@@ -382,7 +382,7 @@ body {
 @media print {
   body * { visibility: hidden; }
   .official-eval-paper, .official-eval-paper * { visibility: visible; }
-  .official-eval-paper { position: absolute; left: 0; top: 0; width: 100% !important; max-width: 100% !important; border: 2px solid #000000 !important; padding: 10mm !important; box-shadow: none !important; }
+  .official-eval-paper { position: static !important; width: 100% !important; max-width: 100% !important; border: 2px solid #000000 !important; padding: 10mm !important; box-shadow: none !important; }
   .no-print, .pm-header-actions, .pm-menu-btn, .pm-drawer, .pm-drawer-scrim, .modal-actions, .bar { display: none !important; }
 }
 

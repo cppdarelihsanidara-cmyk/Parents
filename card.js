@@ -102,9 +102,9 @@
   }
 
   function checkUrl(u) {
-    if (!u) return 'https://hmyasserabdou24-eng.github.io/DarElIhsan3/qr.html';
+    if (!u) return 'https://cppdarelihsanidara-cmyk.github.io/Admin/parent.html';
     try {
-      var x = new URL(u, (typeof window !== 'undefined' && window.location) ? window.location.href : 'https://hmyasserabdou24-eng.github.io');
+      var x = new URL(u, (typeof window !== 'undefined' && window.location) ? window.location.href : 'https://cppdarelihsanidara-cmyk.github.io/Admin/');
       return x.href;
     } catch (e) {
       return String(u);
@@ -169,7 +169,7 @@
         drawQr(ctx, url, qx, qy, qb);
         ctx.textAlign = 'center';
         ctx.fillStyle = MUTED; ctx.font = '700 24px ' + FONT;
-        ctx.fillText('امسح الرمز للتحقق من البطاقة', qx + qb / 2, qy + qb + 46);
+        ctx.fillText('امسح الرمز لدخول فضاء الأولياء', qx + qb / 2, qy + qb + 46);
 
         // بيانات التلميذ (يمين): الاسم واللقب وتاريخ الميلاد فقط — بلا أي معلومات أخرى
         var rx = W - 58, colL = 436;
