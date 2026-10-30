@@ -7,7 +7,15 @@
   var FILE_BUILD = '2026-10-24.2';
   if (window.top !== window.self) { document.body.textContent = ''; return; }
 
-  var CFG = window.DE_CONFIG || {}, h = DE.h;
+  var DEFAULT_CFG = {
+    supabaseUrl: 'https://qgjddtylriqdwvpihvmi.supabase.co',
+    supabaseKey: 'sb_publishable_8mgO37k9jB9_Dg4OQTfynw_NBC0gLjK'
+  };
+  var CFG = Object.assign({}, DEFAULT_CFG, window.DE_CONFIG || {});
+  if (!CFG.supabaseUrl) CFG.supabaseUrl = DEFAULT_CFG.supabaseUrl;
+  if (!CFG.supabaseKey) CFG.supabaseKey = DEFAULT_CFG.supabaseKey;
+  window.DE_CONFIG = CFG;
+  var h = DE.h;
   var $ = function (s) { return document.querySelector(s); };
   var C = DE.Client(CFG, 'de_parent_session', true);
   var S = { tab: 'children', me: null, name: '', d: null, reads: {}, selectedChildId: null };
