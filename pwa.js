@@ -3,7 +3,18 @@
   'use strict';
   var secure = location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
   if (secure && 'serviceWorker' in navigator) {
-    window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
+      // تفريغ الكاش التلقائي للنسخة 90
+  try {
+    if (localStorage.getItem('de_pwa_ver') !== '90') {
+      if ('caches' in window) {
+        caches.keys().then(function (names) {
+          names.forEach(function (n) { caches.delete(n); });
+        });
+      }
+      localStorage.setItem('de_pwa_ver', '90');
+    }
+  } catch (e) {}
+  window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
   }
   var standalone = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
 

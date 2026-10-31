@@ -3738,6 +3738,24 @@ function generateWordDocObservation(rep, child, secName, brName) {
   }
 
 async function init() {
+      // التحقق من تحديث النسخة وتفريغ الذاكرة المؤقتة التلقائي
+      try {
+        var APP_VER = '90';
+        if (localStorage.getItem('de_app_ver') !== APP_VER) {
+          if ('caches' in window) {
+            caches.keys().then(function (names) {
+              names.forEach(function (nm) { caches.delete(nm); });
+            });
+          }
+          if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function (regs) {
+              regs.forEach(function (r) { r.update(); });
+            });
+          }
+          localStorage.setItem('de_app_ver', APP_VER);
+        }
+      } catch (eVer) {}
+
     applyLang();
     if (!CFG.supabaseUrl || !CFG.supabaseKey) { $('#boot').textContent = 'إعدادات الاتصال غير مضبوطة.'; return; }
     C.onExpire(function () { showLogin('انتهت الجلسة. سجّل الدخول من جديد.'); });
