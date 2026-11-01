@@ -1025,6 +1025,8 @@
       window.deferredPwaPrompt.prompt();
       window.deferredPwaPrompt.userChoice.then(function (choice) {
         if (choice.outcome === 'accepted') {
+          localStorage.setItem('de_pwa_installed', '1');
+          checkAndHideInstallButtons();
           toast('تم تثبيت تطبيق فضاء الأولياء بنجاح على هاتفك!', 'ok');
         }
         window.deferredPwaPrompt = null;
@@ -1112,9 +1114,38 @@
     e.preventDefault();
     window.deferredPwaPrompt = e;
   });
+  function checkAndHideInstallButtons() {
+    var isStandalone = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) ||
+                       (window.navigator && window.navigator.standalone === true) ||
+                       localStorage.getItem('de_pwa_installed') === '1';
+
+    if (isStandalone) {
+      var headerBtn = document.getElementById('installHeaderBtn');
+      if (headerBtn) headerBtn.style.display = 'none';
+      var drawerBtn = document.getElementById('drawerInstallBtn');
+      if (drawerBtn) drawerBtn.style.display = 'none';
+      var anyInstall = document.querySelectorAll('[data-install], .pm-install-header-btn, .pm-drawer-install-btn, .pwa-install-banner');
+      [].forEach.call(anyInstall, function (el) { el.style.display = 'none'; });
+    }
+  }
+
   window.addEventListener('appinstalled', function () {
+    localStorage.setItem('de_pwa_installed', '1');
     window.deferredPwaPrompt = null;
+    checkAndHideInstallButtons();
+    toast('تم تثبيت تطبيق فضاء الأولياء بنجاح على هاتفك!', 'ok');
   });
+
+  if (window.matchMedia) {
+    try {
+      window.matchMedia('(display-mode: standalone)').addEventListener('change', function (e) {
+        if (e.matches) {
+          localStorage.setItem('de_pwa_installed', '1');
+          checkAndHideInstallButtons();
+        }
+      });
+    } catch (eMatch) {}
+  }
 
   function renderTabs() {
     updateNotifBadge();
@@ -2529,8 +2560,7 @@ function renderMasEvaluationSheetView(r, childFullName, secName, kd) {
     bipBanner,
     bipGrid,
     bipExtraTable,
-    h('div', { class: 'oep-section-banner', style: 'background-color:#F1F5F9; color:#334155; margin:14px 0 6px;' }, 'البنود التفصيلية لمقياس تقييم دوافع السلوك (MAS 1-16)'),
-    detailTable,
+// [تمت إزالة الجداول التفصيلية للأولياء واكتفاء بالتقرير والنتائج]
     signaturesTable
   );
 }
@@ -2691,8 +2721,7 @@ function renderObservationEvaluationSheetView(r, childFullName, secName, kd) {
     header,
     termBanner,
     infoTable,
-    h('div', { class: 'oep-section-banner', style: 'background-color:#E0E7FF; color:#1E1B4B; margin:14px 0 6px;' }, 'جدول بنود ملاحظة السلوك الميداني (16 عبارة)'),
-    obsTable,
+// [تمت إزالة الجداول التفصيلية للأولياء واكتفاء بالتقرير والنتائج]
     notesBanner,
     notesBox,
     sigTable
@@ -3193,8 +3222,7 @@ function generateWordDocObservation(rep, child, secName, brName) {
       perfGrid,
       summaryBanner,
       recGrid,
-      compactSkillsBox,
-      detailedSkillsSection
+      compactSkillsBox
     );
   }
 
@@ -3625,6 +3653,7 @@ function generateWordDocObservation(rep, child, secName, brName) {
   });
 
   function render() {
+    checkAndHideInstallButtons();
     if (window.DE_NAV) DE_NAV.push({ tab: S.tab });
     renderTabs();
     var v = $('#view'); v.textContent = '';
