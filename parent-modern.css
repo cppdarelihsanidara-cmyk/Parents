@@ -49,35 +49,6 @@
   --de-text-muted: var(--secondary-text);
 }
 
-[data-theme="dark"], body.theme-dark {
-  --primary-forest: #48A783;
-  --secondary-green: #378B6C;
-  --accent-mint: #A9DCC5;
-  --bg: #101A17;
-  --surface: #192722;
-  --surface-glass: rgba(25, 39, 34, 0.88);
-  --surface-elevated: #22352D;
-  --gold-accent: #D6B779;
-  --main-text: #EDF5F0;
-  --secondary-text: #A0B2A8;
-  --border: #30443A;
-  --border-glass: rgba(48, 68, 58, 0.8);
-
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.25);
-  --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 14px 36px rgba(0, 0, 0, 0.6);
-
-  --de-primary: var(--primary-forest);
-  --de-primary-dark: #192722;
-  --de-primary-light: var(--secondary-green);
-  --de-secondary: var(--secondary-green);
-  --de-bg-body: var(--bg);
-  --de-bg-card: var(--surface);
-  --de-border: var(--border);
-  --de-text-main: var(--main-text);
-  --de-text-muted: var(--secondary-text);
-}
-
 body {
   background: var(--de-bg-body) !important;
   color: var(--de-text-main) !important;
