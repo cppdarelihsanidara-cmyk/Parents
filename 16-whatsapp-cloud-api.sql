@@ -61,17 +61,4 @@ create policy "wa_webhook_events_service_role" on public.whatsapp_webhook_events
   for all to service_role
   using (true);
 
--- 5. إدراج سجل تجريبي أولي لتوثيق الجاهزية مع الرقم المعتمد (0564779067)
-insert into public.whatsapp_messages (
-  to_phone,
-  direction,
-  body,
-  status,
-  error
-) values (
-  '213564779067',
-  'outbound',
-  'السلام عليكم، هذا إشعار تجريبي لاختبار جاهزية ربط WhatsApp Cloud API لدار الإحسان.',
-  'sent',
-  ''
-) on conflict do nothing;
+-- لا تُدرج سجلات اختبار أو أرقام هواتف حقيقية ضمن ترحيلات قاعدة الإنتاج.

@@ -1,11 +1,15 @@
 /* Service worker — دار الإحسان.
    الاستراتيجية: الشبكة أولاً مع تجاوز الكاش القديم لتطبيق كافة التعديلات فوراً. */
 'use strict';
-var CACHE = 'de-shell-v20261102-v1';
-var SHELL = ['./', 'index.html', 'site.html', 'go-login.js', 'navback.js', 'icons.js', 'icons.css', 'parent.html', 'manage.html', 'archive-download.html', 'qr.html', '404.html',
-  'style.css', 'cms.css', 'portal.css', 'qr.css', 'manage-theme.css', 'parent-modern.css', 'pdf-writer.js', 'zip-builder.js', 'mobile-admin.css', 'manage.webmanifest', 'pwa.css', 'pwa.js',
-  'script.js', 'i18n-data.js', 'cms.js', 'cms-config.js', 'news.json', 'parent.js', 'parent-guard.js', 'de-core.js', 'username.js', 'manage.js', 'xlsx-writer.js', 'card.js', 'centers.js', 'fr-names.js', 'qr-encoder.js', 'qr-gen.js', 'qr.js', '404.js',
-  'logo.png', 'logo-sq.png', 'cover.jpg', 'hero-background.jpg', 'icon-192.png', 'manifest.webmanifest'];
+var CACHE = 'de-shell-security-20261102-v3';
+var SHELL = [
+  "./", "index.html", "navback.js", "icons.js", "icons.css", "parent.html",
+  "manage.html", "portal.css", "manage-theme.css", "parent-modern.css", "pdf-writer.js", "zip-builder.js",
+  "manage.webmanifest", "pwa.css", "pwa.js", "cms-config.js", "parent.js", "parent-guard.js",
+  "de-core.js", "username.js", "manage.js", "card.js", "centers.js", "fr-names.js",
+  "qr-encoder.js", "qr-gen.js", "qr.js", "logo.png", "logo-sq.png", "icon-192.png",
+  "manifest.webmanifest"
+];
 
 self.addEventListener('install', function (e) {
   self.skipWaiting();

@@ -11,7 +11,7 @@ create table if not exists public.whatsapp_settings (
   phone_number_id text default '',
   waba_id text default '',
   default_template text default 'hello_world',
-  webhook_verify_token text default 'dar_el_ihsan_wa_verify_2026',
+  webhook_verify_token text default null,
   is_enabled boolean default true,
   created_at timestamptz default now(),
   updated_at timestamptz default now()
@@ -19,7 +19,7 @@ create table if not exists public.whatsapp_settings (
 
 -- إدراج الإعداد الافتراضي إن لم يكن موجوداً
 insert into public.whatsapp_settings (id, phone_number_id, waba_id, webhook_verify_token, is_enabled)
-values ('default', '', '', 'dar_el_ihsan_wa_verify_2026', true)
+values ('default', '', '', null, true)
 on conflict (id) do nothing;
 
 -- 2. جدول سجل رسائل واتساب الصادرة والواردة
@@ -86,16 +86,17 @@ alter table public.whatsapp_logs enable row level security;
 alter table public.whatsapp_replies enable row level security;
 alter table public.whatsapp_webhook_events enable row level security;
 
+revoke all on table public.whatsapp_settings from anon, authenticated;
+grant all on table public.whatsapp_settings to service_role;
+
 -- دوال وسياسات الوصول
--- أ) whatsapp_settings: قراءة لجميع المشرفين والإدارة، وتعديل للمديرين العامين فقط
+-- أ) whatsapp_settings: لا قراءة أو تعديل من الواجهة؛ الخدمة الخلفية فقط.
 drop policy if exists "wa_settings_select" on public.whatsapp_settings;
-create policy "wa_settings_select" on public.whatsapp_settings
-  for select to authenticated
-  using (true);
+-- لا توجد سياسة قراءة للواجهة: الإعدادات السرية متاحة للخادم فقط.
 
 drop policy if exists "wa_settings_update" on public.whatsapp_settings;
 create policy "wa_settings_update" on public.whatsapp_settings
-  for all to authenticated
+  for update to authenticated
   using (
     exists (
       select 1 from public.admins a
@@ -133,23 +134,4 @@ create policy "wa_webhook_service" on public.whatsapp_webhook_events
   for all to service_role
   using (true);
 
--- 7. سجل تجريبي لتوثيق الجاهزية مع رقم هاتف الفحص (0564779067)
-insert into public.whatsapp_logs (
-  phone,
-  recipient_name,
-  direction,
-  message_type,
-  message_body,
-  status,
-  center,
-  error_message
-) values (
-  '0564779067',
-  'رقم الاختبار المعتمد',
-  'outbound',
-  'text',
-  'مرحباً بكم من جمعية أولياء الأطفال المعاقين ذهنياً - دار الإحسان. هذا إشعار تجريبي لاختبار الربط والجاهزية.',
-  'sent',
-  'main',
-  ''
-) on conflict do nothing;
+-- لا تُدرج سجلات اختبار أو أرقام هواتف حقيقية ضمن ترحيلات قاعدة الإنتاج.

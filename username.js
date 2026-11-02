@@ -1,6 +1,6 @@
 /* username.js — اسم مستخدم الولي من اسم الطالب بالفرنسية + رقم قيده (يعمل في المتصفح وفي Node).
    الصيغة: <لقب>.<اسم>.<رقم القيد>   مثال: hadj.mohamed.082   (حروف لاتينية صغيرة، 30 حرفًا كحد أقصى)
-   كلمة المرور: DI + تاريخ الميلاد ddmmyyyy   مثال: DI08031996
+   كلمة المرور: تُدار عبر Supabase Auth حصراً ولا تُشتق من تاريخ الميلاد لأسباب أمنية
    تصحيح الأسماء الفرنسية يدويًا: أضف الرقم والاسم في fr-names.js (يتغلب على التحويل التلقائي). */
 (function (root) {
   'use strict';
@@ -70,8 +70,7 @@
     return (name.slice(0, 30 - tail.length).replace(/\.$/, '') + tail);
   }
   function password(dob) {
-    var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(dob || ''));
-    return m ? 'DI' + m[3] + m[2] + m[1] : '';
+    return '';
   }
   root.DEUser = { frName: frName, username: username, password: password };
   if (typeof module !== 'undefined' && module.exports) module.exports = root.DEUser;
