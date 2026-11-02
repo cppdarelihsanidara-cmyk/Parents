@@ -1,40 +1,89 @@
 /* ══════════════════════════════════════════════════════════════════════════════
-   DAR EL IHSAN — MODERN PARENTS PORTAL STYLES (فضاء الأولياء الحديث)
-   الهوية البصرية الرسمية:
-   • اللون الأساسي: الأزرق الداكن #123E73
-   • اللون الثانوي: الأزرق #245A91
-   • اللون المميز: الذهبي #B4873A
-   • الخلفية: أبيض مع درجات رمادية فاتحة #F8FAFC / #F1F5F9
-   • الخط: Cairo / Tajawal / IBM Plex Sans Arabic
+   DAR EL IHSAN — FOREST GREEN PREMIUM PARENTS PORTAL THEME (v22.0)
+   الهوية البصرية المؤسسية لجمعية دار الإحسان:
+   - Primary Forest: #174D3C
+   - Secondary Green: #26745A
+   - Accent Mint: #DCECE4
+   - Background: #F5F7F4
+   - Surface: #FFFFFF
+   - Gold Accent: #D6B779
+   - Main Text: #24332C
+   - Secondary Text: #75847B
+   - Border: #E5EBE6
    ══════════════════════════════════════════════════════════════════════════════ */
 
 :root {
-  --de-primary: #123E73;
-  --de-primary-dark: #0A2547;
-  --de-primary-light: #1A5499;
-  --de-secondary: #245A91;
-  --de-accent-gold: #B4873A;
-  --de-accent-gold-light: #D4A759;
-  --de-accent-gold-bg: rgba(180, 135, 58, 0.12);
-  --de-bg-body: #F8FAFC;
-  --de-bg-card: #FFFFFF;
-  --de-border: #E2E8F0;
-  --de-border-subtle: #EDF2F7;
-  --de-text-main: #0F172A;
-  --de-text-muted: #64748B;
-  --de-text-light: #94A3B8;
-  --de-success: #059669;
-  --de-success-bg: rgba(5, 150, 105, 0.1);
-  --de-danger: #DC2626;
-  --de-danger-bg: rgba(220, 38, 38, 0.1);
-  --de-font: 'Cairo', 'Tajawal', 'IBM Plex Sans Arabic', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --de-radius-sm: 8px;
-  --de-radius-md: 12px;
-  --de-radius-lg: 16px;
-  --de-shadow-sm: 0 1px 3px rgba(18, 62, 115, 0.05);
-  --de-shadow-md: 0 4px 12px rgba(18, 62, 115, 0.08);
-  --de-shadow-lg: 0 10px 25px rgba(18, 62, 115, 0.12);
+  --primary-forest: #174D3C;
+  --secondary-green: #26745A;
+  --accent-mint: #DCECE4;
+  --bg: #F5F7F4;
+  --surface: #FFFFFF;
+  --surface-glass: rgba(255, 255, 255, 0.85);
+  --surface-elevated: #FFFFFF;
+  --gold-accent: #D6B779;
+  --main-text: #24332C;
+  --secondary-text: #75847B;
+  --border: #E5EBE6;
+  --border-glass: rgba(229, 235, 230, 0.85);
+
+  --shadow-sm: 0 2px 8px rgba(23, 77, 60, 0.05);
+  --shadow-md: 0 6px 20px rgba(23, 77, 60, 0.08);
+  --shadow-lg: 0 14px 36px rgba(23, 77, 60, 0.12);
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-xl: 24px;
+  --backdrop-blur: blur(14px);
+
+  --de-primary: var(--primary-forest);
+  --de-primary-dark: #113B2E;
+  --de-primary-light: var(--secondary-green);
+  --de-secondary: var(--secondary-green);
+  --de-accent-gold: var(--gold-accent);
+  --de-accent-gold-light: #E7CF9C;
+  --de-accent-gold-bg: rgba(214, 183, 121, 0.15);
+  --de-bg-body: var(--bg);
+  --de-bg-card: var(--surface);
+  --de-border: var(--border);
+  --de-text-main: var(--main-text);
+  --de-text-muted: var(--secondary-text);
 }
+
+[data-theme="dark"], body.theme-dark {
+  --primary-forest: #48A783;
+  --secondary-green: #378B6C;
+  --accent-mint: #A9DCC5;
+  --bg: #101A17;
+  --surface: #192722;
+  --surface-glass: rgba(25, 39, 34, 0.88);
+  --surface-elevated: #22352D;
+  --gold-accent: #D6B779;
+  --main-text: #EDF5F0;
+  --secondary-text: #A0B2A8;
+  --border: #30443A;
+  --border-glass: rgba(48, 68, 58, 0.8);
+
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.25);
+  --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 14px 36px rgba(0, 0, 0, 0.6);
+
+  --de-primary: var(--primary-forest);
+  --de-primary-dark: #192722;
+  --de-primary-light: var(--secondary-green);
+  --de-secondary: var(--secondary-green);
+  --de-bg-body: var(--bg);
+  --de-bg-card: var(--surface);
+  --de-border: var(--border);
+  --de-text-main: var(--main-text);
+  --de-text-muted: var(--secondary-text);
+}
+
+body {
+  background: var(--de-bg-body) !important;
+  color: var(--de-text-main) !important;
+}
+
+
 
 body {
   font-family: var(--de-font);

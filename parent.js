@@ -3891,5 +3891,45 @@ async function init() {
     }
   }
 
+  
+  /* ══════════════════════════════════════════════════════════════════════════════
+     FOREST GREEN PREMIUM — THEME ENGINE FOR PARENTS
+     ══════════════════════════════════════════════════════════════════════════════ */
+  function initParentThemeEngine() {
+    var saved = localStorage.getItem('de_theme');
+    var theme = saved || (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    applyParentTheme(theme);
+
+    var btn = document.getElementById('themeToggleBtnParent');
+    if (btn && !btn._bound) {
+      btn._bound = true;
+      btn.addEventListener('click', toggleParentTheme);
+    }
+  }
+
+  function applyParentTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    if (theme === 'dark') {
+      document.documentElement.classList.add('theme-dark');
+    } else {
+      document.documentElement.classList.remove('theme-dark');
+    }
+    localStorage.setItem('de_theme', theme);
+
+    var btn = document.getElementById('themeToggleBtnParent');
+    if (btn) {
+      btn.setAttribute('aria-label', theme === 'dark' ? 'التبديل إلى الوضع الفاتح' : 'التبديل إلى الوضع الداكن');
+      btn.title = theme === 'dark' ? 'التبديل إلى الوضع الفاتح' : 'التبديل إلى الوضع الداكن';
+      var u = btn.querySelector('use');
+      if (u) u.setAttribute('href', theme === 'dark' ? '#i-sun' : '#i-moon');
+    }
+  }
+
+  function toggleParentTheme() {
+    var cur = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+    applyParentTheme(cur === 'dark' ? 'light' : 'dark');
+  }
+
+  initParentThemeEngine();
   init();
 })();
