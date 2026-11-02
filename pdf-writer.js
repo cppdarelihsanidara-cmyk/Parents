@@ -435,7 +435,7 @@
       return pObj;
     }
 
-    var p = newPage('تقرير اللجنة البيداغوجية والتربوية');
+    var p = newPage(reportType === 'statistics' ? 'التقرير الإحصائي لنتائج التقييم' : 'تقرير اللجنة البيداغوجية والتربوية');
     var ctx = p.ctx;
     var y = p.y;
 
@@ -576,9 +576,9 @@
     ctx.textAlign = 'right';
     ctx.font = '15px "IBM Plex Sans Arabic", "Cairo", sans-serif';
     var grLines = wrapLines(ctx, ev.general_report || 'تم تسجيل تقدم ملحوظ في الأداء العام للحالة مع مواصلة التأهيل التربوي والنفسي.', halfW - 24, 9);
-    grLines.forEach(function (ln, idx) {
-      ctx.fillText(ln, rightColX + halfW - 12, y + 56 + idx * 26);
-    });
+    var grMaxLines = Math.floor((gridH - 52) / 26);
+    if (grLines.length > grMaxLines) grLines = grLines.slice(0, grMaxLines);
+    grLines.forEach(function (ln, idx) { ctx.fillText(ln, rightColX + halfW - 12, y + 56 + idx * 26); });
 
     // يسار: 6 صناديق القدرات بألوانها المطابقة للصورة
     var ab = ev.abilities || {};
@@ -653,7 +653,7 @@
 
     } // end written report content
 
-    if (reportType !== 'notes') {
+    if (reportType === 'full' || reportType === 'details') {
     // 7. كشف درجات التقييم والنتائج الإجمالية (في نفس الصفحة الأولى تماماً كما في الصورة 55043.jpg)
     ctx.fillStyle = '#7DD3FC';
     ctx.fillRect(M, y, CW, 32);
@@ -763,21 +763,51 @@
     ctx.fillText(totalEarned + ' من ' + totalMax + ' نقطة (' + overallPct + '%)', M + 148, y + 24);
     y += 48;
 
-    // مخطط دائري مبني على نفس عدّ المهارات المكتسبة المستخدم في الأعمدة: المكتسبة >= 4/5
+    // التقرير الإحصائي: لكل مجال شريط أخضر ونسبة محسوبة من المكتسب/إجمالي المهارات.
+    // تُستخدم domainStats نفسها في الرسم والجدول لضمان التطابق الحسابي.
     if (reportType === 'statistics') {
-      if (y > 1390) { p = newPage('التقرير الإحصائي لنتائج التقييم'); ctx = p.ctx; y = p.y; }
-      ctx.fillStyle = '#F8FAFC'; ctx.fillRect(M, y, CW, 220); ctx.strokeStyle = '#CBD5E1'; ctx.strokeRect(M, y, CW, 220);
-      ctx.fillStyle = '#0F172A'; ctx.textAlign = 'center'; ctx.font = 'bold 19px "IBM Plex Sans Arabic", "Cairo", sans-serif'; ctx.fillText('نسبة المهارات المكتسبة (4/5 فما فوق)', W / 2, y + 28);
-      var chartTotal = totalSkills || 1, chartPct = totalSkills ? acquiredSkills / totalSkills : 0;
-      var cx = W / 2, cy = y + 128, outer = 72, inner = 42;
-      ctx.beginPath(); ctx.moveTo(cx, cy); ctx.arc(cx, cy, outer, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * chartPct); ctx.closePath(); ctx.fillStyle = '#16A34A'; ctx.fill();
-      ctx.beginPath(); ctx.moveTo(cx, cy); ctx.arc(cx, cy, outer, -Math.PI / 2 + Math.PI * 2 * chartPct, -Math.PI / 2 + Math.PI * 2); ctx.closePath(); ctx.fillStyle = '#F59E0B'; ctx.fill();
-      ctx.beginPath(); ctx.arc(cx, cy, inner, 0, Math.PI * 2); ctx.fillStyle = '#FFFFFF'; ctx.fill();
-      ctx.fillStyle = '#0F172A'; ctx.font = 'bold 18px "IBM Plex Sans Arabic", "Cairo", sans-serif'; ctx.fillText((chartPct * 100).toFixed(1) + '%', cx, cy + 6);
-      ctx.textAlign = 'right'; ctx.font = 'bold 15px "IBM Plex Sans Arabic", "Cairo", sans-serif'; ctx.fillStyle = '#15803D'; ctx.fillText('المكتسبة: ' + acquiredSkills + ' (' + (chartPct * 100).toFixed(1) + '%)', W - M - 20, y + 95);
-      ctx.fillStyle = '#B45309'; ctx.fillText('غير المكتسبة / دون تقييم 4/5: ' + (totalSkills - acquiredSkills) + ' (' + ((1-chartPct) * 100).toFixed(1) + '%)', W - M - 20, y + 135);
-      ctx.fillStyle = '#475569'; ctx.font = '13px "IBM Plex Sans Arabic", "Cairo", sans-serif'; ctx.fillText('المقام الموحد: ' + totalSkills + ' مهارة', W - M - 20, y + 175);
-      y += 232;
+      ctx.fillStyle = '#123E73'; ctx.fillRect(M, y, CW, 42);
+      ctx.fillStyle = '#FFFFFF'; ctx.textAlign = 'center'; ctx.font = 'bold 22px "IBM Plex Sans Arabic", "Cairo", sans-serif';
+      ctx.fillText('التقرير الإحصائي لنتائج التقييم', W / 2, y + 28); y += 54;
+      ctx.fillStyle = '#F8FAFC'; ctx.fillRect(M, y, CW, 42); ctx.strokeStyle = '#CBD5E1'; ctx.strokeRect(M, y, CW, 42);
+      ctx.fillStyle = '#0F172A'; ctx.font = 'bold 16px "IBM Plex Sans Arabic", "Cairo", sans-serif';
+      ctx.textAlign = 'right'; ctx.fillText('اسم الطفل: ' + (childFullName || (kd && kd.full_name) || '—'), W-M-14, y+26);
+      ctx.textAlign = 'left'; ctx.fillText('تاريخ التقييم: ' + (ev.report_date || '—'), M+14, y+26); y += 54;
+      ctx.fillStyle = '#0F172A'; ctx.textAlign = 'right'; ctx.font = 'bold 18px "IBM Plex Sans Arabic", "Cairo", sans-serif';
+      ctx.fillText('نسبة اكتساب المهارات في كل مجال (المهارة مكتسبة عند 4/5 فما فوق)', W-M, y+20); y += 34;
+      domainStats.forEach(function(dm, idx) {
+        if (y > 1500) { p = newPage('التقرير الإحصائي لنتائج التقييم — تابع'); ctx = p.ctx; y = p.y; }
+        var rowH = 76, pct = dm.count ? (dm.acquired / dm.count) * 100 : 0;
+        ctx.fillStyle = idx % 2 ? '#FFFFFF' : '#F8FAFC'; ctx.fillRect(M, y, CW, rowH); ctx.strokeStyle = '#CBD5E1'; ctx.strokeRect(M, y, CW, rowH);
+        ctx.fillStyle = '#0F172A'; ctx.textAlign = 'right'; ctx.font = 'bold 16px "IBM Plex Sans Arabic", "Cairo", sans-serif';
+        ctx.fillText(dm.name, W-M-14, y+23);
+        ctx.font = 'bold 14px "IBM Plex Sans Arabic", "Cairo", sans-serif'; ctx.fillStyle = '#15803D';
+        ctx.fillText('المهارات المكتسبة: ' + dm.acquired + ' من ' + dm.count, W-M-14, y+49);
+        var bx = M+14, by = y+20, bw = Math.min(620, CW*0.54), bh = 22;
+        ctx.fillStyle = '#E2E8F0'; ctx.fillRect(bx, by, bw, bh);
+        ctx.fillStyle = '#16A34A'; ctx.fillRect(bx, by, bw * pct / 100, bh);
+        ctx.strokeStyle = '#94A3B8'; ctx.strokeRect(bx, by, bw, bh);
+        ctx.fillStyle = '#0F172A'; ctx.textAlign = 'left'; ctx.font = 'bold 15px "IBM Plex Sans Arabic", "Cairo", sans-serif';
+        ctx.fillText(pct.toFixed(1) + '%', bx + bw + 12, by+16);
+        // دائرة صغيرة لكل مجال، محسوبة من نفس البسط والمقام المستخدمين في الشريط.
+        var cx = W-M-260, cy = y+38, r = 23;
+        ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,r,-Math.PI/2,-Math.PI/2+Math.PI*2*pct/100); ctx.closePath(); ctx.fillStyle='#16A34A'; ctx.fill();
+        ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,r,-Math.PI/2+Math.PI*2*pct/100,-Math.PI/2+Math.PI*2); ctx.closePath(); ctx.fillStyle='#F59E0B'; ctx.fill();
+        ctx.beginPath(); ctx.arc(cx,cy,13,0,Math.PI*2); ctx.fillStyle='#FFFFFF'; ctx.fill();
+        ctx.fillStyle='#0F172A'; ctx.textAlign='center'; ctx.font='bold 10px "IBM Plex Sans Arabic", "Cairo", sans-serif'; ctx.fillText(Math.round(pct)+'%',cx,cy+4);
+        y += rowH + 8;
+      });
+      y += 8;
+      if (y > 1510) { p = newPage('ملخص التقرير الإحصائي'); ctx = p.ctx; y = p.y; }
+      // جدول مختصر وفق المطلوب: المجال وعدد المهارات المكتسبة فقط.
+      ctx.fillStyle = '#123E73'; ctx.fillRect(M,y,CW,34); ctx.fillStyle='#FFFFFF'; ctx.textAlign='center'; ctx.font='bold 17px "IBM Plex Sans Arabic", "Cairo", sans-serif'; ctx.fillText('ملخص المهارات المكتسبة حسب المجال',W/2,y+23); y+=34;
+      var nameW = CW*0.72, countW = CW-nameW;
+      [[ 'المجال', 'عدد المهارات المكتسبة' ]].concat(domainStats.map(function(dm){ return [dm.name, String(dm.acquired)]; })).forEach(function(row, ri){
+        var rh=32; ctx.fillStyle=ri===0?'#E2E8F0':(ri%2?'#FFFFFF':'#F8FAFC'); ctx.fillRect(M,y,CW,rh); ctx.strokeStyle='#CBD5E1'; ctx.strokeRect(M,y,CW,rh); ctx.strokeRect(M+nameW,y,countW,rh);
+        ctx.fillStyle='#0F172A'; ctx.font=ri===0?'bold 14px "IBM Plex Sans Arabic", "Cairo", sans-serif':'14px "IBM Plex Sans Arabic", "Cairo", sans-serif'; ctx.textAlign='right'; ctx.fillText(row[0],M+nameW-10,y+21);
+        ctx.textAlign='center'; ctx.fillText(row[1],M+nameW+countW/2,y+21); y+=rh;
+      });
+      y += 12;
     }
 
     // 8. الجداول التفصيلية لكافة المهارات المقيمة في المجالات التربوية (تبدأ مباشرة وتكمل في الصفحات التالية)
