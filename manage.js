@@ -5181,9 +5181,12 @@
     return res;
   }
 
-  /* رسم ورقة التقييم الرسمية المطابقة بدقة للصورة المرفقة (53020.jpg) */
-  function renderEvaluationSheetView(r, childFullName, secName, kd) {
+  /* رسم ورقة التقييم الرسمية (الإدارة: 3 أزرار للتقرير الكتابي، التقرير الكمي المطابق للصورة، والتقرير الشامل مع الجداول) */
+  function renderEvaluationSheetView(r, childFullName, secName, kd, initialReportMode) {
     var ev = parseEvaluationReport(r);
+    var statsObj = (window.DE_PDF && typeof window.DE_PDF.computeEvaluationStats === 'function')
+      ? window.DE_PDF.computeEvaluationStats(ev)
+      : null;
 
     // حساب العمر التقريبي للطفل إن توفر تاريخ الميلاد
     var ageTxt = '—';
@@ -5201,14 +5204,14 @@
     var logoImg = h('img', { class: 'oep-logo-side', alt: 'شعار الجمعية' });
     logoImg.setAttribute('src', 'logo-sq.png');
 
-    // 1. ترويسة الوثيقة الرسمية
+    // 1. ترويسة الوثيقة الرسمية (التقرير البيداغوجي الوصفي — تقرير الملاحظات والتوجيهات)
     var header = h('div', { class: 'oep-header' },
       h('div', { class: 'oep-title-block' },
         h('h3', { class: 'oep-org-name', text: 'جمعية أولياء الأطفال المعاقين ذهنيًا' }),
         h('h4', { class: 'oep-center-name', text: 'المركز النفسي البيداغوجي دار الإحسان' }),
         h('p', { class: 'oep-location', text: '— العطف - غرداية —' }),
         h('div', { class: 'oep-fr-title', text: "COMPTE RENDU DE L'EQUIPE PEDAGOGIQUE" }),
-        h('h2', { class: 'oep-report-heading', text: 'تقرير اللجنة البيداغوجية والتربوية' })
+        h('h2', { class: 'oep-report-heading', text: 'التقرير البيداغوجي الوصفي (تقرير الملاحظات والتوجيهات)' })
       ),
       logoImg
     );
@@ -5216,7 +5219,7 @@
     // 2. البانر الأصفر/الذهبي للثلاثي والموسم
     var termBanner = h('div', { class: 'oep-term-banner', text: 'تقييم ' + (ev.term || 'الثلاثي الأخير') + ' للموسم الدراسي: ' + (ev.school_year || '2024/2025') });
 
-    // 3. شبكة معلومات الحالة (اسم الحالة، العمر، نوع الاضطراب، الميلاد، درجة الإعاقة، القسم)
+    // 3. شبكة معلومات الحالة
     var infoTable = h('table', { class: 'oep-info-table' },
       h('tbody', null,
         h('tr', null,
@@ -5240,8 +5243,8 @@
       )
     );
 
-    // 4. جدول المشرفين بدون رموز QR وبمظهر رسمي نظيف وأنيق
-    var supRows = (ev.supervisors && ev.supervisors.length ? ev.supervisors : [{ name: 'إدارة المركز', role: 'مدير المركز' }]).map(function (sp) {
+    // 4. جدول المشرفين (بحد أقصى 4 صفوف لضمان عدم تجاوز صفحة A4)
+    var supRows = (ev.supervisors && ev.supervisors.length ? ev.supervisors : [{ name: 'إدارة المركز', role: 'مدير المركز' }]).slice(0, 4).map(function (sp) {
       return h('tr', null,
         h('td', null, h('strong', { text: sp.name || '—' })),
         h('td', { text: sp.role || '—' }),
@@ -5253,19 +5256,20 @@
       h('thead', null,
         h('tr', null,
           h('th', { text: 'المشرفون: الإسم واللقب' }),
-          h('th', { text: 'الوظيفة' }),
+          h('th', { text: 'الوظيفة / التخصص' }),
           h('th', { text: 'التوقيع والختم' })
         )
       ),
       h('tbody', null, supRows)
     );
 
-    // 5. البانر الأزرق وقسم "الوصف العام لأداء الحالة"
+    // 5. البانر الأزرق وقسم "الوصف العام لأداء الحالة" (مع حد صفحة A4)
     var perfBanner = h('div', { class: 'oep-section-banner', text: 'الوصف العام لأداء الحالة' });
 
+    var generalReportText = String(ev.general_report || 'تم تسجيل تقدم ملحوظ في الأداء العام للحالة مع مواصلة التأهيل التربوي والنفسي.').slice(0, 750);
     var generalReportCol = h('div', { class: 'oep-general-report-box' },
-      h('div', { class: 'oep-gr-header', text: 'التقرير العام' }),
-      h('div', { class: 'oep-gr-body', text: ev.general_report || 'تم تسجيل تقدم ملحوظ في الأداء العام للحالة مع مواصلة التأهيل التربوي والنفسي.' })
+      h('div', { class: 'oep-gr-header', text: 'التقرير العام والملاحظات البيداغوجية' }),
+      h('div', { class: 'oep-gr-body oep-a4-clamped-body', text: generalReportText })
     );
 
     var ab = ev.abilities || {};
@@ -5279,21 +5283,21 @@
     ].map(function (item) {
       return h('div', { class: 'oep-ability-box' },
         h('div', { class: 'oep-ab-hdr ' + item.cls, text: item.title }),
-        h('div', { class: 'oep-ab-content', text: item.val || '—' })
+        h('div', { class: 'oep-ab-content oep-a4-clamped-ability', text: String(item.val || '—').slice(0, 140) })
       );
     });
 
     var abilitiesCol = h('div', { class: 'oep-abilities-stack' }, abilityBoxes);
     var perfGrid = h('div', { class: 'oep-performance-grid' }, generalReportCol, abilitiesCol);
 
-    // 6. البانر الأخضر وقسم "الخلاصة والتوصيات" (نقاط القوة، نقاط الضعف، التوصيات)
+    // 6. البانر الأخضر وقسم "الخلاصة والتوصيات" (بحد أقصى 4 نقاط لكل عمود لعدم تجاوز صفحة A4)
     var summaryBanner = h('div', { class: 'oep-summary-banner', text: 'الخلاصة والتوصيات' });
 
     function renderListItems(arr, fallback) {
-      var items = (arr || []).filter(function (x) { return x && x.trim(); });
+      var items = (arr || []).filter(function (x) { return x && x.trim(); }).slice(0, 4);
       if (!items.length) items = [fallback];
-      var ul = h('ul', { class: 'oep-rec-list' });
-      items.forEach(function (txt) { ul.appendChild(h('li', { text: txt })); });
+      var ul = h('ul', { class: 'oep-rec-list oep-a4-clamped-list' });
+      items.forEach(function (txt) { ul.appendChild(h('li', { text: String(txt).slice(0, 130) })); });
       return ul;
     }
 
@@ -5307,118 +5311,75 @@
         renderListItems(ev.weaknesses, 'الحاجة لتعزيز مهارات التركيز والاستقلالية.')
       ),
       h('div', { class: 'oep-rec-col' },
-        h('div', { class: 'oep-rec-title', text: '3. التوصيات' }),
+        h('div', { class: 'oep-rec-title', text: '3. التوصيات والتوجيهات' }),
         renderListItems(ev.recommendations, 'مواصلة المتابعة البيداغوجية والتنسيق المستمر مع الأسرة.')
       )
     );
 
-    // 7. كشف الحساب التلقائي للنقاط لكل مجال والنتيجة الإجمالية لكافة المجالات المختارة
-    var totalEarnedPoints = 0;
-    var totalMaxPoints = 0;
-    var totalRatedSkills = 0;
-
-    var domainRows = (ev.domains || []).map(function (dm) {
-      var dEarned = 0;
-      var dMax = 0;
-      var dCount = (dm.ratings || []).length;
-      (dm.ratings || []).forEach(function (it) {
-        var sc = 0;
-        if (it.score !== '' && it.score != null) {
-          var parsedSc = parseInt(it.score, 10);
-          if (!isNaN(parsedSc)) sc = parsedSc;
-        } else if (it.yn) {
-          if (it.yn === 'نعم') sc = 5;
-        }
-        dEarned += sc;
-        dMax += 5;
-      });
-      totalEarnedPoints += dEarned;
-      totalMaxPoints += dMax;
-      totalRatedSkills += dCount;
-      var dPct = dMax > 0 ? Math.round((dEarned / dMax) * 100) : 0;
-      return h('tr', null,
-        h('td', null, h('strong', { text: dm.domain })),
-        h('td', { text: dCount + ' مهارة' }),
-        h('td', null, h('span', { class: 'badge ' + (dEarned > 0 ? 'ok' : 'gray'), text: dEarned + ' نقطة' })),
-        h('td', { text: dMax + ' نقطة' }),
-        h('td', null, h('strong', { text: dPct + '%' }))
-      );
-    });
-
-    var overallPct = totalMaxPoints > 0 ? ((totalEarnedPoints / totalMaxPoints) * 100).toFixed(1) : '0';
-
-    var scorecardTable = h('table', { class: 'oep-scorecard-table' },
-      h('thead', null,
-        h('tr', null,
-          h('th', { text: 'المجال التربوي / البيداغوجي' }),
-          h('th', { text: 'المهارات المقيمة' }),
-          h('th', { text: 'النقاط المحصلة' }),
-          h('th', { text: 'المجموع الأقصى' }),
-          h('th', { text: 'النسبة المئوية' })
-        )
-      ),
-      h('tbody', null,
-        domainRows,
-        h('tr', { class: 'total-row' },
-          h('td', null, h('strong', { text: 'النتيجة الإجمالية لكافة المجالات التربوية المختارة' })),
-          h('td', { text: totalRatedSkills + ' مهارة' }),
-          h('td', null, h('strong', { text: totalEarnedPoints + ' نقطة' })),
-          h('td', null, h('strong', { text: totalMaxPoints + ' نقطة' })),
-          h('td', null, h('strong', { text: overallPct + '%' }))
-        )
-      )
+    // القسم الأول: التقرير الكتابي للملاحظات (صفحة A4 واحدة بدون الكشف والجداول)
+    var writtenReportSection = h('div', { class: 'oep-written-page-box' },
+      header,
+      termBanner,
+      infoTable,
+      supervisorsTable,
+      perfBanner,
+      perfGrid,
+      summaryBanner,
+      recGrid
     );
 
-    var overallBanner = h('div', { class: 'oep-overall-score-banner' },
-      h('span', { text: 'النتيجة الإجمالية لكافة المجالات المختارة:' }),
-      h('span', { class: 'oep-score-highlight', text: totalEarnedPoints + ' من ' + totalMaxPoints + ' نقطة (' + overallPct + '%)' })
+    // القسم الثاني: التقرير التقييمي الكمي (الجدول + المشرفون + الأعمدة البيانية + الدائرة النسبية — مطابق للصورة 56725.jpg)
+    var quantitativeCanvasHost = h('div', {
+      class: 'oep-quant-canvas-host',
+      style: 'width:100%; background:#FFFFFF; border:1px solid #CBD5E1; border-radius:6px; overflow:hidden; text-align:center; min-height:320px; display:flex; align-items:center; justify-content:center;'
+    }, h('span', { class: 'muted small', text: 'جارٍ رسم التقرير الكمي البياني...' }));
+
+    function renderQuantCanvasNow() {
+      if (window.DE_PDF && typeof window.DE_PDF.renderQuantitativePageCanvas === 'function') {
+        window.DE_PDF.renderQuantitativePageCanvas(ev, childFullName, secName, kd).then(function (cEl) {
+          quantitativeCanvasHost.textContent = '';
+          cEl.style.width = '100%';
+          cEl.style.height = 'auto';
+          cEl.style.display = 'block';
+          cEl.style.maxWidth = '100%';
+          quantitativeCanvasHost.appendChild(cEl);
+        }).catch(function () {});
+      }
+    }
+    setTimeout(renderQuantCanvasNow, 10);
+
+    var quantitativeReportSection = h('div', { class: 'oep-quantitative-page-box' },
+      quantitativeCanvasHost
     );
 
-    var skillsSectionBanner = h('div', { class: 'oep-section-banner', style: 'background-color:#E0E7FF; color:#1E1B4B; margin-top:12px;', text: 'كشف درجات التقييم والنتائج الإجمالية' });
-
-    // 8. إظهار كافة الجداول التفصيلية للمهارات لكل مجال بيداغوجي مختار مع أسماء المهارات والدرجة صفر لمن لم تقيّم
-    var allDomainDetailTables = (ev.domains || []).map(function (dm, dIdx) {
-      var dEarned = 0;
-      var dMax = 0;
-      var skillRows = (dm.ratings || []).map(function (it, sIdx) {
-        var skillName = it.skill || it.item || (EMBEDDED_CURRICULUM[dm.domain] && EMBEDDED_CURRICULUM[dm.domain][sIdx]) || ('مهارة ' + (sIdx + 1));
-        var sc = 0;
-        var isRated = false;
-        if (it.score !== '' && it.score != null) {
-          var parsedSc = parseInt(it.score, 10);
-          if (!isNaN(parsedSc)) {
-            sc = parsedSc;
-            isRated = true;
-          }
-        } else if (it.yn) {
-          if (it.yn === 'نعم') sc = 5;
-          else sc = 0;
-          isRated = true;
-        }
-        dEarned += sc;
-        dMax += 5;
-        var scVal = isRated ? (it.yn ? it.yn : (sc + ' / 5')) : '0 / 5';
-
+    // القسم الثالث (خاص بالإدارة في التقرير الشامل): الجداول التفصيلية لكافة المجالات والمهارات المقيمة
+    var domainStatsList = statsObj ? statsObj.domainStats : [];
+    var allDomainDetailTables = domainStatsList.map(function (dm, dIdx) {
+      var skillRows = (dm.ratings || []).map(function (rt) {
         return h('tr', null,
-          h('td', { style: 'text-align:center;', text: String(sIdx + 1) }),
-          h('td', null, h('strong', { text: skillName })),
-          h('td', { style: 'text-align:center;' }, h('span', { class: 'badge ' + (sc > 0 ? 'ok' : 'gray'), text: scVal })),
-          h('td', { class: 'muted small', text: it.note || it.obs || (isRated ? 'مقيَّمة' : 'لم تقيَّم (درجة صفر)') })
+          h('td', { style: 'text-align:center;', text: String(rt.num) }),
+          h('td', null, h('strong', { text: rt.skill })),
+          h('td', { style: 'text-align:center;' },
+            h('span', {
+              class: 'badge ' + (rt.acquired ? 'ok' : (rt.isRated ? 'gold' : 'gray')),
+              text: rt.badgeText + (rt.acquired ? ' • مكتسبة' : (rt.isRated ? ' • غير مكتسبة' : ' • لم تقيَّم'))
+            })
+          ),
+          h('td', { class: 'muted small', text: rt.note })
         );
       });
-      var dPct = dMax > 0 ? Math.round((dEarned / dMax) * 100) : 0;
 
       return h('div', { class: 'eval-domain-table-wrap', style: 'margin-top:16px;' },
-        h('div', { class: 'oep-gr-header', style: 'display:flex;justify-content:space-between;align-items:center;padding:8px 14px;background:#EEF2FF;color:#312E81;border:1px solid #C7D2FE;' },
-          h('strong', { text: (dIdx + 1) + '. ' + dm.domain + ' (' + (dm.ratings ? dm.ratings.length : 0) + ' مهارة)' }),
-          h('span', { class: 'badge gold', text: 'النقاط: ' + dEarned + ' / ' + dMax + ' (' + dPct + '%)' })
+        h('div', { class: 'oep-gr-header', style: 'display:flex;justify-content:space-between;align-items:center;padding:8px 14px;background:#EEF2FF;color:#312E81;border:1px solid #C7D2FE;flex-wrap:wrap;gap:8px;' },
+          h('strong', { text: (dIdx + 1) + '. ' + dm.name + ' (إجمالي المهارات: ' + dm.count + ')' }),
+          h('span', { class: 'badge ok', text: 'المهارات المكتسبة (4/5 فما فوق): ' + dm.acquired + ' من ' + dm.count + ' (' + dm.pctFmt + '%)' })
         ),
         h('table', { class: 'oep-scorecard-table', style: 'margin-top:0;width:100%;' },
           h('thead', null,
             h('tr', null,
               h('th', { style: 'width:45px;text-align:center;', text: '#' }),
               h('th', { text: 'المهارة المقيمة' }),
-              h('th', { style: 'width:130px;text-align:center;', text: 'التقييم / النتيجة' }),
+              h('th', { style: 'width:165px;text-align:center;', text: 'الدرجة والاكتساب (4/5+)' }),
               h('th', { text: 'الملاحظات والتوجيهات' })
             )
           ),
@@ -5428,56 +5389,109 @@
     });
 
     var detailedSkillsSection = h('div', { class: 'eval-detailed-skills-box', style: 'margin-top:20px;' },
-      h('div', { class: 'oep-section-banner', style: 'background-color:#E0E7FF; color:#1E1B4B; margin:16px 0 8px;' }, 'الجداول التفصيلية لكافة المهارات المقيمة في المجالات التربوية'),
+      h('div', { class: 'oep-section-banner', style: 'background-color:#E0E7FF; color:#1E1B4B; margin:16px 0 8px;', text: 'الجداول التفصيلية لكافة المجالات والمهارات المقيمة (معيار الاكتساب: 4/5 فما فوق)' }),
       allDomainDetailTables
     );
 
-    var topActionsBar = h('div', { class: 'oep-action-bar no-print', style: 'display:flex;justify-content:flex-end;gap:10px;margin-bottom:16px;padding:10px 14px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:10px;' },
-      h('button', {
+    // إدارة التبديل المباشر بين التقارير الثلاثة على شاشة الكمبيوتر دون إزاحة
+    var activeMode = initialReportMode || 'notes'; // 'notes' | 'statistics' | 'full'
+    var isFitScreen = false;
+    var paperEl = h('div', { class: 'official-eval-paper mode-' + activeMode });
+
+    function makeReportTabBtn(modeKey, labelText, pdfFileNamePrefix, toastMsg) {
+      var viewBtn = h('button', {
         type: 'button',
-        class: 'btn gold',
-        onclick: async function () {
+        class: 'btn ' + (activeMode === modeKey ? 'gold' : 'light'),
+        style: 'font-weight:800; display:inline-flex; align-items:center; gap:6px;',
+        onclick: function () {
+          activeMode = modeKey;
+          updateViewMode();
+        }
+      }, makeSvgIcon(modeKey === 'full' ? 's-card' : 's-eye'), h('span', { text: labelText }));
+
+      var dlBtn = h('button', {
+        type: 'button',
+        class: 'btn small',
+        title: 'تحميل ' + labelText + ' بصيغة PDF',
+        style: 'padding:6px 10px; font-size:0.78rem;',
+        onclick: async function (e) {
+          e.stopPropagation();
           try {
-            toast('جارٍ تجهيز وتحميل الاستمارة بصيغة PDF...', 'ok');
-            var pdfBytes = await DE_PDF.renderEvaluationToPdf(ev, childFullName, secName, kd);
-            DE_PDF.downloadPdf(pdfBytes, 'استمارة_تقييم_' + (childFullName || 'تلميذ').replace(/\s+/g, '_') + '.pdf');
-            toast('تم تنزيل ملف PDF بنجاح!', 'ok');
-          } catch (e) {
-            toast('تعذر تنزيل PDF: ' + e.message, 'bad');
+            toast(toastMsg, 'ok');
+            var pdfBytes = await DE_PDF.renderEvaluationToPdf(ev, childFullName, secName, kd, modeKey);
+            DE_PDF.downloadPdf(pdfBytes, pdfFileNamePrefix + '_' + (childFullName || 'تلميذ').replace(/\s+/g, '_') + '.pdf');
+            toast('تم تنزيل التقرير بصيغة PDF بنجاح!', 'ok');
+          } catch (err) {
+            toast('تعذر تنزيل التقرير: ' + err.message, 'bad');
           }
         }
-      }, makeSvgIcon('s-download'), h('span', { text: 'تحميل الاستمارة بصيغة PDF' })),
-      h('button', {
-        type: 'button',
-        class: 'btn',
-        onclick: function () { window.print(); }
-      }, makeSvgIcon('s-print'), h('span', { text: 'طباعة الورقة الرسمية (A4)' }))
+      }, makeSvgIcon('s-download'), h('span', { text: 'PDF' }));
+
+      return {
+        group: h('div', { class: 'oep-report-btn-group', style: 'display:inline-flex; align-items:center; gap:4px; background:#FFFFFF; padding:3px; border-radius:9px; border:1px solid #CBD5E1;' }, viewBtn, dlBtn),
+        viewBtn: viewBtn
+      };
+    }
+
+    var tab1 = makeReportTabBtn('notes', '1. تقرير الملاحظات والتوجيهات (الكتابي)', 'تقرير_الملاحظات_والتوجيهات', 'جارٍ تجهيز تقرير الملاحظات والتوجيهات...');
+    var tab2 = makeReportTabBtn('statistics', '2. التقرير الكمي لنتائج التقييم (البياني)', 'التقرير_الكمي_لنتائج_التقييم', 'جارٍ تجهيز التقرير الكمي لنتائج التقييم...');
+    var tab3 = makeReportTabBtn('full', '3. التقرير الشامل (الملاحظات والكمي وجداول المهارات)', 'التقرير_الشامل_للتقييم', 'جارٍ تجهيز التقرير الشامل مع الجداول التفصيلية...');
+
+    var fitScreenBtn = h('button', {
+      type: 'button',
+      class: 'btn small light',
+      title: 'رؤية التقرير كاملاً في شاشة الكمبيوتر دون الحاجة للإزاحة',
+      onclick: function () {
+        isFitScreen = !isFitScreen;
+        paperEl.classList.toggle('oep-fit-computer-screen', isFitScreen);
+        fitScreenBtn.className = 'btn small ' + (isFitScreen ? 'gold' : 'light');
+      }
+    }, h('span', { text: '🖥 ملاءمة لشاشة الكمبيوتر (دون إزاحة)' }));
+
+    var printBtn = h('button', {
+      type: 'button',
+      class: 'btn small',
+      onclick: function () { window.print(); }
+    }, makeSvgIcon('s-print'), h('span', { text: 'طباعة (A4)' }));
+
+    var topActionsBar = h('div', {
+      class: 'oep-action-bar no-print',
+      style: 'position:sticky;top:6px;z-index:20;display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px;margin-bottom:14px;padding:10px 12px;background:#F8FAFC;border:1px solid #CBD5E1;border-radius:10px;box-shadow:0 4px 12px rgba(15,23,42,.08);'
+    },
+      h('div', { style: 'display:flex;flex-wrap:wrap;gap:8px;align-items:center;' },
+        tab1.group,
+        tab2.group,
+        tab3.group
+      ),
+      h('div', { style: 'display:flex;flex-wrap:wrap;gap:6px;align-items:center;' },
+        fitScreenBtn,
+        printBtn
+      )
     );
 
-    var compactSkillsBox = h('div', { class: 'eval-compact-box' },
-      skillsSectionBanner,
-      scorecardTable,
-      overallBanner
-    );
+    function updateViewMode() {
+      paperEl.className = 'official-eval-paper mode-' + activeMode + (isFitScreen ? ' oep-fit-computer-screen' : '');
+      tab1.viewBtn.className = 'btn ' + (activeMode === 'notes' ? 'gold' : 'light');
+      tab2.viewBtn.className = 'btn ' + (activeMode === 'statistics' ? 'gold' : 'light');
+      tab3.viewBtn.className = 'btn ' + (activeMode === 'full' ? 'gold' : 'light');
 
-    
+      writtenReportSection.hidden = !(activeMode === 'notes' || activeMode === 'full');
+      quantitativeReportSection.hidden = !(activeMode === 'statistics' || activeMode === 'full');
+      detailedSkillsSection.hidden = !(activeMode === 'full');
+    }
+
     var printStyleTag = h('style', {
-      text: '@media print { @page { size: A4 portrait; margin: 8mm 8mm 10mm 8mm; } html, body, #app, .shell, .main, .content { background: #FFFFFF !important; color: #000000 !important; margin: 0 !important; padding: 0 !important; width: 100% !important; overflow: visible !important; } body * { visibility: hidden; } .modal, .modal-card, .modal-body, .wk-modal-print, .official-eval-paper, .official-eval-paper * { visibility: visible !important; } .modal { position: static !important; background: transparent !important; padding: 0 !important; overflow: visible !important; display: block !important; border: none !important; } .modal-card, .modal-body { position: static !important; max-width: 100% !important; width: 100% !important; padding: 0 !important; margin: 0 !important; border: none !important; box-shadow: none !important; overflow: visible !important; } .official-eval-paper { position: static !important; display: block !important; left: auto !important; top: auto !important; width: 100% !important; max-width: 100% !important; border: 1.5px solid #000000 !important; padding: 6mm !important; margin: 0 auto !important; box-shadow: none !important; page-break-inside: auto !important; break-inside: auto !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; } .no-print, .oep-action-bar, .modal-actions, .bar, .side, #nav, #topbar, .btn, button { display: none !important; } .oep-header, .oep-term-banner, .oep-info-table, .oep-supervisors-table, .oep-perf-banner, .oep-performance-grid, .oep-summary-banner, .oep-recommendations-grid, .oep-section-banner, .oep-scorecard-table, .oep-overall-score-banner, .eval-domain-table-wrap { page-break-inside: avoid !important; break-inside: avoid !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; } .eval-detailed-skills-box { display: block !important; visibility: visible !important; } .eval-domain-table-wrap { margin-top: 14px !important; margin-bottom: 14px !important; } }'
+      text: '@media print { @page { size: A4 portrait; margin: 6mm; } html, body, #app, .shell, .main, .content { background: #FFFFFF !important; color: #000000 !important; margin: 0 !important; padding: 0 !important; width: 100% !important; overflow: visible !important; } body * { visibility: hidden; } .modal, .modal-card, .modal-body, .wk-modal-print, .official-eval-paper, .official-eval-paper * { visibility: visible !important; } .official-eval-paper [hidden] { display: none !important; visibility: hidden !important; } .modal { position: static !important; background: transparent !important; padding: 0 !important; overflow: visible !important; display: block !important; border: none !important; } .modal-card, .modal-body { position: static !important; max-width: 100% !important; width: 100% !important; padding: 0 !important; margin: 0 !important; border: none !important; box-shadow: none !important; overflow: visible !important; } .official-eval-paper { position: static !important; display: block !important; width: 100% !important; max-width: 100% !important; border: none !important; padding: 0 !important; margin: 0 auto !important; box-shadow: none !important; transform: none !important; } .official-eval-paper.mode-notes .oep-written-page-box { max-height: 282mm !important; overflow: hidden !important; page-break-after: avoid !important; page-break-inside: avoid !important; border: 1.5px solid #000 !important; padding: 5mm !important; } .official-eval-paper.mode-full .oep-written-page-box { page-break-after: always !important; border: 1.5px solid #000 !important; padding: 5mm !important; } .official-eval-paper.mode-full .oep-quantitative-page-box { page-break-after: always !important; } .no-print, .oep-action-bar, .modal-actions, .bar, .side, #nav, #topbar, .btn, button { display: none !important; } }'
     });
 
-    return h('div', { class: 'official-eval-paper' },
-      printStyleTag,
-      topActionsBar,
-      header,
-      termBanner,
-      infoTable,
-      supervisorsTable,
-      perfBanner,
-      perfGrid,
-      summaryBanner,
-      recGrid,
-      compactSkillsBox
-    );
+    paperEl.appendChild(printStyleTag);
+    paperEl.appendChild(topActionsBar);
+    paperEl.appendChild(writtenReportSection);
+    paperEl.appendChild(quantitativeReportSection);
+    paperEl.appendChild(detailedSkillsSection);
+
+    updateViewMode();
+    return paperEl;
   }
 
   /* ---- باني ومحرر استمارة التقييم البيداغوجي (مع خانات التقرير والمشرفين والمجالات المصغرة) ---- */
@@ -5660,18 +5674,41 @@
     );
     v.appendChild(stepSupervisorsCard);
 
-    // 3. خانات تقرير التقييم (الوصف العام لأداء الحالة: التقرير العام + الخانات الستة)
-    var generalReportArea = h('textarea', { rows: 9, placeholder: 'اكتب التقرير العام الشامل لأداء وسلوك الحالة...' });
-    generalReportArea.value = ev.general_report || '';
-    generalReportArea.addEventListener('input', function () { ev.general_report = generalReportArea.value; });
+    // 3. خانات تقرير التقييم (الوصف العام لأداء الحالة: التقرير العام + الخانات الستة — مضبوطة بحد أقصى لصفحة A4)
+    var MAX_GR_CHARS = 700;
+    var MAX_GR_LINES = 10;
+    var grCounterBadge = h('span', { class: 'muted small', style: 'display:block; margin-top:4px; font-weight:700;' });
+    var generalReportArea = h('textarea', { rows: 8, maxlength: MAX_GR_CHARS, placeholder: 'اكتب التقرير العام الشامل لأداء وسلوك الحالة (مضبوط بحد أقصى لا يتجاوز صفحة A4)...' });
+    generalReportArea.value = String(ev.general_report || '').slice(0, MAX_GR_CHARS);
+
+    function updateGrLimitUI() {
+      var val = generalReportArea.value || '';
+      var lines = val.split('\n');
+      if (lines.length > MAX_GR_LINES) {
+        val = lines.slice(0, MAX_GR_LINES).join('\n');
+        generalReportArea.value = val;
+      }
+      if (val.length > MAX_GR_CHARS) {
+        val = val.slice(0, MAX_GR_CHARS);
+        generalReportArea.value = val;
+      }
+      ev.general_report = val;
+      var rem = MAX_GR_CHARS - val.length;
+      grCounterBadge.textContent = 'حد صفحة A4: ' + val.length + ' / ' + MAX_GR_CHARS + ' حرف (' + lines.length + '/' + MAX_GR_LINES + ' أسطر)' + (rem <= 0 ? ' — امتلأت مساحة الصندوق في صفحة A4' : '');
+      grCounterBadge.style.color = rem <= 30 ? '#DC2626' : '#475569';
+    }
+    generalReportArea.addEventListener('input', updateGrLimitUI);
+    updateGrLimitUI();
 
     var ab = ev.abilities || {};
     function makeAbArea(key, placeholder) {
-      var ta = h('textarea', { rows: 2, placeholder: placeholder });
-      ta.value = ab[key] || '';
+      var ta = h('textarea', { rows: 2, maxlength: 130, placeholder: placeholder + ' (حد أقصى سطران لصفحة A4)' });
+      ta.value = String(ab[key] || '').slice(0, 130);
       ta.addEventListener('input', function () {
         if (!ev.abilities) ev.abilities = {};
-        ev.abilities[key] = ta.value;
+        var lns = ta.value.split('\n');
+        if (lns.length > 2) ta.value = lns.slice(0, 2).join(' ');
+        ev.abilities[key] = ta.value.slice(0, 130);
       });
       return ta;
     }
@@ -5680,8 +5717,9 @@
       h('h3', { class: 'prog-step-title', text: '3⃣ خانات تقرير التقييم — الوصف العام لأداء الحالة (مطابقة للصورة الرسمية)' }),
       h('div', { class: 'eval-builder-grid-2' },
         h('label', { class: 'fld' },
-          h('span', { text: 'التقرير العام (مربع التقرير الشامل على اليمين):' }),
-          generalReportArea
+          h('span', { text: 'التقرير العام (مربع التقرير الشامل على اليمين — مضبوط لصفحة A4):' }),
+          generalReportArea,
+          grCounterBadge
         ),
         h('div', { class: 'oep-abilities-stack' },
           h('label', { class: 'fld' }, h('span', { text: '1. إمكانيات والقدرات الحالية:' }), makeAbArea('current_potentials', 'سجل الإمكانيات والقدرات الحالية...')),
@@ -5697,13 +5735,28 @@
 
     // 4. الخلاصة والتوصيات (نقاط القوة، نقاط الضعف، التوصيات مع إمكانية إضافة أكثر من واحدة)
     function buildDynamicListBlock(title, arrKey, placeholder, addLabel) {
+      var MAX_ITEMS_A4 = 4;
       var container = h('div', { class: 'dynamic-items-container' });
+      var addBtn = h('button', {
+        type: 'button',
+        class: 'btn small light',
+        text: addLabel,
+        onclick: function () {
+          if ((ev[arrKey] || []).length >= MAX_ITEMS_A4) {
+            return toast('الحد الأقصى 4 نقاط في كل خانة حتى لا يتجاوز تقرير الملاحظات صفحة A4 واحدة.', 'bad');
+          }
+          ev[arrKey].push('');
+          redraw();
+        }
+      });
       function redraw() {
         container.textContent = '';
         if (!ev[arrKey] || !ev[arrKey].length) ev[arrKey] = [''];
+        if (ev[arrKey].length > MAX_ITEMS_A4) ev[arrKey] = ev[arrKey].slice(0, MAX_ITEMS_A4);
+        addBtn.disabled = ev[arrKey].length >= MAX_ITEMS_A4;
         ev[arrKey].forEach(function (val, idx) {
-          var inp = h('input', { type: 'text', placeholder: placeholder, value: val || '' });
-          inp.addEventListener('input', function () { ev[arrKey][idx] = inp.value; });
+          var inp = h('input', { type: 'text', maxlength: 120, placeholder: placeholder + ' (حد صفحة A4)', value: String(val || '').slice(0, 120) });
+          inp.addEventListener('input', function () { ev[arrKey][idx] = inp.value.slice(0, 120); });
           var del = h('button', {
             type: 'button',
             class: 'btn small danger',
@@ -5718,17 +5771,8 @@
         });
       }
       redraw();
-      var addBtn = h('button', {
-        type: 'button',
-        class: 'btn small light',
-        text: addLabel,
-        onclick: function () {
-          ev[arrKey].push('');
-          redraw();
-        }
-      });
       return h('div', { class: 'card', style: 'margin-bottom:0;' },
-        h('div', { class: 'bar-sub' }, h('h4', { text: title }), addBtn),
+        h('div', { class: 'bar-sub' }, h('h4', { text: title + ' (حد 4 نقاط لصفحة A4)' }), addBtn),
         container
       );
     }
@@ -5853,31 +5897,29 @@
           })
         );
 
-        // حساب نقاط المجال تلقائياً
-        var domEarned = 0;
-        var domMax = 0;
+        // حساب المهارات المكتسبة (بمعيار 4/5 فما فوق) ونسبة المجال تلقائياً
+        var domAcquired = 0;
+        var domTotalSkills = (dm.ratings || []).length;
         var domRated = 0;
         (dm.ratings || []).forEach(function (it) {
           if (it.score !== '' && it.score != null) {
             var sc = parseInt(it.score, 10);
             if (!isNaN(sc)) {
-              domEarned += sc;
-              domMax += 5;
               domRated++;
+              if (sc >= 4) domAcquired++;
             }
           } else if (it.yn) {
-            if (it.yn === 'نعم') domEarned += 5;
-            domMax += 5;
             domRated++;
+            if (it.yn === 'نعم') domAcquired++;
           }
         });
-        var domPct = domMax > 0 ? Math.round((domEarned / domMax) * 100) : 0;
+        var domPct = domTotalSkills > 0 ? ((domAcquired / domTotalSkills) * 100).toFixed(1).replace(/\.0$/, '') : '0';
 
         var domCard = h('div', { class: 'card', style: 'margin-bottom:12px; padding:12px;' },
           h('div', { class: 'bar-sub' },
             h('h4', { text: dm.domain }),
             h('div', { class: 'row-actions' },
-              h('span', { class: 'badge ' + (domRated ? 'ok' : 'gold'), text: 'المجموع: ' + domEarned + ' من ' + domMax + ' نقطة (' + domPct + '%)' }),
+              h('span', { class: 'badge ' + (domAcquired > 0 ? 'ok' : 'gold'), text: 'المكتسبة (4/5+): ' + domAcquired + ' من ' + domTotalSkills + ' مهارة (' + domPct + '%)' }),
               ev.domains.length > 1 ? h('button', {
                 type: 'button',
                 class: 'btn small danger',
@@ -5905,34 +5947,28 @@
         domainsHost.appendChild(domCard);
       });
 
-      // حساب النتيجة الإجمالية لكافة المجالات المختارة في الوقت الفعلي
-      var overallEarned = 0;
-      var overallMax = 0;
-      var overallSkillsCount = 0;
+      // حساب النتيجة الإجمالية للمهارات المكتسبة (4/5 فما فوق) لكافة المجالات المختارة في الوقت الفعلي
+      var overallAcquired = 0;
+      var overallTotalSkills = 0;
       ev.domains.forEach(function (dm) {
         (dm.ratings || []).forEach(function (it) {
+          overallTotalSkills++;
           if (it.score !== '' && it.score != null) {
             var sc = parseInt(it.score, 10);
-            if (!isNaN(sc)) {
-              overallEarned += sc;
-              overallMax += 5;
-              overallSkillsCount++;
-            }
-          } else if (it.yn) {
-            if (it.yn === 'نعم') overallEarned += 5;
-            overallMax += 5;
-            overallSkillsCount++;
+            if (!isNaN(sc) && sc >= 4) overallAcquired++;
+          } else if (it.yn === 'نعم') {
+            overallAcquired++;
           }
         });
       });
-      var overallPercentage = overallMax > 0 ? ((overallEarned / overallMax) * 100).toFixed(1) : '0';
+      var overallPercentage = overallTotalSkills > 0 ? ((overallAcquired / overallTotalSkills) * 100).toFixed(1) : '0';
 
       var liveOverallBanner = h('div', { class: 'eval-live-score-banner' },
         h('div', null,
-          h('div', { class: 'eval-live-score-title', text: '📊 النتيجة الإجمالية لكافة المجالات التربوية المختارة:' }),
-          h('p', { class: 'muted small', style: 'margin:0;', text: 'تُحسب تلقائياً بجمع النقاط المحصلة (' + overallEarned + ') مقسومة على المجموع الكلي الأقصى للمجالات المختارة (' + overallMax + ').' })
+          h('div', { class: 'eval-live-score-title', text: '📊 حصيلة المهارات المكتسبة (معيار دار الإحسان: 4/5 فما فوق):' }),
+          h('p', { class: 'muted small', style: 'margin:0;', text: 'تُحسب تلقائياً بقسمة مجموع المهارات المكتسبة (' + overallAcquired + ') على إجمالي مهارات المجالات المختارة (' + overallTotalSkills + ').' })
         ),
-        h('div', { class: 'eval-live-score-val', text: overallEarned + ' / ' + overallMax + ' نقطة (' + overallPercentage + '%)' })
+        h('div', { class: 'eval-live-score-val', text: overallAcquired + ' من ' + overallTotalSkills + ' مهارة (' + overallPercentage + '%)' })
       );
       domainsHost.insertBefore(liveOverallBanner, domainsHost.firstChild);
     }

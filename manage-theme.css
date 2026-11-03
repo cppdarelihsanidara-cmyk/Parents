@@ -4253,3 +4253,67 @@ body {
   background: #64748B !important;
   color: #FFFFFF !important;
 }
+
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   تعديلات عرض تقارير التقييم على الكمبيوتر دون إزاحة وضبط حد صفحة A4 لتقرير الملاحظات
+   ══════════════════════════════════════════════════════════════════════════════ */
+#modal .modal-card:has(.official-eval-paper),
+#modal .modal-card:has(.wk-modal-print) {
+  max-width: min(1060px, 96vw) !important;
+  width: min(1060px, 96vw) !important;
+  padding: 16px 20px !important;
+  overflow-x: hidden !important;
+}
+
+.official-eval-paper {
+  width: 100% !important;
+  max-width: 960px !important;
+  margin: 0 auto !important;
+  overflow-x: hidden !important;
+  box-sizing: border-box !important;
+}
+
+/* وضع الملاءمة الكاملة لشاشة الكمبيوتر دون الحاجة للإزاحة */
+.official-eval-paper.oep-fit-computer-screen .oep-written-page-box,
+.official-eval-paper.oep-fit-computer-screen .oep-quantitative-page-box {
+  max-width: min(640px, 88vw) !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+.official-eval-paper.oep-fit-computer-screen .oep-quant-canvas-host canvas {
+  max-height: calc(100vh - 140px) !important;
+  width: auto !important;
+  max-width: 100% !important;
+  margin: 0 auto !important;
+}
+
+/* ضبط حدود صندوق الملاحظات والتقرير الكتابي لعدم تجاوز صفحة A4 أبداً */
+.oep-a4-clamped-body {
+  max-height: 250px !important;
+  overflow: hidden !important;
+  display: -webkit-box !important;
+  -webkit-line-clamp: 10 !important;
+  -webkit-box-orient: vertical !important;
+  word-break: break-word !important;
+}
+
+.oep-a4-clamped-ability {
+  max-height: 44px !important;
+  overflow: hidden !important;
+  display: -webkit-box !important;
+  -webkit-line-clamp: 2 !important;
+  -webkit-box-orient: vertical !important;
+}
+
+.oep-a4-clamped-list {
+  max-height: 115px !important;
+  overflow: hidden !important;
+}
+
+.oep-written-page-box {
+  background: #FFFFFF;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}

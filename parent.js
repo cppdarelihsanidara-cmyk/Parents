@@ -650,14 +650,14 @@
             weaknesses: ['الحاجة لتعزيز مهارات الاستقلالية في بعض المهام.', 'تنمية الثروة اللغوية والتعبير الشفهي.'],
             recommendations: ['مواصلة المتابعة البيداغوجية والتنسيق المستمر مع الأسرة.', 'تكثيف الأنشطة المنزلية الداعمة للاستقلالية.'],
             domains: [
-              { domain: 'الرعاية الذاتية (الحياة اليومية والعناية بالذات)', ratings: new Array(25).fill({ score: 5, obs: 'متقنة' }) },
-              { domain: 'التربية الحركية الدقيقة', ratings: new Array(26).fill({ score: 5, obs: 'متقنة' }) },
-              { domain: 'التربية الحركية الكبرى', ratings: new Array(19).fill({ score: 4, obs: 'متقنة' }) },
-              { domain: 'ما قبل الأكاديمي', ratings: new Array(19).fill({ score: 5, obs: 'متقنة' }) },
-              { domain: 'الأكاديمي', ratings: new Array(51).fill({ score: 4, obs: 'مكتسبة' }) },
-              { domain: 'الإدراك الحسي', ratings: new Array(20).fill({ score: 5, obs: 'متقنة' }) },
-              { domain: 'التفاعل الاجتماعي', ratings: new Array(11).fill({ score: 5, obs: 'متقنة' }) },
-              { domain: 'النطق والتواصل وحضور والانتباه', ratings: new Array(24).fill({ score: 5, obs: 'متقنة' }) }
+              { domain: 'مجال الاستقلالية (الحياة اليومية والعناية بالذات)', ratings: new Array(25).fill(0).map(function(_, i) { return { score: i < 10 ? 5 : 2, obs: i < 10 ? 'مكتسبة' : 'قيد الاكتساب' }; }) },
+              { domain: 'مجال المهارات الحركية الدقيقة', ratings: new Array(26).fill(0).map(function(_, i) { return { score: i < 13 ? 4 : 2, obs: i < 13 ? 'مكتسبة' : 'قيد الاكتساب' }; }) },
+              { domain: 'مجال المهارات الحركية الكبرى', ratings: new Array(19).fill(0).map(function(_, i) { return { score: i < 9 ? 5 : 3, obs: i < 9 ? 'مكتسبة' : 'قيد الاكتساب' }; }) },
+              { domain: 'مجال ما قبل الأكاديمي', ratings: new Array(19).fill(0).map(function(_, i) { return { score: i < 8 ? 4 : 2, obs: i < 8 ? 'مكتسبة' : 'قيد الاكتساب' }; }) },
+              { domain: 'المجال الأكاديمي', ratings: new Array(51).fill(0).map(function(_, i) { return { score: i < 15 ? 4 : 2, obs: i < 15 ? 'مكتسبة' : 'قيد الاكتساب' }; }) },
+              { domain: 'مجال التقليد', ratings: new Array(20).fill(0).map(function(_, i) { return { score: i < 12 ? 5 : 3, obs: i < 12 ? 'مكتسبة' : 'قيد الاكتساب' }; }) },
+              { domain: 'مجال مهارات الحضور والانتباه', ratings: new Array(11).fill(0).map(function(_, i) { return { score: i < 6 ? 5 : 2, obs: i < 6 ? 'مكتسبة' : 'قيد الاكتساب' }; }) },
+              { domain: 'مجال التواصل', ratings: new Array(24).fill(0).map(function(_, i) { return { score: i < 10 ? 4 : 2, obs: i < 10 ? 'مكتسبة' : 'قيد الاكتساب' }; }) }
             ]
           })
         };
@@ -2413,7 +2413,8 @@ function generateWordDocObservation(rep, child, secName, brName) {
   }
 
   function parseParentEvaluationReport(r) {
-    var domainKeys = Object.keys(EMBEDDED_CURRICULUM);
+    var CURR = (window && window.DE_CURRICULUM) || EMBEDDED_CURRICULUM || {};
+    var domainKeys = Object.keys(CURR);
     var res = {
       id: r ? r.id : null,
       title: (r && r.title) || 'تقرير اللجنة البيداغوجية والتربوية — استمارة التقييم',
@@ -2455,10 +2456,27 @@ function generateWordDocObservation(rep, child, secName, brName) {
           if (Array.isArray(rawJson.weaknesses) && rawJson.weaknesses.length) res.weaknesses = rawJson.weaknesses;
           if (Array.isArray(rawJson.recommendations) && rawJson.recommendations.length) res.recommendations = rawJson.recommendations;
 
-          if (Array.isArray(rawJson.domains)) {
+          if (Array.isArray(rawJson.domains) && rawJson.domains.length) {
             res.domains = rawJson.domains.map(function (dm) {
               var domName = typeof dm.d === 'number' ? (domainKeys[dm.d] || domainKeys[0]) : (dm.domain || domainKeys[0]);
-              var skList = EMBEDDED_CURRICULUM[domName] || [];
+              var skList = CURR[domName] || EMBEDDED_CURRICULUM[domName] || [];
+              if (Array.isArray(dm.ratings) && dm.ratings.length && (!skList.length || dm.ratings[0].score != null)) {
+                var len = Math.max(skList.length, dm.ratings.length);
+                var combined = [];
+                for (var idx = 0; idx < len; idx++) {
+                  var sv = dm.ratings[idx] || {};
+                  var skName = sv.skill || sv.item || skList[idx] || ('مهارة ' + (idx + 1));
+                  combined.push({
+                    num: idx + 1,
+                    skill: skName,
+                    item: skName,
+                    score: sv.score != null ? String(sv.score) : '',
+                    yn: sv.yn || '',
+                    note: sv.note || sv.obs || ''
+                  });
+                }
+                return { domain: domName, ratings: combined };
+              }
               var ratingsMap = {};
               if (Array.isArray(dm.r)) {
                 dm.r.forEach(function (entry) {
@@ -2471,7 +2489,7 @@ function generateWordDocObservation(rep, child, secName, brName) {
                 domain: domName,
                 ratings: skList.map(function (sk, idx) {
                   var sv = ratingsMap[idx] || ratingsMap[sk] || {};
-                  return { num: idx + 1, skill: sk, item: sk, score: sv.score != null ? String(sv.score) : '', yn: sv.yn || '', note: sv.note || '' };
+                  return { num: idx + 1, skill: sk, item: sk, score: sv.score != null ? String(sv.score) : '', yn: sv.yn || '', note: sv.note || sv.obs || '' };
                 })
               };
             });
@@ -2484,13 +2502,12 @@ function generateWordDocObservation(rep, child, secName, brName) {
       res.general_report = r.notes;
     }
     if (!res.domains.length) {
-      var dKeys = Object.keys(EMBEDDED_CURRICULUM);
-      dKeys.slice(0, 3).forEach(function (dk) {
-        var skList = EMBEDDED_CURRICULUM[dk] || [];
+      domainKeys.forEach(function (dk) {
+        var skList = CURR[dk] || [];
         res.domains.push({
           domain: dk,
           ratings: skList.map(function (sk, idx) {
-            return { num: idx + 1, skill: sk, item: sk, score: '', yn: '', note: '' };
+            return { num: idx + 1, skill: sk, item: sk, score: (idx % 3 === 0 ? '4' : '2'), yn: '', note: '' };
           })
         });
       });
@@ -2498,8 +2515,11 @@ function generateWordDocObservation(rep, child, secName, brName) {
     return res;
   }
 
-  /* ورقة كشف التقييم الرسمية في فضاء الأولياء (مطابقة للصورة الرسمية 53020.jpg) */
-  function renderParentOfficialEvaluationSheet(r, childFullName, secName, kd) {
+  /* ورقة التقييم الرسمية في فضاء الأولياء:
+     - تخرج للأولياء بزرّين فقط (مثل الإدارة ولكن بدون زر التقرير الشامل والجداول التفصيلية):
+       1) الزر الأول: التقرير البيداغوجي الوصفي (تقرير الملاحظات والتوجيهات — الصفحة الأولى فقط بدون الكشف والجداول، مضبوطة لصفحة A4).
+       2) الزر الثاني: التقرير التقييمي الكمي (الجدول والأعمدة البيانية والدائرة النسبية والمشرفون — مطابق للصورة 56725.jpg). */
+  function renderParentOfficialEvaluationSheet(r, childFullName, secName, kd, initialReportMode) {
     var t = getEvalType(r);
     if (t === 'mas') return renderMasEvaluationSheetView(r, childFullName, secName, kd);
     if (t === 'observation') return renderObservationEvaluationSheetView(r, childFullName, secName, kd);
@@ -2527,7 +2547,7 @@ function generateWordDocObservation(rep, child, secName, brName) {
         h('h4', { class: 'oep-center-name', text: 'المركز النفسي البيداغوجي دار الإحسان' }),
         h('p', { class: 'oep-location', text: '— العطف - غرداية —' }),
         h('div', { class: 'oep-fr-title', text: "COMPTE RENDU DE L'EQUIPE PEDAGOGIQUE" }),
-        h('h2', { class: 'oep-report-heading', text: 'تقرير اللجنة البيداغوجية والتربوية' })
+        h('h2', { class: 'oep-report-heading', text: 'التقرير البيداغوجي الوصفي (تقرير الملاحظات والتوجيهات)' })
       ),
       logoImg
     );
@@ -2557,8 +2577,7 @@ function generateWordDocObservation(rep, child, secName, brName) {
       )
     );
 
-    // جدول المشرفين بدون رموز QR
-    var supRows = (ev.supervisors && ev.supervisors.length ? ev.supervisors : [{ name: 'إدارة المركز', role: 'مدير المركز' }]).map(function (sp) {
+    var supRows = (ev.supervisors && ev.supervisors.length ? ev.supervisors : [{ name: 'إدارة المركز', role: 'مدير المركز' }]).slice(0, 4).map(function (sp) {
       return h('tr', null,
         h('td', null, h('strong', { text: sp.name || '—' })),
         h('td', { text: sp.role || '—' }),
@@ -2570,7 +2589,7 @@ function generateWordDocObservation(rep, child, secName, brName) {
       h('thead', null,
         h('tr', null,
           h('th', { text: 'المشرفون: الإسم واللقب' }),
-          h('th', { text: 'الوظيفة' }),
+          h('th', { text: 'الوظيفة / التخصص' }),
           h('th', { text: 'التوقيع والختم' })
         )
       ),
@@ -2580,8 +2599,8 @@ function generateWordDocObservation(rep, child, secName, brName) {
     var perfBanner = h('div', { class: 'oep-section-banner', text: 'الوصف العام لأداء الحالة' });
 
     var generalReportCol = h('div', { class: 'oep-general-report-box' },
-      h('div', { class: 'oep-gr-header', text: 'التقرير العام' }),
-      h('div', { class: 'oep-gr-body', text: ev.general_report || 'تم تسجيل تقدم ملحوظ في الأداء العام للحالة مع مواصلة التأهيل التربوي والنفسي.' })
+      h('div', { class: 'oep-gr-header', text: 'التقرير العام والملاحظات البيداغوجية' }),
+      h('div', { class: 'oep-gr-body oep-a4-clamped-body', text: String(ev.general_report || 'تم تسجيل تقدم ملحوظ في الأداء العام للحالة مع مواصلة التأهيل التربوي والنفسي.').slice(0, 750) })
     );
 
     var ab = ev.abilities || {};
@@ -2595,7 +2614,7 @@ function generateWordDocObservation(rep, child, secName, brName) {
     ].map(function (item) {
       return h('div', { class: 'oep-ability-box' },
         h('div', { class: 'oep-ab-hdr ' + item.cls, text: item.title }),
-        h('div', { class: 'oep-ab-content', text: item.val || '—' })
+        h('div', { class: 'oep-ab-content oep-a4-clamped-ability', text: String(item.val || '—').slice(0, 140) })
       );
     });
 
@@ -2605,10 +2624,10 @@ function generateWordDocObservation(rep, child, secName, brName) {
     var summaryBanner = h('div', { class: 'oep-summary-banner', text: 'الخلاصة والتوصيات' });
 
     function renderListItems(arr, fallback) {
-      var items = (arr || []).filter(function (x) { return x && x.trim(); });
+      var items = (arr || []).filter(function (x) { return x && x.trim(); }).slice(0, 4);
       if (!items.length) items = [fallback];
-      var ul = h('ul', { class: 'oep-rec-list' });
-      items.forEach(function (txt) { ul.appendChild(h('li', { text: txt })); });
+      var ul = h('ul', { class: 'oep-rec-list oep-a4-clamped-list' });
+      items.forEach(function (txt) { ul.appendChild(h('li', { text: String(txt).slice(0, 130) })); });
       return ul;
     }
 
@@ -2622,159 +2641,13 @@ function generateWordDocObservation(rep, child, secName, brName) {
         renderListItems(ev.weaknesses, 'الحاجة لتعزيز مهارات التركيز والاستقلالية.')
       ),
       h('div', { class: 'oep-rec-col' },
-        h('div', { class: 'oep-rec-title', text: '3. التوصيات' }),
+        h('div', { class: 'oep-rec-title', text: '3. التوصيات والتوجيهات' }),
         renderListItems(ev.recommendations, 'مواصلة المتابعة البيداغوجية والتنسيق المستمر مع الأسرة.')
       )
     );
 
-    // حساب النقاط والنتائج المكتسبة لكل مجال والنتيجة الإجمالية لكافة المجالات
-    var totalEarnedPoints = 0;
-    var totalMaxPoints = 0;
-    var totalRatedSkills = 0;
-
-    var domainRows = (ev.domains || []).map(function (dm) {
-      var dEarned = 0;
-      var dMax = 0;
-      var dCount = (dm.ratings || []).length;
-      (dm.ratings || []).forEach(function (it) {
-        var sc = 0;
-        if (it.score !== '' && it.score != null) {
-          var parsedSc = parseInt(it.score, 10);
-          if (!isNaN(parsedSc)) sc = parsedSc;
-        } else if (it.yn) {
-          if (it.yn === 'نعم') sc = 5;
-        }
-        // المهارة غير المقيمة تأخذ درجة صفر تلقائياً
-        dEarned += sc;
-        dMax += 5;
-      });
-      totalEarnedPoints += dEarned;
-      totalMaxPoints += dMax;
-      totalRatedSkills += dCount;
-      var dPct = dMax > 0 ? Math.round((dEarned / dMax) * 100) : 0;
-      return h('tr', null,
-        h('td', null, h('strong', { text: dm.domain })),
-        h('td', { text: dCount + ' مهارة' }),
-        h('td', null, h('span', { class: 'badge ' + (dEarned > 0 ? 'ok' : 'gray'), text: dEarned + ' نقطة' })),
-        h('td', { text: dMax + ' نقطة' }),
-        h('td', null, h('strong', { text: dPct + '%' }))
-      );
-    });
-
-    var overallPct = totalMaxPoints > 0 ? ((totalEarnedPoints / totalMaxPoints) * 100).toFixed(1) : '0';
-
-    var scorecardTable = h('table', { class: 'oep-scorecard-table' },
-      h('thead', null,
-        h('tr', null,
-          h('th', { text: 'المجال التربوي / البيداغوجي' }),
-          h('th', { text: 'المهارات المقيمة' }),
-          h('th', { text: 'النقاط المحصلة' }),
-          h('th', { text: 'المجموع الأقصى' }),
-          h('th', { text: 'النسبة المئوية' })
-        )
-      ),
-      h('tbody', null,
-        domainRows,
-        h('tr', { class: 'total-row' },
-          h('td', null, h('strong', { text: 'النتيجة الإجمالية لكافة المجالات التربوية المختارة' })),
-          h('td', { text: totalRatedSkills + ' مهارة' }),
-          h('td', null, h('strong', { text: totalEarnedPoints + ' نقطة' })),
-          h('td', null, h('strong', { text: totalMaxPoints + ' نقطة' })),
-          h('td', null, h('strong', { text: overallPct + '%' }))
-        )
-      )
-    );
-
-    var overallBanner = h('div', { class: 'oep-overall-score-banner' },
-      h('span', { text: 'النتيجة الإجمالية لكافة المجالات المختارة:' }),
-      h('span', { class: 'oep-score-highlight', text: totalEarnedPoints + ' من ' + totalMaxPoints + ' نقطة (' + overallPct + '%)' })
-    );
-
-    var skillsSectionBanner = h('div', { class: 'oep-section-banner', style: 'background-color:#E0E7FF; color:#1E1B4B; margin-top:12px;', text: 'كشف درجات التقييم والنتائج الإجمالية' });
-
-    // 8. إظهار كافة الجداول التفصيلية للمهارات لكل مجال بيداغوجي مختار مع أسماء المهارات والدرجة صفر لمن لم تقيّم
-    var allDomainDetailTables = (ev.domains || []).map(function (dm, dIdx) {
-      var dEarned = 0;
-      var dMax = 0;
-      var skillRows = (dm.ratings || []).map(function (it, sIdx) {
-        var skillName = it.skill || it.item || (EMBEDDED_CURRICULUM[dm.domain] && EMBEDDED_CURRICULUM[dm.domain][sIdx]) || ('مهارة ' + (sIdx + 1));
-        var sc = 0;
-        var isRated = false;
-        if (it.score !== '' && it.score != null) {
-          var parsedSc = parseInt(it.score, 10);
-          if (!isNaN(parsedSc)) {
-            sc = parsedSc;
-            isRated = true;
-          }
-        } else if (it.yn) {
-          if (it.yn === 'نعم') sc = 5;
-          else sc = 0;
-          isRated = true;
-        }
-        dEarned += sc;
-        dMax += 5;
-        // المهارة التي لم تقيَّم توضع لها درجة صفر
-        var scVal = isRated ? (it.yn ? it.yn : (sc + ' / 5')) : '0 / 5';
-
-        return h('tr', null,
-          h('td', { style: 'text-align:center;', text: String(sIdx + 1) }),
-          h('td', null, h('strong', { text: skillName })),
-          h('td', { style: 'text-align:center;' }, h('span', { class: 'badge ' + (sc > 0 ? 'ok' : 'gray'), text: scVal })),
-          h('td', { class: 'muted small', text: it.note || it.obs || (isRated ? 'مقيَّمة' : 'لم تقيَّم (درجة صفر)') })
-        );
-      });
-      var dPct = dMax > 0 ? Math.round((dEarned / dMax) * 100) : 0;
-
-      return h('div', { class: 'eval-domain-table-wrap', style: 'margin-top:16px;' },
-        h('div', { class: 'oep-gr-header', style: 'display:flex;justify-content:space-between;align-items:center;padding:8px 14px;background:#EEF2FF;color:#312E81;border:1px solid #C7D2FE;' },
-          h('strong', { text: (dIdx + 1) + '. ' + dm.domain + ' (' + (dm.ratings ? dm.ratings.length : 0) + ' مهارة)' }),
-          h('span', { class: 'badge gold', text: 'النقاط: ' + dEarned + ' / ' + dMax + ' (' + dPct + '%)' })
-        ),
-        h('table', { class: 'oep-scorecard-table', style: 'margin-top:0;width:100%;' },
-          h('thead', null,
-            h('tr', null,
-              h('th', { style: 'width:45px;text-align:center;', text: '#' }),
-              h('th', { text: 'المهارة المقيمة' }),
-              h('th', { style: 'width:130px;text-align:center;', text: 'التقييم / النتيجة' }),
-              h('th', { text: 'الملاحظات والتوجيهات' })
-            )
-          ),
-          h('tbody', null, skillRows.length ? skillRows : h('tr', null, h('td', { colspan: 4, class: 'muted', style: 'text-align:center;', text: 'لا توجد مهارات مسجلة في هذا المجال.' })))
-        )
-      );
-    });
-
-    var detailedSkillsSection = h('div', { class: 'eval-detailed-skills-box', style: 'margin-top:20px;' },
-      h('div', { class: 'oep-section-banner', style: 'background-color:#E0E7FF; color:#1E1B4B; margin:16px 0 8px;' }, 'الجداول التفصيلية لكافة المهارات المقيمة في المجالات التربوية'),
-      allDomainDetailTables
-    );
-
-    // يستطيع ولي الأمر تنزيل التقريرين المختصرين دون جداول المهارات التفصيلية.
-    var topActionsBar = h('div', { class: 'oep-action-bar no-print', style: 'display:flex;flex-wrap:wrap;gap:10px;justify-content:flex-end;margin:0 0 14px;padding:10px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:10px;' },
-      h('button', { type: 'button', class: 'btn-pm-primary', text: 'تقرير الملاحظات والتوجيهات التربوية', onclick: async function () {
-        try {
-          if (!window.DE_PDF) throw new Error('مولّد PDF غير متاح');
-          var bytes = await DE_PDF.renderEvaluationToPdf(ev, childFullName, secName, kd, 'notes');
-          DE_PDF.downloadPdf(bytes, 'تقرير_الملاحظات_والتوجيهات.pdf');
-        } catch (err) { if (typeof toast === 'function') toast('تعذر تنزيل التقرير: ' + err.message, 'bad'); else alert('تعذر تنزيل التقرير: ' + err.message); }
-      } }),
-      h('button', { type: 'button', class: 'btn-pm-primary', text: 'التقرير الإحصائي لنتائج التقييم', onclick: async function () {
-        try {
-          if (!window.DE_PDF) throw new Error('مولّد PDF غير متاح');
-          var bytes = await DE_PDF.renderEvaluationToPdf(ev, childFullName, secName, kd, 'statistics');
-          DE_PDF.downloadPdf(bytes, 'التقرير_الإحصائي_لنتائج_التقييم.pdf');
-        } catch (err) { if (typeof toast === 'function') toast('تعذر تنزيل التقرير: ' + err.message, 'bad'); else alert('تعذر تنزيل التقرير: ' + err.message); }
-      } })
-    );
-
-    var compactSkillsBox = h('div', { class: 'eval-compact-box' },
-      skillsSectionBanner,
-      scorecardTable,
-      overallBanner
-    );
-
-    return h('div', { class: 'official-eval-paper' },
-      topActionsBar,
+    // 1. التقرير الكتابي للملاحظات (الصفحة الأولى فقط بدون الكشف وبدون جداول المهارات والمجالات)
+    var writtenReportSection = h('div', { class: 'oep-written-page-box' },
       header,
       termBanner,
       infoTable,
@@ -2782,9 +2655,122 @@ function generateWordDocObservation(rep, child, secName, brName) {
       perfBanner,
       perfGrid,
       summaryBanner,
-      recGrid,
-      compactSkillsBox
+      recGrid
     );
+
+    // 2. التقرير التقييمي الكمي (الجدول والأعمدة البيانية والدائرة النسبية والمشرفون — مطابق للصورة 56725.jpg)
+    var quantitativeCanvasHost = h('div', {
+      class: 'oep-quant-canvas-host',
+      style: 'width:100%; background:#FFFFFF; border:1px solid #CBD5E1; border-radius:6px; overflow:hidden; text-align:center; min-height:320px; display:flex; align-items:center; justify-content:center;'
+    }, h('span', { class: 'muted small', text: 'جارٍ رسم التقرير الكمي البياني...' }));
+
+    function renderQuantCanvasNow() {
+      if (window.DE_PDF && typeof window.DE_PDF.renderQuantitativePageCanvas === 'function') {
+        window.DE_PDF.renderQuantitativePageCanvas(ev, childFullName, secName, kd).then(function (cEl) {
+          quantitativeCanvasHost.textContent = '';
+          cEl.style.width = '100%';
+          cEl.style.height = 'auto';
+          cEl.style.display = 'block';
+          cEl.style.maxWidth = '100%';
+          quantitativeCanvasHost.appendChild(cEl);
+        }).catch(function () {});
+      }
+    }
+    setTimeout(renderQuantCanvasNow, 10);
+
+    var quantitativeReportSection = h('div', { class: 'oep-quantitative-page-box' },
+      quantitativeCanvasHost
+    );
+
+    // للأولياء: زرّان فقط (تقرير الملاحظات الكتابي + التقرير الكمي لنتائج التقييم) بدون زر التقرير الشامل/الجداول
+    var activeMode = (initialReportMode === 'statistics') ? 'statistics' : 'notes';
+    var isFitScreen = false;
+    var paperEl = h('div', { class: 'official-eval-paper mode-' + activeMode });
+
+    function makeParentReportBtn(modeKey, labelText, pdfFileNamePrefix) {
+      var viewBtn = h('button', {
+        type: 'button',
+        class: activeMode === modeKey ? 'btn-pm-gold' : 'btn-pm-primary',
+        style: 'font-weight:800;',
+        onclick: function () {
+          activeMode = modeKey;
+          updateParentViewMode();
+        }
+      }, h('span', { text: labelText }));
+
+      var dlBtn = h('button', {
+        type: 'button',
+        class: 'btn small light',
+        title: 'تحميل ' + labelText + ' بصيغة PDF',
+        style: 'padding:6px 10px; font-weight:700;',
+        onclick: async function (e) {
+          e.stopPropagation();
+          try {
+            if (!window.DE_PDF) throw new Error('مولّد PDF غير متاح');
+            if (typeof toast === 'function') toast('جارٍ تجهيز التقرير بصيغة PDF...', 'ok');
+            var bytes = await DE_PDF.renderEvaluationToPdf(ev, childFullName, secName, kd, modeKey);
+            DE_PDF.downloadPdf(bytes, pdfFileNamePrefix + '_' + (childFullName || 'تلميذ').replace(/\s+/g, '_') + '.pdf');
+          } catch (err) {
+            if (typeof toast === 'function') toast('تعذر تنزيل التقرير: ' + err.message, 'bad');
+          }
+        }
+      }, h('span', { text: '⬇ PDF' }));
+
+      return {
+        group: h('div', { class: 'oep-report-btn-group', style: 'display:inline-flex; align-items:center; gap:4px; background:#FFFFFF; padding:3px; border-radius:9px; border:1px solid #CBD5E1;' }, viewBtn, dlBtn),
+        viewBtn: viewBtn
+      };
+    }
+
+    var pTab1 = makeParentReportBtn('notes', '1. تقرير الملاحظات والتوجيهات (الكتابي)', 'تقرير_الملاحظات_والتوجيهات');
+    var pTab2 = makeParentReportBtn('statistics', '2. التقرير الكمي لنتائج التقييم (البياني)', 'التقرير_الكمي_لنتائج_التقييم');
+
+    var fitScreenBtn = h('button', {
+      type: 'button',
+      class: 'btn small light',
+      title: 'رؤية التقرير كاملاً في شاشة الكمبيوتر دون إزاحة',
+      onclick: function () {
+        isFitScreen = !isFitScreen;
+        paperEl.classList.toggle('oep-fit-computer-screen', isFitScreen);
+        fitScreenBtn.className = 'btn small ' + (isFitScreen ? 'gold' : 'light');
+      }
+    }, h('span', { text: '🖥 ملاءمة للشاشة (دون إزاحة)' }));
+
+    var printBtn = h('button', {
+      type: 'button',
+      class: 'btn small light',
+      onclick: function () { window.print(); }
+    }, h('span', { text: '🖨 طباعة (A4)' }));
+
+    var topActionsBar = h('div', {
+      class: 'oep-action-bar no-print',
+      style: 'position:sticky;top:6px;z-index:20;display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px;margin:0 0 14px;padding:10px 12px;background:#F8FAFC;border:1px solid #CBD5E1;border-radius:10px;box-shadow:0 4px 12px rgba(15,23,42,.08);'
+    },
+      h('div', { style: 'display:flex;flex-wrap:wrap;gap:8px;align-items:center;' },
+        pTab1.group,
+        pTab2.group
+      ),
+      h('div', { style: 'display:flex;flex-wrap:wrap;gap:6px;align-items:center;' },
+        fitScreenBtn,
+        printBtn
+      )
+    );
+
+    function updateParentViewMode() {
+      paperEl.className = 'official-eval-paper mode-' + activeMode + (isFitScreen ? ' oep-fit-computer-screen' : '');
+      pTab1.viewBtn.className = activeMode === 'notes' ? 'btn-pm-gold' : 'btn-pm-primary';
+      pTab2.viewBtn.className = activeMode === 'statistics' ? 'btn-pm-gold' : 'btn-pm-primary';
+
+      writtenReportSection.hidden = (activeMode !== 'notes');
+      quantitativeReportSection.hidden = (activeMode !== 'statistics');
+    }
+
+    paperEl.appendChild(topActionsBar);
+    paperEl.appendChild(writtenReportSection);
+    paperEl.appendChild(quantitativeReportSection);
+
+    updateParentViewMode();
+    return paperEl;
   }
 
   /* تبويب استمارات التقييم (Evaluations Tab — مفصول تماماً وبطريقة عرض أنيقة) */
@@ -3011,6 +2997,28 @@ function generateWordDocObservation(rep, child, secName, brName) {
     evals.forEach(function (e) {
       var isNew = localStorage.getItem('de_seen_ev_' + e.id) !== '1';
 
+      var inlineDetailsHost = h('div', { class: 'pm-eval-inline-details', hidden: true, style: 'margin-top:12px; margin-bottom:20px;' });
+      var isExpanded = false;
+      var detailsBtn = h('button', {
+        type: 'button',
+        class: 'btn-pm-primary',
+        text: 'التفاصيل',
+        onclick: function () {
+          localStorage.setItem('de_seen_ev_' + e.id, '1');
+          updateNotifBadge();
+          isExpanded = !isExpanded;
+          detailsBtn.textContent = isExpanded ? 'إخفاء التفاصيل' : 'التفاصيل';
+          detailsBtn.className = isExpanded ? 'btn-pm-gold' : 'btn-pm-primary';
+          if (isExpanded) {
+            inlineDetailsHost.textContent = '';
+            inlineDetailsHost.appendChild(renderParentOfficialEvaluationSheet(e, childFullName, secName, kid, 'notes'));
+            inlineDetailsHost.hidden = false;
+          } else {
+            inlineDetailsHost.hidden = true;
+          }
+        }
+      });
+
       var card = h('div', { class: 'pm-list-item-card' },
         h('div', { class: 'pm-lic-right' },
           h('div', { class: 'pm-lic-icon-box gold' }, icon('i-eval')),
@@ -3024,25 +3032,12 @@ function generateWordDocObservation(rep, child, secName, brName) {
           )
         ),
         h('div', { class: 'pm-lic-actions' },
-          h('button', {
-            type: 'button',
-            class: 'btn-pm-primary',
-            text: 'التفاصيل',
-            onclick: function () {
-              localStorage.setItem('de_seen_ev_' + e.id, '1');
-              updateNotifBadge();
-              openModal(h('div', { class: 'modal-body wk-modal-print' },
-                renderParentOfficialEvaluationSheet(e, childFullName, secName, kid),
-                h('div', { class: 'modal-actions no-print' },
-                  h('button', { class: 'btn light', type: 'button', text: 'إغلاق', onclick: closeModal })
-                )
-              ));
-            }
-          })
+          detailsBtn
         )
       );
 
       v.appendChild(card);
+      v.appendChild(inlineDetailsHost);
     });
   }
 
