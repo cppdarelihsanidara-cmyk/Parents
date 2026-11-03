@@ -1121,3 +1121,145 @@ body {
   page-break-inside: avoid;
   break-inside: avoid;
 }
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   لوحة التحكم بالتفاصيل والتقارير (أزرار المعاينة، عناوين التقارير، وأزرار الإدارة)
+   ══════════════════════════════════════════════════════════════════════════════ */
+.official-eval-paper.is-collapsed-preview {
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  background: transparent !important;
+}
+
+.oep-details-control-panel {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  gap: 12px !important;
+  padding: 16px 18px !important;
+  background: #F8FAFC !important;
+  border: 1.5px solid #CBD5E1 !important;
+  border-radius: 14px !important;
+  margin-bottom: 16px !important;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06) !important;
+}
+
+.oep-crud-management-bar {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  gap: 12px !important;
+  padding: 12px 16px !important;
+  background: #FFFFFF !important;
+  border: 1px solid #E2E8F0 !important;
+  border-radius: 11px !important;
+}
+
+.oep-crud-bar-title {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  flex-wrap: wrap !important;
+  color: #0F172A !important;
+  font-size: 0.95rem !important;
+}
+
+.oep-crud-bar-btns {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.oep-reports-list-header {
+  font-size: 0.92rem !important;
+  color: #1E293B !important;
+  padding: 2px 4px !important;
+}
+
+.oep-reports-selector-stack {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 10px !important;
+}
+
+.oep-report-selector-row {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  gap: 12px !important;
+  padding: 12px 16px !important;
+  background: #FFFFFF !important;
+  border: 1.5px solid #CBD5E1 !important;
+  border-radius: 12px !important;
+  transition: all 0.2s ease !important;
+}
+
+.oep-report-selector-row:hover {
+  border-color: #94A3B8 !important;
+  background: #FCFDFE !important;
+}
+
+.oep-report-selector-row.is-active {
+  background: #FEFCE8 !important;
+  border-color: #D97706 !important;
+  box-shadow: 0 3px 10px rgba(217, 119, 6, 0.12) !important;
+}
+
+.oep-report-row-right {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  flex-wrap: wrap !important;
+  flex: 1 1 320px !important;
+}
+
+.oep-report-main-btn {
+  font-weight: 800 !important;
+  min-width: 170px !important;
+  justify-content: center !important;
+}
+
+.oep-report-row-title {
+  cursor: pointer !important;
+  color: #0F172A !important;
+  font-size: 0.96rem !important;
+  line-height: 1.4 !important;
+}
+
+.oep-report-row-title:hover strong {
+  color: #B45309 !important;
+  text-decoration: underline !important;
+}
+
+.oep-report-row-actions {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  flex-wrap: wrap !important;
+}
+
+.oep-report-preview-btn {
+  font-weight: 800 !important;
+  min-width: 110px !important;
+}
+
+.oep-preview-utilities-bar {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  gap: 10px !important;
+  padding: 10px 14px !important;
+  background: #EFF6FF !important;
+  border: 1px solid #BFDBFE !important;
+  border-radius: 10px !important;
+  margin-top: 4px !important;
+}
+
+.oep-preview-utilities-bar[hidden] {
+  display: none !important;
+}

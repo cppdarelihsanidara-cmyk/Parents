@@ -855,7 +855,36 @@
     links: function () { return C.rest('GET', '/parent_children?select=parent_id,child_id').catch(function () { return []; }); },
     programs: function () { return C.rest('GET', '/educational_programs?select=*&order=created_at.desc').catch(function () { return []; }); },
     codes: function () { return C.rest('GET', '/registration_codes?select=*&order=created_at.desc').catch(function () { return []; }); },
-    reports: function () { return C.rest('GET', '/progress_reports?select=*&order=report_date.desc').catch(function () { return []; }); },
+    reports: async function () {
+      var dbRows = [];
+      try {
+        var r = await C.rest('GET', '/progress_reports?select=*&order=report_date.desc');
+        if (Array.isArray(r)) dbRows = r;
+      } catch (e) {}
+      var merged = dbRows.slice();
+      var sharedList = await loadSharedEvaluationsList();
+      sharedList.forEach(function (item) {
+        if (!item || !item.id) return;
+        var existingIdx = merged.findIndex(function (m) { return m && String(m.id) === String(item.id); });
+        if (existingIdx >= 0) {
+          if (item.status) merged[existingIdx].status = item.status;
+          if (item.activities) merged[existingIdx].activities = item.activities;
+          if (item.title) merged[existingIdx].title = item.title;
+          if (item.report_date) merged[existingIdx].report_date = item.report_date;
+        } else {
+          merged.push(item);
+        }
+      });
+      merged.forEach(function (row) {
+        if (isEvaluationReport(row)) {
+          row.status = extractEvalStatus(row);
+        }
+      });
+      merged.sort(function (a, b) {
+        return String(b.report_date || '').localeCompare(String(a.report_date || ''));
+      });
+      return merged;
+    },
     appts: function () { return C.rest('GET', '/appointments?select=*&order=starts_at.desc').catch(function () { return []; }); },
     msgs: function () { return C.rest('GET', '/messages?select=*&order=created_at.desc').catch(function () { return []; }); },
     reads: function () { return C.rest('GET', '/message_reads?select=message_id').catch(function () { return []; }); },
@@ -5075,11 +5104,132 @@
      6. التقارير التربوية الدورية واستمارات التقييم البيداغوجي (مفصولة ومطابقة للصورة الرسمية)
      ===================================================================== */
   var EVAL_MARKER = '/*DE_EVAL_V1*/';
+  var SHARED_EVALS_STORAGE_KEY = 'de_shared_evaluations_v1';
 
   function isEvaluationReport(r) {
     if (!r) return false;
     return (typeof r.activities === 'string' && r.activities.indexOf(EVAL_MARKER) === 0)
       || (typeof r.title === 'string' && (r.title.indexOf('استمارة تقييم') >= 0 || r.title.indexOf('تقرير اللجنة البيداغوجية') >= 0));
+  }
+
+  function extractEvalStatus(r) {
+    if (!r) return 'draft';
+    if (typeof r.activities === 'string' && r.activities.indexOf(EVAL_MARKER) === 0) {
+      try {
+        var parsed = JSON.parse(r.activities.slice(EVAL_MARKER.length));
+        if (parsed && (parsed.status === 'published' || parsed.status === 'draft')) {
+          return parsed.status;
+        }
+      } catch (e) {}
+    }
+    if (r.status === 'published' || r.status === 'draft') return r.status;
+    return 'published';
+  }
+
+  function setEvalStatusInActivities(activitiesStr, newStatus, extraMeta) {
+    if (typeof activitiesStr !== 'string' || activitiesStr.indexOf(EVAL_MARKER) !== 0) return activitiesStr;
+    try {
+      var obj = JSON.parse(activitiesStr.slice(EVAL_MARKER.length));
+      if (obj && typeof obj === 'object') {
+        obj.status = newStatus;
+        if (extraMeta && typeof extraMeta === 'object') {
+          Object.keys(extraMeta).forEach(function (k) {
+            if (extraMeta[k] !== undefined) obj[k] = extraMeta[k];
+          });
+        }
+        return EVAL_MARKER + JSON.stringify(obj);
+      }
+    } catch (e) {}
+    return activitiesStr;
+  }
+
+  function readLocalSharedEvaluations() {
+    try {
+      var raw = localStorage.getItem(SHARED_EVALS_STORAGE_KEY);
+      var parsed = raw ? JSON.parse(raw) : [];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function writeLocalSharedEvaluations(list) {
+    try {
+      localStorage.setItem(SHARED_EVALS_STORAGE_KEY, JSON.stringify(Array.isArray(list) ? list : []));
+    } catch (e) {}
+  }
+
+  async function loadSharedEvaluationsList() {
+    var localList = readLocalSharedEvaluations();
+    var remoteList = [];
+    try {
+      var rows = await C.rest('GET', '/site_content?id=eq.draft&select=id,data');
+      var row = Array.isArray(rows) ? rows[0] : null;
+      if (row && row.data) {
+        if (Array.isArray(row.data._published_evaluations)) {
+          remoteList = row.data._published_evaluations;
+        } else if (row.data._portal_meta && Array.isArray(row.data._portal_meta.published_evaluations)) {
+          remoteList = row.data._portal_meta.published_evaluations;
+        }
+      }
+    } catch (e) {}
+    var map = {};
+    var combined = [];
+    localList.concat(remoteList).forEach(function (it) {
+      if (!it || !it.id) return;
+      var k = String(it.id);
+      if (!map[k]) {
+        map[k] = it;
+        combined.push(it);
+      } else if (it.updated_at && (!map[k].updated_at || it.updated_at > map[k].updated_at)) {
+        var idx = combined.indexOf(map[k]);
+        map[k] = it;
+        if (idx >= 0) combined[idx] = it;
+      }
+    });
+    writeLocalSharedEvaluations(combined);
+    return combined;
+  }
+
+  async function syncSharedEvaluationRecord(evalRow, removeById) {
+    var list = await loadSharedEvaluationsList();
+    if (removeById) {
+      list = list.filter(function (x) { return x && String(x.id) !== String(removeById); });
+    } else if (evalRow && evalRow.id) {
+      var copy = Object.assign({}, evalRow, { updated_at: new Date().toISOString() });
+      var idx = list.findIndex(function (x) { return x && String(x.id) === String(copy.id); });
+      if (idx >= 0) list[idx] = copy;
+      else list.unshift(copy);
+    }
+    writeLocalSharedEvaluations(list);
+    try {
+      var rows = await C.rest('GET', '/site_content?id=eq.draft&select=id,data');
+      var row = Array.isArray(rows) ? rows[0] : null;
+      var baseData = (row && row.data && typeof row.data === 'object') ? Object.assign({}, row.data) : {};
+      baseData._published_evaluations = list.slice(0, 200);
+      if (baseData._portal_meta && typeof baseData._portal_meta === 'object') {
+        baseData._portal_meta.published_evaluations = list.slice(0, 200);
+      }
+      if (row) {
+        await C.rest('PATCH', '/site_content?id=eq.draft', { data: baseData, updated_at: new Date().toISOString() });
+      } else {
+        await C.rest('POST', '/site_content', { id: 'draft', data: baseData, updated_at: new Date().toISOString() });
+      }
+    } catch (e) {}
+    return list;
+  }
+
+  async function saveProgressReportResilient(method, path, body) {
+    try {
+      return await C.rest(method, path, body, 'return=representation');
+    } catch (err1) {
+      if (body && body.status !== undefined) {
+        var fallbackBody = Object.assign({}, body);
+        delete fallbackBody.status;
+        return await C.rest(method, path, fallbackBody, 'return=representation');
+      }
+      throw err1;
+    }
   }
 
   function parseEvaluationReport(r) {
@@ -5090,7 +5240,7 @@
       child_id: (r && r.child_id) || S.preselectChildId || '',
       title: (r && r.title) || 'تقرير اللجنة البيداغوجية والتربوية — استمارة التقييم',
       report_date: (r && r.report_date) || new Date().toISOString().slice(0, 10),
-      status: (r && r.status) || 'draft',
+      status: extractEvalStatus(r),
       general_notes: (r && r.notes) || '',
       term: 'الثلاثي الأخير',
       school_year: '2024/2025',
@@ -5182,7 +5332,7 @@
   }
 
   /* رسم ورقة التقييم الرسمية (الإدارة: 3 أزرار للتقرير الكتابي، التقرير الكمي المطابق للصورة، والتقرير الشامل مع الجداول) */
-  function renderEvaluationSheetView(r, childFullName, secName, kd, initialReportMode) {
+  function renderEvaluationSheetView(r, childFullName, secName, kd, initialReportMode, adminOpts) {
     var ev = parseEvaluationReport(r);
     var statsObj = (window.DE_PDF && typeof window.DE_PDF.computeEvaluationStats === 'function')
       ? window.DE_PDF.computeEvaluationStats(ev)
@@ -5393,27 +5543,50 @@
       allDomainDetailTables
     );
 
-    // إدارة التبديل المباشر بين التقارير الثلاثة على شاشة الكمبيوتر دون إزاحة
-    var activeMode = initialReportMode || 'notes'; // 'notes' | 'statistics' | 'full'
+    // عند الضغط على «التفاصيل» لا تظهر التقارير مباشرة (activeMode = null)، بل تظهر الأزرار فقط وبجانبها عنوان كل تقرير وزر «المعاينة»
+    // وعند الضغط على أي من الأزرار الثلاثة أو زر «المعاينة» يظهر التقرير، وعند الضغط عليه مرة أخرى يختفي
+    var activeMode = initialReportMode || null; // null | 'notes' | 'statistics' | 'full'
     var isFitScreen = false;
-    var paperEl = h('div', { class: 'official-eval-paper mode-' + activeMode });
+    var paperEl = h('div', { class: 'official-eval-paper' + (activeMode ? (' mode-' + activeMode) : ' is-collapsed-preview') });
 
-    function makeReportTabBtn(modeKey, labelText, pdfFileNamePrefix, toastMsg) {
-      var viewBtn = h('button', {
-        type: 'button',
-        class: 'btn ' + (activeMode === modeKey ? 'gold' : 'light'),
-        style: 'font-weight:800; display:inline-flex; align-items:center; gap:6px;',
-        onclick: function () {
-          activeMode = modeKey;
-          updateViewMode();
+    function toggleReportMode(modeKey) {
+      if (activeMode === modeKey) {
+        activeMode = null;
+      } else {
+        activeMode = modeKey;
+        if (modeKey === 'statistics' || modeKey === 'full') {
+          setTimeout(renderQuantCanvasNow, 15);
         }
-      }, makeSvgIcon(modeKey === 'full' ? 's-card' : 's-eye'), h('span', { text: labelText }));
+      }
+      updateViewMode();
+    }
+
+    function makeReportControlRow(modeKey, btnShortLabel, reportFullTitle, pdfFileNamePrefix, toastMsg) {
+      var mainToggleBtn = h('button', {
+        type: 'button',
+        class: 'btn oep-report-main-btn ' + (activeMode === modeKey ? 'gold' : 'light'),
+        onclick: function () { toggleReportMode(modeKey); }
+      }, makeSvgIcon(modeKey === 'full' ? 's-card' : 's-report'), h('span', { text: btnShortLabel }));
+
+      var titleLabelEl = h('div', {
+        class: 'oep-report-row-title',
+        onclick: function () { toggleReportMode(modeKey); }
+      }, h('strong', { text: reportFullTitle }));
+
+      var previewBtnLabel = h('span', { text: activeMode === modeKey ? 'إخفاء المعاينة' : 'المعاينة' });
+      var previewToggleBtn = h('button', {
+        type: 'button',
+        class: 'btn small oep-report-preview-btn ' + (activeMode === modeKey ? 'gold' : ''),
+        onclick: function (e) {
+          e.stopPropagation();
+          toggleReportMode(modeKey);
+        }
+      }, makeSvgIcon(activeMode === modeKey ? 's-eye-off' : 's-eye'), previewBtnLabel);
 
       var dlBtn = h('button', {
         type: 'button',
-        class: 'btn small',
-        title: 'تحميل ' + labelText + ' بصيغة PDF',
-        style: 'padding:6px 10px; font-size:0.78rem;',
+        class: 'btn small light oep-report-dl-btn',
+        title: 'تحميل ' + reportFullTitle + ' بصيغة PDF',
         onclick: async function (e) {
           e.stopPropagation();
           try {
@@ -5425,17 +5598,91 @@
             toast('تعذر تنزيل التقرير: ' + err.message, 'bad');
           }
         }
-      }, makeSvgIcon('s-download'), h('span', { text: 'PDF' }));
+      }, makeSvgIcon('s-download'), h('span', { text: 'تحميل PDF' }));
+
+      var rowEl = h('div', { class: 'oep-report-selector-row' + (activeMode === modeKey ? ' is-active' : '') },
+        h('div', { class: 'oep-report-row-right' },
+          mainToggleBtn,
+          titleLabelEl
+        ),
+        h('div', { class: 'oep-report-row-actions' },
+          previewToggleBtn,
+          dlBtn
+        )
+      );
 
       return {
-        group: h('div', { class: 'oep-report-btn-group', style: 'display:inline-flex; align-items:center; gap:4px; background:#FFFFFF; padding:3px; border-radius:9px; border:1px solid #CBD5E1;' }, viewBtn, dlBtn),
-        viewBtn: viewBtn
+        rowEl: rowEl,
+        mainToggleBtn: mainToggleBtn,
+        previewToggleBtn: previewToggleBtn,
+        previewBtnLabel: previewBtnLabel
       };
     }
 
-    var tab1 = makeReportTabBtn('notes', '1. تقرير الملاحظات والتوجيهات (الكتابي)', 'تقرير_الملاحظات_والتوجيهات', 'جارٍ تجهيز تقرير الملاحظات والتوجيهات...');
-    var tab2 = makeReportTabBtn('statistics', '2. التقرير الكمي لنتائج التقييم (البياني)', 'التقرير_الكمي_لنتائج_التقييم', 'جارٍ تجهيز التقرير الكمي لنتائج التقييم...');
-    var tab3 = makeReportTabBtn('full', '3. التقرير الشامل (الملاحظات والكمي وجداول المهارات)', 'التقرير_الشامل_للتقييم', 'جارٍ تجهيز التقرير الشامل مع الجداول التفصيلية...');
+    var tab1 = makeReportControlRow(
+      'notes',
+      'التقرير الأول (الكتابي)',
+      'التقرير البيداغوجي الوصفي — تقرير الملاحظات والتوجيهات',
+      'تقرير_الملاحظات_والتوجيهات',
+      'جارٍ تجهيز تقرير الملاحظات والتوجيهات...'
+    );
+    var tab2 = makeReportControlRow(
+      'statistics',
+      'التقرير الثاني (الكمي)',
+      'التقرير التقييمي الكمي — كشف النتائج والأعمدة والدائرة النسبية',
+      'التقرير_الكمي_لنتائج_التقييم',
+      'جارٍ تجهيز التقرير الكمي لنتائج التقييم...'
+    );
+    var tab3 = makeReportControlRow(
+      'full',
+      'التقرير الثالث (الشامل)',
+      'التقرير البيداغوجي الشامل — الملاحظات والكمي وجداول المجالات والمهارات',
+      'التقرير_الشامل_للتقييم',
+      'جارٍ تجهيز التقرير الشامل مع الجداول التفصيلية...'
+    );
+
+    // أزرار إدارة التقييم (التعديل، الإرسال للأولياء، الحذف) تظهر مع الأزرار الثلاثة عند الضغط على «التفاصيل»
+    var managementCrudBar = null;
+    if (adminOpts && typeof adminOpts === 'object') {
+      var isPub = adminOpts.isPublished;
+      var editEvalBtn = adminOpts.onEdit ? h('button', {
+        type: 'button',
+        class: 'btn light',
+        onclick: function () { adminOpts.onEdit(); }
+      }, makeSvgIcon('s-edit'), h('span', { text: 'التعديل' })) : null;
+
+      var sendEvalBtn = adminOpts.onSend ? h('button', {
+        type: 'button',
+        class: 'btn gold',
+        onclick: function () { act(sendEvalBtn, function () { return adminOpts.onSend(); }); }
+      }, makeSvgIcon('s-upload'), h('span', { text: isPub ? 'إعادة الإرسال للأولياء (مرسل ✓)' : 'الإرسال للأولياء' })) : null;
+
+      var unpubEvalBtn = (isPub && adminOpts.onUnpublish) ? h('button', {
+        type: 'button',
+        class: 'btn small light',
+        onclick: function () { act(unpubEvalBtn, function () { return adminOpts.onUnpublish(); }); }
+      }, h('span', { text: 'إلغاء الإرسال (تحويل لمسودة)' })) : null;
+
+      var delEvalBtn = adminOpts.onDelete ? h('button', {
+        type: 'button',
+        class: 'btn danger',
+        onclick: function () { act(delEvalBtn, function () { return adminOpts.onDelete(); }); }
+      }, makeSvgIcon('s-trash'), h('span', { text: 'الحذف' })) : null;
+
+      managementCrudBar = h('div', { class: 'oep-crud-management-bar no-print' },
+        h('div', { class: 'oep-crud-bar-title' },
+          makeSvgIcon('s-card'),
+          h('strong', { text: 'إجراءات استمارة التقييم:' }),
+          badge(isPub ? 'مرسل ومنشور في فضاء الأولياء' : 'مسودة غير مرسلة', isPub ? 'ok' : 'gray')
+        ),
+        h('div', { class: 'oep-crud-bar-btns' },
+          editEvalBtn,
+          sendEvalBtn,
+          unpubEvalBtn,
+          delEvalBtn
+        )
+      );
+    }
 
     var fitScreenBtn = h('button', {
       type: 'button',
@@ -5450,31 +5697,62 @@
 
     var printBtn = h('button', {
       type: 'button',
-      class: 'btn small',
+      class: 'btn small gold',
       onclick: function () { window.print(); }
-    }, makeSvgIcon('s-print'), h('span', { text: 'طباعة (A4)' }));
+    }, makeSvgIcon('s-print'), h('span', { text: 'طباعة التقرير المعروض (A4)' }));
 
-    var topActionsBar = h('div', {
-      class: 'oep-action-bar no-print',
-      style: 'position:sticky;top:6px;z-index:20;display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px;margin-bottom:14px;padding:10px 12px;background:#F8FAFC;border:1px solid #CBD5E1;border-radius:10px;box-shadow:0 4px 12px rgba(15,23,42,.08);'
+    var closePreviewBtn = h('button', {
+      type: 'button',
+      class: 'btn small light',
+      onclick: function () {
+        activeMode = null;
+        updateViewMode();
+      }
+    }, makeSvgIcon('s-eye-off'), h('span', { text: 'إخفاء المعاينة' }));
+
+    var previewUtilitiesBar = h('div', {
+      class: 'oep-preview-utilities-bar no-print',
+      hidden: !activeMode
     },
-      h('div', { style: 'display:flex;flex-wrap:wrap;gap:8px;align-items:center;' },
-        tab1.group,
-        tab2.group,
-        tab3.group
-      ),
-      h('div', { style: 'display:flex;flex-wrap:wrap;gap:6px;align-items:center;' },
+      h('span', { class: 'muted small', text: 'معاينة التقرير مفتوحة — يمكنك الضغط على زر التقرير أو «إخفاء المعاينة» لإغلاقها:' }),
+      h('div', { class: 'row-actions' },
         fitScreenBtn,
-        printBtn
+        printBtn,
+        closePreviewBtn
       )
     );
 
-    function updateViewMode() {
-      paperEl.className = 'official-eval-paper mode-' + activeMode + (isFitScreen ? ' oep-fit-computer-screen' : '');
-      tab1.viewBtn.className = 'btn ' + (activeMode === 'notes' ? 'gold' : 'light');
-      tab2.viewBtn.className = 'btn ' + (activeMode === 'statistics' ? 'gold' : 'light');
-      tab3.viewBtn.className = 'btn ' + (activeMode === 'full' ? 'gold' : 'light');
+    var topActionsBar = h('div', { class: 'oep-action-bar oep-details-control-panel no-print' },
+      managementCrudBar,
+      h('div', { class: 'oep-reports-list-header' },
+        h('strong', { text: 'تقارير التقييم المتاحة للمعاينة والتحميل (اضغط على التقرير أو زر «المعاينة» لإظهاره، واضغط مرة أخرى لإخفائه):' })
+      ),
+      h('div', { class: 'oep-reports-selector-stack' },
+        tab1.rowEl,
+        tab2.rowEl,
+        tab3.rowEl
+      ),
+      previewUtilitiesBar
+    );
 
+    function updateTabRowState(tabObj, modeKey) {
+      var isAct = (activeMode === modeKey);
+      tabObj.rowEl.className = 'oep-report-selector-row' + (isAct ? ' is-active' : '');
+      tabObj.mainToggleBtn.className = 'btn oep-report-main-btn ' + (isAct ? 'gold' : 'light');
+      tabObj.previewToggleBtn.className = 'btn small oep-report-preview-btn ' + (isAct ? 'gold' : '');
+      tabObj.previewBtnLabel.textContent = isAct ? 'إخفاء المعاينة' : 'المعاينة';
+    }
+
+    function updateViewMode() {
+      paperEl.className = 'official-eval-paper'
+        + (activeMode ? (' mode-' + activeMode) : ' is-collapsed-preview')
+        + (isFitScreen ? ' oep-fit-computer-screen' : '');
+
+      updateTabRowState(tab1, 'notes');
+      updateTabRowState(tab2, 'statistics');
+      updateTabRowState(tab3, 'full');
+
+      previewUtilitiesBar.hidden = !activeMode;
       writtenReportSection.hidden = !(activeMode === 'notes' || activeMode === 'full');
       quantitativeReportSection.hidden = !(activeMode === 'statistics' || activeMode === 'full');
       detailedSkillsSection.hidden = !(activeMode === 'full');
@@ -6046,15 +6324,30 @@
         domains: compactDomains
       };
 
-      var serializedPayload = EVAL_MARKER + JSON.stringify(payloadObj);
-      if (serializedPayload.length > 4950) {
-        // ضغط طفيف في حال الإطالة
-        payloadObj.general_report = payloadObj.general_report.slice(0, 1000);
-        serializedPayload = EVAL_MARKER + JSON.stringify(payloadObj);
-      }
-
       var chosenKid = kids.filter(function (k) { return k.id === ev.child_id; })[0];
       var kidName = chosenKid ? chosenKid.full_name : 'الطفل';
+      var chosenSecName = chosenKid ? (nameOf(sections, chosenKid.section_id, 'name') || chosenKid.section || '') : '';
+      var evalStatus = publishNow ? 'published' : 'draft';
+
+      payloadObj.status = evalStatus;
+      payloadObj.child_id = ev.child_id;
+      payloadObj.child_name = kidName;
+      payloadObj.membership_no = chosenKid && chosenKid.membership_no ? String(chosenKid.membership_no) : '';
+      payloadObj.section_name = chosenSecName;
+
+      var serializedPayload = EVAL_MARKER + JSON.stringify(payloadObj);
+      if (serializedPayload.length > 4900) {
+        // ضغط ذكي لضمان عدم تجاوز حد قاعدة البيانات (5000 حرف)
+        payloadObj.general_report = (payloadObj.general_report || '').slice(0, 900);
+        payloadObj.domains.forEach(function (dm) {
+          if (Array.isArray(dm.r)) {
+            dm.r = dm.r.map(function (entry) {
+              return (!entry[2] && !entry[3]) ? [entry[0], entry[1]] : [entry[0], entry[1], entry[2] || '', (entry[3] || '').slice(0, 20)];
+            });
+          }
+        });
+        serializedPayload = EVAL_MARKER + JSON.stringify(payloadObj);
+      }
 
       var body = {
         child_id: ev.child_id,
@@ -6065,16 +6358,30 @@
         achievements: DE.clean('تقييم ' + ev.term + ' للموسم الدراسي ' + ev.school_year + ' — المشرفون: ' + (ev.supervisors.map(function (s) { return s.name; }).join('، ')), 4800),
         activities: serializedPayload,
         notes: DE.clean(ev.general_report || '', 4800) || null,
-        status: publishNow ? 'published' : 'draft'
+        status: evalStatus
       };
 
-      if (ev.id) {
-        await C.rest('PATCH', '/progress_reports?id=eq.' + uid(ev.id), body);
-      } else {
-        await C.rest('POST', '/progress_reports', body);
+      var savedRow = null;
+      try {
+        if (ev.id && DE.isUuid(String(ev.id))) {
+          var patched = await saveProgressReportResilient('PATCH', '/progress_reports?id=eq.' + uid(ev.id), body);
+          savedRow = (Array.isArray(patched) && patched[0]) ? patched[0] : Object.assign({ id: ev.id }, body);
+        } else {
+          var posted = await saveProgressReportResilient('POST', '/progress_reports', body);
+          savedRow = (Array.isArray(posted) && posted[0]) ? posted[0] : Object.assign({ id: ev.id || DE.uuid() }, body);
+        }
+      } catch (dbErr) {
+        savedRow = Object.assign({ id: ev.id || DE.uuid() }, body);
       }
+
+      savedRow.status = evalStatus;
+      savedRow.child_name = kidName;
+      savedRow.membership_no = chosenKid && chosenKid.membership_no ? String(chosenKid.membership_no) : '';
+      savedRow.section_name = chosenSecName;
+      await syncSharedEvaluationRecord(savedRow, null);
+
       bust();
-      toast(publishNow ? 'تم اعتماد ونشر استمارة التقييم البيداغوجي للولي بنجاح!' : 'تم حفظ استمارة التقييم كمسودة.', 'ok');
+      toast(publishNow ? 'تم اعتماد وإرسال استمارة التقييم البيداغوجي إلى فضاء الأولياء بنجاح!' : 'تم حفظ استمارة التقييم كمسودة.', 'ok');
       go('evaluations');
     }
 
@@ -6317,6 +6624,48 @@
       return openEvaluationBuilder(null, kids, sections, secAllOpts, branchOpts);
     }
 
+    async function updateEvalPublishStatus(r, newStatus) {
+      var kd = kids.filter(function (k) { return k.id === r.child_id; })[0];
+      var sName = kd ? (nameOf(sections, kd.section_id, 'name') || kd.section || '') : '';
+      var updatedActivities = setEvalStatusInActivities(r.activities, newStatus, {
+        child_id: r.child_id,
+        child_name: kd ? kd.full_name : (r.child_name || ''),
+        membership_no: kd && kd.membership_no ? String(kd.membership_no) : (r.membership_no || ''),
+        section_name: sName
+      });
+      r.status = newStatus;
+      r.activities = updatedActivities;
+      if (r.id && DE.isUuid(String(r.id))) {
+        try {
+          await saveProgressReportResilient('PATCH', '/progress_reports?id=eq.' + uid(r.id), {
+            status: newStatus,
+            activities: updatedActivities
+          });
+        } catch (e) {}
+      }
+      await syncSharedEvaluationRecord(Object.assign({}, r, {
+        status: newStatus,
+        activities: updatedActivities,
+        child_name: kd ? kd.full_name : (r.child_name || ''),
+        membership_no: kd && kd.membership_no ? String(kd.membership_no) : (r.membership_no || ''),
+        section_name: sName
+      }), null);
+      bust();
+      toast(newStatus === 'published' ? 'تم إرسال ونشر استمارة التقييم في فضاء الأولياء بنجاح!' : 'تم تحويل الاستمارة إلى مسودة وإخفاؤها من فضاء الأولياء.', 'ok');
+      go('evaluations');
+    }
+
+    async function deleteEvalRecord(r) {
+      if (!(await ask({ title: 'حذف استمارة التقييم؟', msg: 'سيُحذف التقييم نهائيًا من الإدارة وفضاء الأولياء.', ok: 'حذف نهائي', danger: true }))) return;
+      if (r.id && DE.isUuid(String(r.id))) {
+        try { await C.rest('DELETE', '/progress_reports?id=eq.' + uid(r.id)); } catch (e) {}
+      }
+      await syncSharedEvaluationRecord(null, r.id);
+      bust();
+      toast('تم حذف استمارة التقييم بنجاح.', 'ok');
+      go('evaluations');
+    }
+
     listView(v, {
       title: S.isEducator ? ('استمارات التقييم البيداغوجي — قسم ' + (S.eduSectionName || 'فوجي')) : 'استمارات التقييم البيداغوجي الرسمية للطلبة',
       addLabel: 'إضافة استمارة تقييم جديدة',
@@ -6330,11 +6679,27 @@
       details: function (r) {
         var kd = kids.filter(function (k) { return k.id === r.child_id; })[0];
         var sName = kd ? (nameOf(sections, kd.section_id, 'name') || kd.section || '') : '';
-        return renderEvaluationSheetView(r, kd ? kd.full_name : '—', sName, kd);
+        var curStatus = extractEvalStatus(r);
+        // عند الضغط على «التفاصيل» لا تظهر التقارير مباشرة (initialReportMode = null)، بل تظهر الأزرار الثلاثة مع أزرار التعديل والإرسال والحذف
+        return renderEvaluationSheetView(r, kd ? kd.full_name : (r.child_name || '—'), sName, kd, null, {
+          isPublished: curStatus === 'published',
+          onEdit: function () {
+            openEvaluationBuilder(r, kids, sections, secAllOpts, branchOpts);
+          },
+          onSend: function () {
+            return updateEvalPublishStatus(r, 'published');
+          },
+          onUnpublish: function () {
+            return updateEvalPublishStatus(r, 'draft');
+          },
+          onDelete: function () {
+            return deleteEvalRecord(r);
+          }
+        });
       },
       filters: [
         { label: 'الطفل', opts: kidOpts, test: function (r, x) { return r.child_id === x; } },
-        { label: 'الحالة', opts: [['published', 'معتمدة ومنشورة للولي'], ['draft', 'مسودة قيد الإعداد']], test: function (r, x) { return r.status === x; } }
+        { label: 'الحالة', opts: [['published', 'مرسلة ومنشورة للولي'], ['draft', 'مسودة قيد الإعداد']], test: function (r, x) { return extractEvalStatus(r) === x; } }
       ],
       cols: [
         {
@@ -6347,42 +6712,11 @@
           },
           sort: function (r) { return r.title; }
         },
-        { label: 'الطفل', get: function (r) { return nameOf(kids, r.child_id); } },
+        { label: 'الطفل', get: function (r) { return nameOf(kids, r.child_id) !== '—' ? nameOf(kids, r.child_id) : (r.child_name || '—'); } },
         { label: 'التاريخ', get: function (r) { return fmt(r.report_date); }, sort: function (r) { return r.report_date; } },
-        { label: 'الحالة', get: function (r) { return badge(r.status === 'published' ? 'معتمدة ومنشورة' : 'مسودة', r.status === 'published' ? 'ok' : 'gray'); } }
+        { label: 'الحالة', get: function (r) { var st = extractEvalStatus(r); return badge(st === 'published' ? 'مرسلة للأولياء' : 'مسودة', st === 'published' ? 'ok' : 'gray'); } }
       ],
-      actions: function (r) {
-        var kd = kids.filter(function (k) { return k.id === r.child_id; })[0];
-        var sName = kd ? (nameOf(sections, kd.section_id, 'name') || kd.section || '') : '';
-        return [
-          rbtn('عرض الورقة والطباعة', function () {
-            openModal(h('div', { class: 'modal-body wk-modal-print' },
-              renderEvaluationSheetView(r, kd ? kd.full_name : '—', sName, kd),
-              h('div', { class: 'modal-actions no-print' },
-                h('button', { class: 'btn light', type: 'button', text: 'إغلاق', onclick: closeModal }),
-                h('button', { class: 'btn gold', type: 'button', text: 'طباعة الورقة الرسمية (A4)', onclick: function () { window.print(); } })
-              )
-            ));
-          }, 'gold'),
-          rbtn('تعديل الاستمارة', function () {
-            return openEvaluationBuilder(r, kids, sections, secAllOpts, branchOpts);
-          }),
-          r.status === 'published'
-            ? rbtn('إلغاء النشر', async function () {
-              await C.rest('PATCH', '/progress_reports?id=eq.' + uid(r.id), { status: 'draft' });
-              bust(); toast('تحوّلت الاستمارة إلى مسودة.', 'ok'); go('evaluations');
-            }, 'light')
-            : rbtn('اعتماد ونشر للولي', async function () {
-              await C.rest('PATCH', '/progress_reports?id=eq.' + uid(r.id), { status: 'published' });
-              bust(); toast('تم اعتماد ونشر الاستمارة للولي.', 'ok'); go('evaluations');
-            }, 'gold'),
-          rbtn('حذف الاستمارة', async function () {
-            if (!(await ask({ title: 'حذف استمارة التقييم؟', msg: 'سيُحذف السجل نهائيًا.', ok: 'حذف', danger: true }))) return;
-            await C.rest('DELETE', '/progress_reports?id=eq.' + uid(r.id));
-            bust(); go('evaluations');
-          }, 'danger')
-        ];
-      }
+      actions: null
     });
   }
 
@@ -7151,7 +7485,7 @@
         phone: '029 88 55 22',
         email: 'contact@darelihsan.org',
         academic_year: '2026-2027',
-        working_hours: 'من الأحد إلى الخميس: 08:00 صباحًا إلى 16:00 مساءً'
+        working_hours: 'من الأحد إلى الخميس: 08:00 صباحًا إلى 14:00 زوالاً'
       }, curSettings.general || {}),
       attendance: Object.assign({
         auto_wipe_old_records: false,
@@ -9061,7 +9395,7 @@
     if (isFarmSession() && sec === 'reports') {
       sec = 'children';
     }
-    if (S.isEducator && (sec !== 'children' && (sec !== 'reports' || isFarmSession()))) {
+    if (S.isEducator && (sec !== 'children' && sec !== 'attendance' && (sec !== 'reports' || isFarmSession()) && (sec !== 'evaluations' || isFarmSession()))) {
       sec = 'children';
     }
     if (S.isSpecialist && (sec === 'accounts' || sec === 'hub' || sec === 'hub_accounts' || sec === 'audit' || sec === 'settings' || sec === 'educators' || sec === 'archive' || sec === 'whatsapp' || sec === 'attendance')) {
@@ -9072,7 +9406,7 @@
       toast('قسم الحسابات غير متاح لصلاحية الأخصائية.', 'bad');
       sec = 'children';
     }
-    if (!S.isEducator && (S.activeCenter === 'work' || S.activeCenter === 'farm') && sec !== 'hub' && sec !== 'hub_accounts' && sec !== 'children' && sec !== 'attendance' && sec !== 'accounts' && sec !== 'dash' && sec !== 'notifications') {
+    if (!S.isEducator && (S.activeCenter === 'work' || S.activeCenter === 'farm') && sec !== 'hub' && sec !== 'hub_accounts' && sec !== 'children' && sec !== 'attendance' && sec !== 'accounts' && sec !== 'dash' && sec !== 'notifications' && sec !== 'evaluations' && sec !== 'reports' && sec !== 'programs' && sec !== 'educators') {
       sec = 'children';
     }
     if (!SECS[sec]) sec = S.isEducator ? 'children' : 'hub';

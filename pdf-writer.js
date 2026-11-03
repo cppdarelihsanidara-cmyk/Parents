@@ -40,6 +40,30 @@
     '#65A30D', '#9333EA', '#0284C7', '#D97706', '#059669'
   ];
 
+  // دالة تظليل وتفتيح الألوان لرسم الحواف والمجسم ثلاثي الأبعاد للدائرة النسبية
+  function shadeHexColor(hex, factor) {
+    var s = String(hex || '#16A34A').replace(/^#/, '');
+    if (s.length === 3) {
+      s = s[0] + s[0] + s[1] + s[1] + s[2] + s[2];
+    }
+    var num = parseInt(s, 16);
+    if (isNaN(num)) return hex;
+    var r = (num >> 16) & 255;
+    var g = (num >> 8) & 255;
+    var b = num & 255;
+    if (factor < 1) {
+      r = Math.max(0, Math.min(255, Math.round(r * factor)));
+      g = Math.max(0, Math.min(255, Math.round(g * factor)));
+      b = Math.max(0, Math.min(255, Math.round(b * factor)));
+    } else {
+      var boost = factor - 1;
+      r = Math.max(0, Math.min(255, Math.round(r + (255 - r) * boost)));
+      g = Math.max(0, Math.min(255, Math.round(g + (255 - g) * boost)));
+      b = Math.max(0, Math.min(255, Math.round(b + (255 - b) * boost)));
+    }
+    return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+  }
+
   function shortenDomainName(name) {
     var s = String(name || '').trim();
     if (DOMAIN_SHORT_NAMES[s]) return DOMAIN_SHORT_NAMES[s];
@@ -921,8 +945,9 @@
         label: 'المتبقي لبلوغ 100%',
         pctText: statsObj.remainingPctComma + '%',
         pctOnly: statsObj.remainingPctComma + '%',
-        color: '#F7EBEF',
-        darkColor: '#B8ABB0',
+        color: '#F3DCE2',
+        wallBaseColor: '#C49AA7',
+        rimColor: '#885E6B',
         start: curAng,
         end: curAng + remSweep,
         mid: curAng + remSweep / 2,
@@ -930,32 +955,95 @@
       });
     }
 
-    var dCx = W / 2;
-    var dCy = donutBoxY + 265;
-    var outerR = 190;
-    var innerR = 102;
-    var tiltY = 0.68;
-    var depth3D = 28;
-
-    // رسم الحافة السفلية ثلاثية الأبعاد (3D Depth Rim) كما في الصورة 56725.jpg
-    ctx.save();
-    ctx.translate(dCx, dCy + depth3D);
-    ctx.scale(1, tiltY);
     donutSlices.forEach(function (sl) {
-      ctx.beginPath();
-      ctx.arc(0, 0, outerR, sl.start, sl.end, false);
-      ctx.arc(0, 0, innerR, sl.end, sl.start, true);
-      ctx.closePath();
-      ctx.fillStyle = sl.isRemaining ? '#BEB2B6' : sl.color;
-      ctx.fill();
-      if (!sl.isRemaining) {
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.28)';
-        ctx.fill();
-      }
+      if (!sl.wallBaseColor) sl.wallBaseColor = sl.color;
+      if (!sl.rimColor) sl.rimColor = shadeHexColor(sl.color, 0.44);
     });
+
+    var dCx = W / 2;
+    var dCy = donutBoxY + 258;
+    var outerR = 192;
+    var innerR = 100;
+    var tiltY = 0.63;
+    var depth3D = 38;
+
+    // 1) ظل سفلي ناعم تحت المجسم ثلاثي الأبعاد لإبراز العمق والارتفاع
+    ctx.save();
+    ctx.translate(dCx, dCy + depth3D + 12);
+    ctx.scale(1, tiltY);
+    ctx.beginPath();
+    ctx.arc(0, 0, outerR + 8, 0, Math.PI * 2, false);
+    ctx.arc(0, 0, Math.max(10, innerR - 8), Math.PI * 2, 0, true);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.16)';
+    ctx.fill();
     ctx.restore();
 
-    // رسم السطح العلوي للحلقة الدائرية (Top Donut Ring)
+    // 2) بناء الجدران والحواف الجانبية ثلاثية الأبعاد (Extruded 3D Solid Walls & Colored Edges)
+    //    نرسم طبقات المجسم الملساء من الأسفل (depth3D) إلى الأعلى (1) بتدرج لوني ثلاثي الأبعاد لكل شريحة بدون خطوط متداخلة
+    for (var dz = depth3D; dz >= 1; dz--) {
+      var progress = 1 - (dz / depth3D); // 0 في القاعدة السفلية -> 1 قرب السطح العلوي
+      var wallShade = 0.56 + 0.24 * progress;
+      ctx.save();
+      ctx.translate(dCx, dCy + dz);
+      ctx.scale(1, tiltY);
+      donutSlices.forEach(function (sl) {
+        ctx.beginPath();
+        ctx.arc(0, 0, outerR, sl.start, sl.end, false);
+        ctx.arc(0, 0, innerR, sl.end, sl.start, true);
+        ctx.closePath();
+        ctx.fillStyle = shadeHexColor(sl.wallBaseColor, sl.isRemaining ? (0.78 + 0.16 * progress) : wallShade);
+        ctx.fill();
+      });
+      ctx.restore();
+    }
+
+    // 3) رسم الحافة السفلية المرئية فقط (الأمامية الخارجية + الخلفية داخل التجويف) والخطوط العمودية الفاصلة بين الشرائح
+    donutSlices.forEach(function (sl) {
+      // أ) القوس السفلي الخارجي (يظهر فقط في النصف الأمامي حيث sin(angle) >= 0 أي بين 0 و PI)
+      var visStart = Math.max(0, Math.min(Math.PI, sl.start));
+      var visEnd = Math.max(0, Math.min(Math.PI, sl.end));
+      if (visEnd > visStart + 0.01) {
+        ctx.save();
+        ctx.translate(dCx, dCy + depth3D);
+        ctx.scale(1, tiltY);
+        ctx.beginPath();
+        ctx.arc(0, 0, outerR, visStart, visEnd, false);
+        ctx.strokeStyle = sl.rimColor;
+        ctx.lineWidth = 2.6;
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // ب) خطوط الحواف العمودية الأمامية والداخلية بين الشرائح لإبراز المجسم ثلاثي الأبعاد
+      [sl.start, sl.end].forEach(function (ang) {
+        var sinVal = Math.sin(ang);
+        var cosVal = Math.cos(ang);
+        if (sinVal > 0.04) {
+          // حافة عمودية على الجدار الخارجي الأمامي
+          var vx = dCx + cosVal * outerR;
+          var vyTop = dCy + sinVal * outerR * tiltY;
+          ctx.beginPath();
+          ctx.moveTo(vx, vyTop);
+          ctx.lineTo(vx, vyTop + depth3D);
+          ctx.strokeStyle = sl.rimColor;
+          ctx.lineWidth = 1.6;
+          ctx.stroke();
+        } else if (sinVal < -0.04) {
+          // حافة عمودية داخل جدار التجويف الأوسط الخلفي
+          var vxIn = dCx + cosVal * innerR;
+          var vyInTop = dCy + sinVal * innerR * tiltY;
+          ctx.beginPath();
+          ctx.moveTo(vxIn, vyInTop);
+          ctx.lineTo(vxIn, vyInTop + depth3D);
+          ctx.strokeStyle = sl.rimColor;
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+        }
+      });
+    });
+
+    // 4) رسم السطح العلوي للحلقة الدائرية ثلاثية الأبعاد مع تلوين الحواف (Top Beveled 3D Ring with Colored Edges)
     ctx.save();
     ctx.translate(dCx, dCy);
     ctx.scale(1, tiltY);
@@ -964,10 +1052,37 @@
       ctx.arc(0, 0, outerR, sl.start, sl.end, false);
       ctx.arc(0, 0, innerR, sl.end, sl.start, true);
       ctx.closePath();
-      ctx.fillStyle = sl.color;
+
+      // تدرج إضاءة علوي يمنح السطح مظهر المجسم المحدب
+      var grad = ctx.createRadialGradient(-outerR * 0.2, -outerR * 0.2, innerR * 0.4, 0, 0, outerR);
+      if (sl.isRemaining) {
+        grad.addColorStop(0, '#FFF5F7');
+        grad.addColorStop(0.65, '#F3DCE2');
+        grad.addColorStop(1, '#E2C2CB');
+      } else {
+        grad.addColorStop(0, shadeHexColor(sl.color, 1.22));
+        grad.addColorStop(0.55, sl.color);
+        grad.addColorStop(1, shadeHexColor(sl.color, 0.86));
+      }
+      ctx.fillStyle = grad;
       ctx.fill();
-      ctx.strokeStyle = '#FFFFFF';
-      ctx.lineWidth = 1.5;
+
+      // تلوين حواف كل شريحة بلون ثلاثي الأبعاد غامق ومميز من الحواف الخارجية والداخلية
+      ctx.strokeStyle = sl.isRemaining ? '#9F7481' : shadeHexColor(sl.color, 0.52);
+      ctx.lineWidth = 3.2;
+      ctx.stroke();
+
+      // لمعة الحافة الداخلية العلوية (3D Inner Specular Rim Highlight)
+      ctx.beginPath();
+      ctx.arc(0, 0, outerR - 2.2, sl.start + 0.01, sl.end - 0.01, false);
+      ctx.strokeStyle = sl.isRemaining ? 'rgba(255,255,255,0.85)' : shadeHexColor(sl.color, 1.35);
+      ctx.lineWidth = 1.4;
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(0, 0, innerR + 2.2, sl.start + 0.01, sl.end - 0.01, false);
+      ctx.strokeStyle = sl.isRemaining ? '#B08592' : shadeHexColor(sl.color, 0.62);
+      ctx.lineWidth = 2.0;
       ctx.stroke();
     });
     ctx.restore();
