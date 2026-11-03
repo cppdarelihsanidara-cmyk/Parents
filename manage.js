@@ -875,11 +875,29 @@
           merged.push(item);
         }
       });
+      var pubToSync = [];
       merged.forEach(function (row) {
         if (isEvaluationReport(row)) {
           row.status = extractEvalStatus(row);
+          if (row.status === 'published') pubToSync.push(row);
         }
       });
+      if (pubToSync.length) {
+        try {
+          var curLocal = readLocalSharedEvaluations();
+          var changed = false;
+          pubToSync.forEach(function (pr) {
+            if (!curLocal.some(function (x) { return x && String(x.id) === String(pr.id); })) {
+              curLocal.unshift(pr);
+              changed = true;
+            }
+          });
+          if (changed) {
+            writeLocalSharedEvaluations(curLocal);
+            syncSharedEvaluationRecord(pubToSync[0], null).catch(function () {});
+          }
+        } catch (eSync) {}
+      }
       merged.sort(function (a, b) {
         return String(b.report_date || '').localeCompare(String(a.report_date || ''));
       });
@@ -5543,11 +5561,11 @@
       allDomainDetailTables
     );
 
-    // عند الضغط على «التفاصيل» لا تظهر التقارير مباشرة (activeMode = null)، بل تظهر الأزرار فقط وبجانبها عنوان كل تقرير وزر «المعاينة»
-    // وعند الضغط على أي من الأزرار الثلاثة أو زر «المعاينة» يظهر التقرير، وعند الضغط عليه مرة أخرى يختفي
-    var activeMode = initialReportMode || null; // null | 'notes' | 'statistics' | 'full'
-    var isFitScreen = false;
-    var paperEl = h('div', { class: 'official-eval-paper' + (activeMode ? (' mode-' + activeMode) : ' is-collapsed-preview') });
+    // عند الضغط على «التفاصيل» لا يظهر التقرير إطلاقاً (activeMode = null)، بل تظهر الأزرار فقط وبجانبها عنوان كل تقرير وزر «المعاينة»
+    // وعند الضغط على أي من الأزرار الثلاثة أو زر «المعاينة» يظهر التقرير بملاءمة تلقائية كاملة للهاتف والكمبيوتر، وعند الضغط مرة أخرى يختفي تماماً
+    var activeMode = (initialReportMode === 'notes' || initialReportMode === 'statistics' || initialReportMode === 'full') ? initialReportMode : null;
+    var paperEl = h('div', { class: 'official-eval-paper oep-fit-computer-screen' + (activeMode ? (' mode-' + activeMode) : ' is-collapsed-preview') });
+    var previewMountHost = h('div', { class: 'oep-report-preview-mount' });
 
     function toggleReportMode(modeKey) {
       if (activeMode === modeKey) {
@@ -5684,17 +5702,6 @@
       );
     }
 
-    var fitScreenBtn = h('button', {
-      type: 'button',
-      class: 'btn small light',
-      title: 'رؤية التقرير كاملاً في شاشة الكمبيوتر دون الحاجة للإزاحة',
-      onclick: function () {
-        isFitScreen = !isFitScreen;
-        paperEl.classList.toggle('oep-fit-computer-screen', isFitScreen);
-        fitScreenBtn.className = 'btn small ' + (isFitScreen ? 'gold' : 'light');
-      }
-    }, h('span', { text: '🖥 ملاءمة لشاشة الكمبيوتر (دون إزاحة)' }));
-
     var printBtn = h('button', {
       type: 'button',
       class: 'btn small gold',
@@ -5714,9 +5721,8 @@
       class: 'oep-preview-utilities-bar no-print',
       hidden: !activeMode
     },
-      h('span', { class: 'muted small', text: 'معاينة التقرير مفتوحة — يمكنك الضغط على زر التقرير أو «إخفاء المعاينة» لإغلاقها:' }),
+      h('span', { class: 'muted small', text: 'معاينة التقرير مفتوحة — اضغط على زر التقرير مرة أخرى أو «إخفاء المعاينة» لإغلاقها:' }),
       h('div', { class: 'row-actions' },
-        fitScreenBtn,
         printBtn,
         closePreviewBtn
       )
@@ -5744,18 +5750,34 @@
     }
 
     function updateViewMode() {
-      paperEl.className = 'official-eval-paper'
-        + (activeMode ? (' mode-' + activeMode) : ' is-collapsed-preview')
-        + (isFitScreen ? ' oep-fit-computer-screen' : '');
+      paperEl.className = 'official-eval-paper oep-fit-computer-screen'
+        + (activeMode ? (' mode-' + activeMode) : ' is-collapsed-preview');
 
       updateTabRowState(tab1, 'notes');
       updateTabRowState(tab2, 'statistics');
       updateTabRowState(tab3, 'full');
 
       previewUtilitiesBar.hidden = !activeMode;
-      writtenReportSection.hidden = !(activeMode === 'notes' || activeMode === 'full');
-      quantitativeReportSection.hidden = !(activeMode === 'statistics' || activeMode === 'full');
-      detailedSkillsSection.hidden = !(activeMode === 'full');
+
+      // تفريغ حاوية العرض تماماً عند عدم اختيار أي تقرير حتى لا يظهر أي عنصر من التقرير إلا بعد الضغط على زر التقرير
+      previewMountHost.textContent = '';
+      if (!activeMode) {
+        previewMountHost.hidden = true;
+      } else {
+        previewMountHost.hidden = false;
+        if (activeMode === 'notes' || activeMode === 'full') {
+          writtenReportSection.hidden = false;
+          previewMountHost.appendChild(writtenReportSection);
+        }
+        if (activeMode === 'statistics' || activeMode === 'full') {
+          quantitativeReportSection.hidden = false;
+          previewMountHost.appendChild(quantitativeReportSection);
+        }
+        if (activeMode === 'full') {
+          detailedSkillsSection.hidden = false;
+          previewMountHost.appendChild(detailedSkillsSection);
+        }
+      }
     }
 
     var printStyleTag = h('style', {
@@ -5764,9 +5786,7 @@
 
     paperEl.appendChild(printStyleTag);
     paperEl.appendChild(topActionsBar);
-    paperEl.appendChild(writtenReportSection);
-    paperEl.appendChild(quantitativeReportSection);
-    paperEl.appendChild(detailedSkillsSection);
+    paperEl.appendChild(previewMountHost);
 
     updateViewMode();
     return paperEl;

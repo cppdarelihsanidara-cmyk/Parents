@@ -5,8 +5,8 @@
 (function () {
   'use strict';
   try {
-    if (typeof window !== 'undefined' && localStorage.getItem('de_app_ver') !== 'v50') {
-      localStorage.setItem('de_app_ver', 'v50');
+    if (typeof window !== 'undefined' && localStorage.getItem('de_app_ver') !== 'v98') {
+      localStorage.setItem('de_app_ver', 'v98');
       if (window.caches && caches.keys) {
         caches.keys().then(function (ks) { ks.forEach(function (k) { caches.delete(k); }); });
       }
@@ -30,6 +30,7 @@
   window.DE_CONFIG = CFG;
   var h = DE.h;
   var $ = function (s) { return document.querySelector(s); };
+  function badge(text, kind) { return h('span', { class: 'badge ' + (kind || ''), text: text }); }
   var C = DE.Client(CFG, 'de_parent_session', true);
   var S = { tab: 'children', me: null, name: '', d: null, reads: {}, selectedChildId: null };
   var stopIdle = null;
@@ -2667,6 +2668,7 @@ function generateWordDocObservation(rep, child, secName, brName) {
     }
     return res;
   }
+  var parseEvaluationReport = parseParentEvaluationReport;
 
   /* ورقة التقييم الرسمية في فضاء الأولياء:
      - تخرج للأولياء بزرّين فقط (مثل الإدارة ولكن بدون زر التقرير الشامل والجداول التفصيلية):
@@ -2837,10 +2839,10 @@ function generateWordDocObservation(rep, child, secName, brName) {
 
     // للأولياء: عند الضغط على «التفاصيل» لا يظهر أي تقرير مباشرة (activeMode = null)،
     // بل يظهر الزرّان الخاصان بالتقرير الكتابي والتقرير الكمي وبجانب كل منهما عنوان التقرير وزر «المعاينة» وزر «تحميل PDF».
-    // وعند الضغط على الزر أو «المعاينة» يظهر التقرير، وعند الضغط عليه مرة أخرى يختفي.
+    // وعند الضغط على الزر أو «المعاينة» يظهر التقرير بملاءمة تلقائية كاملة للهاتف والكمبيوتر، وعند الضغط عليه مرة أخرى يختفي.
     var activeMode = (initialReportMode === 'notes' || initialReportMode === 'statistics') ? initialReportMode : null;
-    var isFitScreen = false;
-    var paperEl = h('div', { class: 'official-eval-paper' + (activeMode ? (' mode-' + activeMode) : ' is-collapsed-preview') });
+    var paperEl = h('div', { class: 'official-eval-paper oep-fit-computer-screen' + (activeMode ? (' mode-' + activeMode) : ' is-collapsed-preview') });
+    var previewMountHost = h('div', { class: 'oep-report-preview-mount' });
 
     function toggleParentReportMode(modeKey) {
       if (activeMode === modeKey) {
@@ -2925,17 +2927,6 @@ function generateWordDocObservation(rep, child, secName, brName) {
       'التقرير_الكمي_لنتائج_التقييم'
     );
 
-    var fitScreenBtn = h('button', {
-      type: 'button',
-      class: 'btn small light',
-      title: 'رؤية التقرير كاملاً في شاشة الكمبيوتر دون إزاحة',
-      onclick: function () {
-        isFitScreen = !isFitScreen;
-        paperEl.classList.toggle('oep-fit-computer-screen', isFitScreen);
-        fitScreenBtn.className = 'btn small ' + (isFitScreen ? 'gold' : 'light');
-      }
-    }, h('span', { text: '🖥 ملاءمة للشاشة (دون إزاحة)' }));
-
     var printBtn = h('button', {
       type: 'button',
       class: 'btn small gold',
@@ -2955,9 +2946,8 @@ function generateWordDocObservation(rep, child, secName, brName) {
       class: 'oep-preview-utilities-bar no-print',
       hidden: !activeMode
     },
-      h('span', { class: 'muted small', text: 'معاينة التقرير مفتوحة — اضغط على زر التقرير أو «إخفاء المعاينة» لإغلاقها:' }),
+      h('span', { class: 'muted small', text: 'معاينة التقرير مفتوحة — اضغط على زر التقرير مرة أخرى أو «إخفاء المعاينة» لإغلاقها:' }),
       h('div', { class: 'row-actions' },
-        fitScreenBtn,
         printBtn,
         closePreviewBtn
       )
@@ -2983,21 +2973,31 @@ function generateWordDocObservation(rep, child, secName, brName) {
     }
 
     function updateParentViewMode() {
-      paperEl.className = 'official-eval-paper'
-        + (activeMode ? (' mode-' + activeMode) : ' is-collapsed-preview')
-        + (isFitScreen ? ' oep-fit-computer-screen' : '');
+      paperEl.className = 'official-eval-paper oep-fit-computer-screen'
+        + (activeMode ? (' mode-' + activeMode) : ' is-collapsed-preview');
 
       updateParentTabRowState(pTab1, 'notes');
       updateParentTabRowState(pTab2, 'statistics');
 
       previewUtilitiesBar.hidden = !activeMode;
-      writtenReportSection.hidden = (activeMode !== 'notes');
-      quantitativeReportSection.hidden = (activeMode !== 'statistics');
+
+      previewMountHost.textContent = '';
+      if (!activeMode) {
+        previewMountHost.hidden = true;
+      } else {
+        previewMountHost.hidden = false;
+        if (activeMode === 'notes') {
+          writtenReportSection.hidden = false;
+          previewMountHost.appendChild(writtenReportSection);
+        } else if (activeMode === 'statistics') {
+          quantitativeReportSection.hidden = false;
+          previewMountHost.appendChild(quantitativeReportSection);
+        }
+      }
     }
 
     paperEl.appendChild(topActionsBar);
-    paperEl.appendChild(writtenReportSection);
-    paperEl.appendChild(quantitativeReportSection);
+    paperEl.appendChild(previewMountHost);
 
     updateParentViewMode();
     return paperEl;
@@ -3715,7 +3715,7 @@ function generateWordDocObservation(rep, child, secName, brName) {
 async function init() {
       // التحقق من تحديث النسخة وتفريغ الذاكرة المؤقتة التلقائي
       try {
-        var APP_VER = '90';
+        var APP_VER = 'v98';
         if (localStorage.getItem('de_app_ver') !== APP_VER) {
           if ('caches' in window) {
             caches.keys().then(function (names) {
