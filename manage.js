@@ -2896,20 +2896,14 @@
     });
   }
 
-    /* =====================================================================
-     4. نظام البرامج الأسبوعية الاحترافي الشامل — دار الإحسان (Weekly Programs System)
-     - الورقة الأسبوعية تظهر مباشرة أمام الموظف عند الدخول للقسم.
-     - خانات الحصص فارغة وجاهزة للتعبئة (نظيفة وجديدة).
-     - تعبئة الخانات بالنقر عليها بنافذة أنيقة تدعم:
-       1) الاختيار من المكتبة البيداغوجية الحقيقية (المجال -> المهارات التابعة له فقط وتحديث تلقائي).
-       2) الملء اليدوي المستقل.
-       3) الأنشطة اليومية والفترات الخاصة (الأكل، الاستراحة، النظافة...).
-     - إمكانية دمج عدة خانات متجاورة (خانتين أو ثلاث أو أكثر) وتعديلها وإلغاء الدمج.
-     - التحكم الكامل في التوقيتات وإعادة ترتيب الجدول وحل التداخلات.
-     - هوية دار الإحسان وألوان Forest والأيقونات الموحدة (بدون إيموجي).
-     - إخراج ومعاينة PDF احترافي A4 أفقي Landscape مطابق للورقة الأصلية.
-     - النشر التلقائي في فضاء الأولياء لفوج الطفل المعني فقط مع إشعار مناسب.
-     - مشاركة البرنامج عبر WhatsApp Cloud API الموجود في المشروع.
+      /* =====================================================================
+     4. نظام البرنامج المؤقت الأسبوعي الاحترافي — دار الإحسان (Weekly Timetable)
+     - الورقة الأسبوعية تظهر مباشرة أمام الموظف مطابقة للورقة الأصلية (23499.jpg).
+     - التوقيتات تُعدّل في مكانها مباشرة في ترويسة الجدول (Inline Editing) دون نوافذ منبثقة.
+     - خيارات التعديل وتعبئة الخانات موزعة على العرض (Horizontal Layout) وواسعة.
+     - إمكانية دمج خانات متجاورة في نفس اليوم أو بين الأيام (دمج أفقي ورأسي).
+     - معاينة مطابقة تماماً للورقة الرسمية وحجم الخانات متناسق وغير مبالغ فيه.
+     - النشر التلقائي في فضاء الأولياء لفوج الطفل المعني فقط وحفظ المسودات وسجل التعديلات.
      ===================================================================== */
 
   var WEEK_DAYS = [
@@ -2920,26 +2914,45 @@
     { key: 'thu', label: 'الخميس' }
   ];
 
+  /* التوقيتات الرسمية المعتمدة كما في الورقة 23499.jpg */
   var DEFAULT_WEEK_TIME_SLOTS = [
     { id: 0, start: '08:00', end: '08:30', period: 'morning', label: '08:00 - 08:30', duration: 30 },
-    { id: 1, start: '08:30', end: '09:30', period: 'morning', label: '08:30 - 09:30', duration: 60 },
-    { id: 2, start: '09:30', end: '10:00', period: 'morning', label: '09:30 - 10:00', duration: 30 },
-    { id: 3, start: '10:00', end: '11:00', period: 'morning', label: '10:00 - 11:00', duration: 60 },
-    { id: 4, start: '11:00', end: '11:30', period: 'morning', label: '11:00 - 11:30', duration: 30 },
-    { id: 5, start: '11:30', end: '12:30', period: 'morning', label: '11:30 - 12:30', duration: 60 },
-    { id: 6, start: '12:30', end: '13:30', period: 'afternoon', label: '12:30 - 13:30', duration: 60 },
-    { id: 7, start: '13:30', end: '14:00', period: 'afternoon', label: '13:30 - 14:00', duration: 30 }
+    { id: 1, start: '08:30', end: '09:00', period: 'morning', label: '08:30 - 09:00', duration: 30 },
+    { id: 2, start: '09:00', end: '09:45', period: 'morning', label: '09:00 - 09:45', duration: 45 },
+    { id: 3, start: '09:45', end: '10:30', period: 'morning', label: '09:45 - 10:30', duration: 45 },
+    { id: 4, start: '10:30', end: '11:00', period: 'morning', label: '10:30 - 11:00', duration: 30 },
+    { id: 5, start: '11:00', end: '12:00', period: 'morning', label: '11:00 - 12:00', duration: 60 },
+    { id: 6, start: '12:00', end: '12:45', period: 'afternoon', label: '12:00 - 12:45', duration: 45 },
+    { id: 7, start: '12:45', end: '13:40', period: 'afternoon', label: '12:45 - 13:40', duration: 55 },
+    { id: 8, start: '13:40', end: '14:00', period: 'afternoon', label: '13:40 - 14:00', duration: 20 }
+  ];
+
+  /* قائمة الأنشطة والمجالات الإرشادية للحجم الساعي كما في الورقة الأصلية 23499.jpg */
+  var OFFICIAL_LOAD_SUMMARY = [
+    { code: 'ATM*', name: 'الأنشطة التعليمية', count: '01', duration: '15min', color: '#F3E8FF' },
+    { code: 'MT*', name: 'الحركية الدقيقة', count: '05', duration: '30-45min', color: '#DBEAFE' },
+    { code: 'P*A', name: 'الاستقلالية', count: '08', duration: '45min', color: '#BFDBFE' },
+    { code: 'Intg', name: 'التكامل الحسي', count: '01', duration: '45min', color: '#CFFAFE' },
+    { code: 'L99 (E)', name: 'اللغة والتواصل', count: '02', duration: '45min', color: '#E0E7FF' },
+    { code: 'Pst G', name: 'المعرفي الأكاديمي', count: '01', duration: '45min', color: '#D1FAE5' },
+    { code: 'Act stim', name: 'الاستثارة والأنشطة', count: '03', duration: '30-45min', color: '#FEF08A' },
+    { code: 'RELX', name: 'الاستراحة والاسترخاء', count: '01', duration: '30min', color: '#FBCFE8' },
+    { code: 'ACQS', name: 'المهارات المكتسبة', count: '01', duration: '30min', color: '#F5D0FE' },
+    { code: 'PERCP', name: 'الإدراك والتفاعل', count: '02', duration: '30-45min', color: '#E9D5FF' },
+    { code: 'المجموع', name: 'الحجم الإجمالي', count: '25 حصة', duration: '25H أسبوعياً', color: '#F1F5F9' }
   ];
 
   var DEFAULT_DAILY_ACTIVITIES = [
-    'الأكل',
-    'وجبة خفيفة',
-    'الغداء',
+    'الاعتماد على الذات',
+    'رياضة',
     'الاستراحة',
+    'وجبة خفيفة',
+    'الأكل',
+    'الغداء',
     'النظافة',
-    'الصلاة',
-    'الانتقال',
     'اللعب الحر',
+    'ركن الرمل/ركن الماء',
+    'التحضير للخروج',
     'الاستقبال',
     'الانصراف',
     'نشاط خارجي'
@@ -2998,12 +3011,96 @@
     return diff > 0 ? diff : 30;
   }
 
-  function createEmptyWeekState(secId, secName) {
+  /* تهيئة ورقة أسبوعية جديدة مطابقة تماماً للورقة الأصلية 23499.jpg مع خانات مهيأة */
+  function createOfficialPresetWeekState(secId, secName) {
     var nowIso = new Date().toISOString();
+    var sName = secName || 'توحد 02';
+
+    // الحصص الافتراضية المطابقة لورقة المركز الأصلية 23499.jpg
+    var defaultGrid = {
+      sun: [
+        { slot_id: 0, rowspan: 5, colspan: 1, kind: 'activity', activity: 'الاعتماد على الذات', title: 'الاعتماد على الذات' },
+        { slot_id: 1, rowspan: 5, colspan: 1, kind: 'empty' }, // covered by rowspan
+        { slot_id: 2, rowspan: 2, colspan: 1, kind: 'activity', activity: 'رياضة', title: 'رياضة' },
+        { slot_id: 3, rowspan: 1, colspan: 1, kind: 'library', domain: 'المجال المعرفي', skill: 'الإدراك والتواصل', title: 'المجال المعرفي' },
+        { slot_id: 4, rowspan: 1, colspan: 1, kind: 'library', domain: 'مجال الاستقلالية', skill: 'تنمية مهارات الطلب', title: 'تنمية مهارات الطلب' },
+        { slot_id: 5, rowspan: 1, colspan: 1, kind: 'library', domain: 'مجال الاستقلالية', skill: 'استقلالية ووجبة', title: 'استقلالية' },
+        { slot_id: 6, rowspan: 1, colspan: 1, kind: 'library', domain: 'المجال المعرفي', skill: 'الأداء البصري', title: 'الأداء البصري' },
+        { slot_id: 7, rowspan: 1, colspan: 1, kind: 'library', domain: 'المجال المعرفي', skill: 'الإدراك الحسي', title: 'الإدراك' },
+        { slot_id: 8, rowspan: 5, colspan: 1, kind: 'activity', activity: 'التحضير للخروج', title: 'التحضير للخروج' }
+      ],
+      mon: [
+        { slot_id: 0, rowspan: 1, colspan: 1, kind: 'empty' },
+        { slot_id: 1, rowspan: 1, colspan: 1, kind: 'empty' },
+        { slot_id: 2, rowspan: 1, colspan: 1, kind: 'library', domain: 'المجال المعرفي', skill: 'الانتباه والتركيز', title: 'الانتباه والتركيز' },
+        { slot_id: 3, rowspan: 1, colspan: 1, kind: 'library', domain: 'مجال التواصل واللغة', skill: 'اللغة الاستقبالية pecs', title: 'اللغة الاستقبالية pecs' },
+        { slot_id: 4, rowspan: 1, colspan: 1, kind: 'activity', activity: 'EQUITATION', title: 'EQUITATION ركوب الخيل' },
+        { slot_id: 5, rowspan: 1, colspan: 1, kind: 'library', domain: 'مجال الاستقلالية', skill: 'التكامل الحسي', title: 'التكامل الحسي' },
+        { slot_id: 6, rowspan: 1, colspan: 1, kind: 'activity', activity: 'حصة استرخاء', title: 'حصة استرخاء' },
+        { slot_id: 7, rowspan: 1, colspan: 1, kind: 'library', domain: 'المجال المعرفي', skill: 'التواصل البصري', title: 'التواصل البصري' },
+        { slot_id: 8, rowspan: 1, colspan: 1, kind: 'empty' }
+      ],
+      tue: [
+        { slot_id: 0, rowspan: 1, colspan: 1, kind: 'empty' },
+        { slot_id: 1, rowspan: 1, colspan: 1, kind: 'empty' },
+        { slot_id: 2, rowspan: 1, colspan: 1, kind: 'library', domain: 'المجال المعرفي', skill: 'انتباه بصري سمعي لمسي', title: 'انتباه بصري سمعي لمسي' },
+        { slot_id: 3, rowspan: 1, colspan: 1, kind: 'library', domain: 'مجال التواصل واللغة', skill: 'تقليد لفظي', title: 'تقليد لفظي' },
+        { slot_id: 4, rowspan: 1, colspan: 1, kind: 'activity', activity: 'ركن الرمل/ركن الماء', title: 'ركن الرمل/ركن الماء' },
+        { slot_id: 5, rowspan: 1, colspan: 1, kind: 'library', domain: 'المجال الاجتماعي', skill: 'التفاعل الاجتماعي', title: 'التفاعل الاجتماعي' },
+        { slot_id: 6, rowspan: 1, colspan: 1, kind: 'activity', activity: 'التلوين/أعمال تطبيقية', title: 'التلوين/أعمال تطبيقية' },
+        { slot_id: 7, rowspan: 1, colspan: 1, kind: 'activity', activity: 'الحسية / استرخاء', title: 'الحسية / استرخاء' },
+        { slot_id: 8, rowspan: 1, colspan: 1, kind: 'empty' }
+      ],
+      wed: [
+        { slot_id: 0, rowspan: 1, colspan: 1, kind: 'empty' },
+        { slot_id: 1, rowspan: 1, colspan: 1, kind: 'empty' },
+        { slot_id: 2, rowspan: 1, colspan: 1, kind: 'library', domain: 'مجال التواصل واللغة', skill: 'لغة استقبالية / تعرف تطابق', title: 'لغة استقبالية / تعرف تطابق' },
+        { slot_id: 3, rowspan: 1, colspan: 1, kind: 'library', domain: 'المجال الحركي', skill: 'حركة دقيقة', title: 'حركة دقيقة' },
+        { slot_id: 4, rowspan: 1, colspan: 1, kind: 'library', domain: 'المجال المعرفي', skill: 'تنمية المهارات الانتباه والتركيز', title: 'تنمية المهارات الانتباه والتركيز' },
+        { slot_id: 5, rowspan: 1, colspan: 1, kind: 'activity', activity: 'GYM DES DOIGTS إعادة تشكيل بالعجينة', title: 'GYM DES DOIGTS' },
+        { slot_id: 6, rowspan: 1, colspan: 1, kind: 'library', domain: 'المجال المعرفي', skill: 'التواصل البصري', title: 'التواصل البصري' },
+        { slot_id: 7, rowspan: 1, colspan: 1, kind: 'library', domain: 'المجال المعرفي', skill: 'مهارات الانتباه (بصري / سمعي)', title: 'مهارات الانتباه (بصري / سمعي)' },
+        { slot_id: 8, rowspan: 1, colspan: 1, kind: 'empty' }
+      ],
+      thu: [
+        { slot_id: 0, rowspan: 1, colspan: 1, kind: 'empty' },
+        { slot_id: 1, rowspan: 1, colspan: 1, kind: 'empty' },
+        { slot_id: 2, rowspan: 1, colspan: 1, kind: 'library', domain: 'المجال الحركي', skill: 'تنمية التآزر البصري الحركي', title: 'تنمية التآزر البصري الحركي' },
+        { slot_id: 3, rowspan: 1, colspan: 1, kind: 'library', domain: 'مجال التقليد', skill: 'تقليد حركي', title: 'تقليد حركي' },
+        { slot_id: 4, rowspan: 1, colspan: 1, kind: 'library', domain: 'مجال التواصل واللغة', skill: 'مجال الحسي QT', title: 'مجال الحسي QT' },
+        { slot_id: 5, rowspan: 1, colspan: 1, kind: 'activity', activity: 'تعميم', title: 'تعميم' },
+        { slot_id: 6, rowspan: 1, colspan: 1, kind: 'activity', activity: 'ورشات قص / لصق', title: 'ورشات قص / لصق' },
+        { slot_id: 7, rowspan: 1, colspan: 1, kind: 'activity', activity: 'التحضير للخروج', title: 'أشغال' },
+        { slot_id: 8, rowspan: 1, colspan: 1, kind: 'empty' }
+      ]
+    };
+
+    var slots = DEFAULT_WEEK_TIME_SLOTS.map(function (ts) { return Object.assign({}, ts); });
+
+    var days = WEEK_DAYS.map(function (wd) {
+      var dSessions = (defaultGrid[wd.key] || []).map(function (s) {
+        var baseSlot = slots[s.slot_id] || { start: '08:00', end: '08:30' };
+        return {
+          slot_id: s.slot_id,
+          start: baseSlot.start,
+          end: baseSlot.end,
+          colspan: s.colspan || 1,
+          rowspan: s.rowspan || 1,
+          kind: s.kind || 'empty',
+          domain: s.domain || '',
+          skill: s.skill || '',
+          title: s.title || '',
+          manual_text: s.manual_text || '',
+          activity: s.activity || ''
+        };
+      });
+      return { day: wd.key, label: wd.label, sessions: dSessions };
+    });
+
     return {
       id: null,
       section_id: secId || '',
-      section_name: secName || 'الفوج التربوي',
+      section_name: sName,
       academic_year: '2026/2027',
       status: 'draft',
       published_at: null,
@@ -3014,28 +3111,8 @@
       educator_name: '',
       supervisor_name: '',
       director_name: '',
-      time_slots: DEFAULT_WEEK_TIME_SLOTS.map(function (ts) { return Object.assign({}, ts); }),
-      days: WEEK_DAYS.map(function (wd) {
-        return {
-          day: wd.key,
-          label: wd.label,
-          sessions: DEFAULT_WEEK_TIME_SLOTS.map(function (ts) {
-            return {
-              slot_id: ts.id,
-              start: ts.start,
-              end: ts.end,
-              span: 1,
-              merged_slot_ids: [ts.id],
-              kind: 'empty',
-              domain: '',
-              skill: '',
-              title: '',
-              manual_text: '',
-              activity: ''
-            };
-          })
-        };
-      })
+      time_slots: slots,
+      days: days
     };
   }
 
@@ -3056,7 +3133,7 @@
             id: ts.id != null ? ts.id : idx,
             start: ts.start || '08:00',
             end: ts.end || '08:30',
-            period: ts.period || (timeToMinutes(ts.start) >= 750 ? 'afternoon' : 'morning'),
+            period: ts.period || (timeToMinutes(ts.start) >= 720 ? 'afternoon' : 'morning'),
             label: (ts.start || '08:00') + ' - ' + (ts.end || '08:30'),
             duration: ts.duration || calcDurationMins(ts.start, ts.end)
           };
@@ -3064,9 +3141,15 @@
       : DEFAULT_WEEK_TIME_SLOTS.map(function (ts) { return Object.assign({}, ts); });
 
     var days = WEEK_DAYS.map(function (wd) {
-      var foundDay = Array.isArray(rawSched)
-        ? rawSched.filter(function (r) { return r && (r.day === wd.key || r.label === wd.label || (wd.key === 'mon' && r.label === 'الاثنين')); })[0]
-        : null;
+      var foundDay = null;
+      if (Array.isArray(rawSched)) {
+        foundDay = rawSched.filter(function (r) { return r && (r.day === wd.key || r.label === wd.label || (wd.key === 'mon' && r.label === 'الاثنين')); })[0];
+        if (!foundDay && rawSched[0] && Array.isArray(rawSched[0].days)) {
+          foundDay = rawSched[0].days.filter(function (r) { return r && (r.day === wd.key || r.label === wd.label || (wd.key === 'mon' && r.label === 'الاثنين')); })[0];
+        }
+      } else if (rawSched && Array.isArray(rawSched.days)) {
+        foundDay = rawSched.days.filter(function (r) { return r && (r.day === wd.key || r.label === wd.label || (wd.key === 'mon' && r.label === 'الاثنين')); })[0];
+      }
 
       var rawSess = (foundDay && Array.isArray(foundDay.sessions)) ? foundDay.sessions : [];
       var sessions = [];
@@ -3081,14 +3164,14 @@
             slot_id: s.slot_id,
             start: s.start || '08:00',
             end: s.end || '08:30',
-            span: s.span || 1,
-            merged_slot_ids: s.merged_slot_ids || [s.slot_id],
+            colspan: s.colspan || s.span || 1,
+            rowspan: s.rowspan || 1,
             kind: k,
             domain: s.domain || '',
             skill: s.skill || '',
             title: s.title || (isLib ? (s.domain + ' — ' + s.skill) : (isAct ? s.activity : s.manual_text)) || '',
-            manual_text: s.manual_text || (!isLib && !isAct ? s.title : ''),
-            activity: s.activity || (isAct ? s.title : '')
+            manual_text: s.manual_text || '',
+            activity: s.activity || ''
           };
         });
       } else {
@@ -3100,14 +3183,13 @@
             var isAct = (matching.kind === 'activity' || matching.kind === 'break');
             var isLib = !!(matching.domain && matching.skill);
             var isMan = !isAct && !isLib && !!(matching.title || matching.manual_text);
-            var k = isLib ? 'library' : (isAct ? 'activity' : (isMan ? 'manual' : 'empty'));
             sessions.push({
               slot_id: ts.id,
               start: ts.start,
               end: ts.end,
-              span: 1,
-              merged_slot_ids: [ts.id],
-              kind: k,
+              colspan: 1,
+              rowspan: 1,
+              kind: isLib ? 'library' : (isAct ? 'activity' : (isMan ? 'manual' : 'empty')),
               domain: matching.domain || '',
               skill: matching.skill || (matching.items && matching.items[0] && matching.items[0].skill) || '',
               title: matching.title || '',
@@ -3119,8 +3201,8 @@
               slot_id: ts.id,
               start: ts.start,
               end: ts.end,
-              span: 1,
-              merged_slot_ids: [ts.id],
+              colspan: 1,
+              rowspan: 1,
               kind: 'empty',
               domain: '',
               skill: '',
@@ -3167,39 +3249,35 @@
     var rows = allProgs.filter(function (p) { return !p.section_id || !!secIdsMap[p.section_id]; });
     var secOpts = sections.map(function (s) { return [s.id, s.name]; });
 
-    // حالة البرنامج الحالية المعروضة مباشرة في الصفحة:
-    // إذا كان هناك برامج سابقة نعرض أحدث برنامج، وإلا نبدأ فوراً بورقة أسبوعية جديدة بجميع الخانات فارغة
     var currentSelectedProg = rows[0] || null;
-    var currentWeekState = currentSelectedProg ? parseExistingProgramState(currentSelectedProg, sections) : createEmptyWeekState(sections[0] ? sections[0].id : '', sections[0] ? sections[0].name : 'الفوج التربوي');
+    var currentWeekState = currentSelectedProg ? parseExistingProgramState(currentSelectedProg, sections) : createOfficialPresetWeekState(sections[0] ? sections[0].id : '', sections[0] ? sections[0].name : 'توحد 02');
 
-    // وضع التحديد لدمج الخانات
+    // وضع التحديد لدمج الخانات (يدعم الدمج الأفقي والرأسي بين الأيام)
     var isMergeMode = false;
-    var mergeSelectedCells = {}; // مفاتيح مثل "sun:1"
+    var mergeSelectedCells = {}; // مثل "sun:0" : { dayIdx: 0, slotIdx: 0 }
 
     function getSecName() {
       return (sections && nameOf(sections, currentWeekState.section_id, 'name')) || currentWeekState.section_name || 'الفوج التربوي';
     }
 
-    // بناء الواجهة الرئيسية لقسم البرامج الأسبوعية
     var mainContainer = h('div', { class: 'wk-programs-main-wrap', style: 'display:flex; flex-direction:column; gap:16px;' });
     v.appendChild(mainContainer);
 
     function renderFullView() {
       mainContainer.textContent = '';
 
-      // 1. الترويسة وشريط الأدوات الأساسي النظيف
+      // 1. الترويسة العلوية الأنيقة وأزرار التحكم
       var groupSelect = h('select', {
         class: 'input',
         style: 'font-weight:700; color:#14532D; min-width:180px;',
         onchange: function (e) {
           currentWeekState.section_id = e.target.value;
           currentWeekState.section_name = getSecName();
-          // فحص إن كان للفوج برنامج موجود
           var progForSec = rows.filter(function (r) { return r.section_id === currentWeekState.section_id; })[0];
           if (progForSec) {
             currentWeekState = parseExistingProgramState(progForSec, sections);
           } else {
-            currentWeekState = createEmptyWeekState(currentWeekState.section_id, currentWeekState.section_name);
+            currentWeekState = createOfficialPresetWeekState(currentWeekState.section_id, currentWeekState.section_name);
           }
           renderFullView();
         }
@@ -3215,41 +3293,30 @@
         onchange: function (e) { currentWeekState.academic_year = e.target.value; }
       });
 
-      // زر ورقة جديدة فارغة
       var newBlankBtn = h('button', {
         type: 'button',
         class: 'btn light',
-        title: 'إنشاء ورقة أسبوعية جديدة بجميع الخانات فارغة',
+        title: 'استعادة النموذج الأسبوعي المعتمد',
         onclick: function () {
-          currentWeekState = createEmptyWeekState(currentWeekState.section_id, getSecName());
+          currentWeekState = createOfficialPresetWeekState(currentWeekState.section_id, getSecName());
           isMergeMode = false;
           mergeSelectedCells = {};
           renderFullView();
-          toast('تم فتح ورقة أسبوعية جديدة بجميع الخانات فارغة.', 'ok');
+          toast('تم تحميل نموذج البرنامج المؤقت الأسبوعي بنجاح.', 'ok');
         }
-      }, makeSvgIcon('s-plus'), h('span', { text: 'ورقة جديدة فارغة' }));
+      }, makeSvgIcon('s-plus'), h('span', { text: 'النموذج الرسمي المعتمد' }));
 
-      // زر دمج الخانات المتجاورة
       var mergeToggleBtn = h('button', {
         type: 'button',
         class: 'btn ' + (isMergeMode ? 'gold' : 'light'),
-        title: 'تحديد خانات متجاورة لدمجها معاً',
+        title: 'تحديد خانات لدمجها (في نفس اليوم أو بين الأيام)',
         onclick: function () {
           isMergeMode = !isMergeMode;
           mergeSelectedCells = {};
           renderFullView();
         }
-      }, makeSvgIcon('s-merge'), h('span', { text: isMergeMode ? 'إلغاء وضع الدمج' : 'دمج الخانات' }));
+      }, makeSvgIcon('s-merge'), h('span', { text: isMergeMode ? 'إلغاء وضع الدمج' : 'دمج الخانات (أفقي ورأسي)' }));
 
-      // زر تعديل التوقيتات
-      var timeConfigBtn = h('button', {
-        type: 'button',
-        class: 'btn light',
-        title: 'التحكم في التوقيتات والمدد والفترات',
-        onclick: function () { openTimeSlotsManagerModal(); }
-      }, makeSvgIcon('s-clock'), h('span', { text: 'التحكم في التوقيتات' }));
-
-      // زر حفظ مسودة
       var saveDraftBtn = h('button', {
         type: 'button',
         class: 'btn light',
@@ -3257,15 +3324,13 @@
         onclick: function () { act(saveDraftBtn, function () { return saveProgramAction(false); }); }
       }, makeSvgIcon('s-edit'), h('span', { text: 'حفظ مسودة' }));
 
-      // زر معاينة PDF
       var previewPdfBtn = h('button', {
         type: 'button',
         class: 'btn light',
-        title: 'معاينة الوثيقة الرسمية للبرنامج الأسبوعي بصيغة PDF A4 Landscape',
+        title: 'معاينة الوثيقة الرسمية للبرنامج الأسبوعي المطابقة تماماً لورقة 23499.jpg',
         onclick: function () { openPdfLandscapePreviewModal(); }
-      }, makeSvgIcon('s-eye'), h('span', { text: 'معاينة PDF' }));
+      }, makeSvgIcon('s-eye'), h('span', { text: 'معاينة PDF (A4 أفقي)' }));
 
-      // زر نشر البرنامج
       var publishBtn = h('button', {
         type: 'button',
         class: 'btn gold',
@@ -3274,7 +3339,6 @@
         onclick: function () { act(publishBtn, function () { return saveProgramAction(true); }); }
       }, makeSvgIcon('s-send'), h('span', { text: 'نشر البرنامج للأولياء' }));
 
-      // شريط أعلى الورقة
       var topBarCard = h('div', {
         class: 'card wk-top-hero-card',
         style: 'display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; padding:16px 20px; background:linear-gradient(135deg, #F8FAF9 0%, #FFFFFF 100%); border:1px solid #CBD5E1; border-radius:14px;'
@@ -3282,7 +3346,7 @@
         h('div', { style: 'display:flex; align-items:center; gap:14px; flex-wrap:wrap;' },
           h('div', { style: 'display:flex; align-items:center; gap:8px;' },
             makeSvgIcon('s-cal'),
-            h('h2', { style: 'margin:0; color:#14532D; font-size:1.35rem;', text: 'البرنامج الأسبوعي' })
+            h('h2', { style: 'margin:0; color:#14532D; font-size:1.35rem;', text: 'البرنامج المؤقت الأسبوعي' })
           ),
           h('div', { style: 'display:flex; align-items:center; gap:8px;' },
             h('span', { class: 'small muted', text: 'الفوج:' }),
@@ -3297,7 +3361,6 @@
         h('div', { style: 'display:flex; align-items:center; gap:8px; flex-wrap:wrap;' },
           newBlankBtn,
           mergeToggleBtn,
-          timeConfigBtn,
           saveDraftBtn,
           previewPdfBtn,
           publishBtn
@@ -3312,7 +3375,7 @@
           type: 'button',
           class: 'btn gold',
           disabled: selectedCount < 2,
-          onclick: function () { executeMergeSelection(); }
+          onclick: function () { executeMultiDirectionalMerge(); }
         }, makeSvgIcon('s-merge'), h('span', { text: 'دمج الخانات المحددة (' + selectedCount + ')' }));
 
         var mergeBanner = h('div', {
@@ -3320,7 +3383,7 @@
         },
           h('div', { style: 'display:flex; align-items:center; gap:10px;' },
             makeSvgIcon('s-merge'),
-            h('span', { style: 'color:#92400E; font-weight:700; font-size:14px;', text: 'وضع دمج الخانات مفعل: اضغط على خانتين متجاورتين أو أكثر في نفس اليوم ثم اضغط على «دمج الخانات المحددة».' })
+            h('span', { style: 'color:#92400E; font-weight:700; font-size:14px;', text: 'وضع دمج الخانات مفعل: اضغط على خانات متجاورة أفقياً (في نفس اليوم) أو رأسياً (بين الأيام لنفس التوقيت مثل حصة الاعتماد على الذات أو رياضة) ثم اضغط دمج.' })
           ),
           h('div', { style: 'display:flex; gap:8px;' },
             executeMergeBtn,
@@ -3335,216 +3398,306 @@
         mainContainer.appendChild(mergeBanner);
       }
 
-      // 2. ورقة البرنامج الأسبوعي التفاعلية (مطابقة تماماً للورقة الأصلية)
+      // 2. بطاقة ورقة البرنامج الأسبوعي المطابقة تماماً للورقة الأصلية 23499.jpg
       var sheetPaperCard = h('div', {
         class: 'card wk-interactive-sheet-paper',
-        style: 'padding:20px; background:#FFFFFF; border:2px solid #14532D; border-radius:16px; box-shadow:0 8px 30px rgba(20,83,45,0.06); overflow-x:auto;'
+        style: 'padding:22px; background:#FFFFFF; border:2px solid #14532D; border-radius:16px; box-shadow:0 8px 30px rgba(20,83,45,0.06); overflow-x:auto;'
       });
 
-      // أ) الترويسة الرسمية للورقة المطابقة للنموذج الأصلي
+      // أ) ترويسة الورقة الرسمية (الجمعية - المركز - اسم الوثيقة - الفوج - الموسم)
       var sheetHeader = h('div', {
-        style: 'display:grid; grid-template-columns:1fr 2fr 1fr; align-items:center; gap:12px; padding-bottom:14px; margin-bottom:14px; border-bottom:2px solid #CBD5E1;'
+        style: 'display:grid; grid-template-columns:1fr 2fr 1fr; align-items:center; gap:12px; padding-bottom:14px; margin-bottom:14px; border-bottom:2px solid #14532D;'
       },
-        // الطرف الأيمن: الجمعية والمركز
         h('div', { style: 'text-align:right;' },
           h('h4', { style: 'margin:0 0 2px; color:#14532D; font-size:15px;', text: 'جمعية أولياء الأطفال المعاقين ذهنيًا' }),
           h('h5', { style: 'margin:0 0 2px; color:#064E3B; font-size:13.5px;', text: 'المركز النفسي البيداغوجي دار الإحسان' }),
           h('span', { class: 'small muted', text: 'العطف — غرداية' })
         ),
-        // الوسط: العنوان الرئيسي ورقم الفوج
         h('div', { style: 'text-align:center;' },
           h('h2', {
             style: 'margin:0 0 4px; color:#14532D; font-size:1.6rem; letter-spacing:0.5px; font-weight:900;',
-            text: 'البرنامج الأسبوعي'
+            text: 'البرنامج المؤقت الأسبوعي'
           }),
           h('div', {
             style: 'display:inline-block; background:#FEF3C7; color:#92400E; border:1px solid #F59E0B; padding:3px 18px; border-radius:20px; font-weight:800; font-size:14px;',
-            text: 'الفوج / الوحدة: ' + getSecName()
+            text: 'الفوج: ' + getSecName()
           })
         ),
-        // الطرف الأيسر: الموسم الدراسي والتوقيت
         h('div', { style: 'text-align:left;' },
           h('div', { style: 'font-weight:700; color:#14532D; font-size:13.5px;', text: 'الموسم الدراسي: ' + (currentWeekState.academic_year || '2026/2027') }),
-          h('div', { class: 'small muted', text: 'التوقيت اليومي: ' + (currentWeekState.day_start || '08:00') + ' إلى ' + (currentWeekState.day_end || '14:00') })
+          h('div', { class: 'small muted', text: 'التوقيت: ' + (currentWeekState.day_start || '08:00') + ' إلى ' + (currentWeekState.day_end || '14:00') })
         )
       );
       sheetPaperCard.appendChild(sheetHeader);
 
-      // ب) جدول الحصص الأسبوعي المطابق للورقة
+      // ب) جدول ملخص الأنشطة والأنصبة الأسبوعية في أعلى الورقة (مطابق لـ 23499.jpg)
+      var loadTable = h('table', {
+        style: 'width:100%; border-collapse:collapse; border:1px solid #CBD5E1; margin-bottom:14px; text-align:center; font-size:12px;'
+      });
+      var trLoad1 = h('tr', null,
+        h('th', { style: 'background:#14532D; color:#fff; padding:5px; border:1px solid #CBD5E1; width:90px;', text: 'الأنشطة التعليمية' }),
+        OFFICIAL_LOAD_SUMMARY.map(function (it) {
+          return h('td', { style: 'background:' + it.color + '; border:1px solid #CBD5E1; font-weight:800; padding:4px;', text: it.code });
+        })
+      );
+      var trLoad2 = h('tr', null,
+        h('th', { style: 'background:#F8FAF9; color:#1E293B; padding:5px; border:1px solid #CBD5E1;', text: 'الحجم الساعي' }),
+        OFFICIAL_LOAD_SUMMARY.map(function (it) {
+          return h('td', { style: 'border:1px solid #CBD5E1; font-weight:700; padding:3px; font-size:11px;', text: it.duration });
+        })
+      );
+      var trLoad3 = h('tr', null,
+        h('th', { style: 'background:#F8FAF9; color:#1E293B; padding:5px; border:1px solid #CBD5E1;', text: 'عدد الحصص' }),
+        OFFICIAL_LOAD_SUMMARY.map(function (it) {
+          return h('td', { style: 'border:1px solid #CBD5E1; font-weight:700; padding:3px;', text: it.count });
+        })
+      );
+      loadTable.appendChild(trLoad1);
+      loadTable.appendChild(trLoad2);
+      loadTable.appendChild(trLoad3);
+      sheetPaperCard.appendChild(loadTable);
+
+      // ج) جدول الحصص الأسبوعي الرئيسي
       var tableEl = h('table', {
         class: 'wk-sheet-table',
         style: 'width:100%; border-collapse:collapse; border:2px solid #14532D; text-align:center; min-width:860px;'
       });
 
-      // صف تقسيم الفترات (الفترة الصباحية والفترة المسائية)
       var morningSlots = currentWeekState.time_slots.filter(function (s) { return s.period === 'morning'; });
       var afternoonSlots = currentWeekState.time_slots.filter(function (s) { return s.period === 'afternoon'; });
       if (!morningSlots.length) morningSlots = currentWeekState.time_slots.slice(0, 6);
       if (!afternoonSlots.length) afternoonSlots = currentWeekState.time_slots.slice(6);
 
       var theadEl = h('thead');
+
+      // 1. صف الفترات الصباحية والمسائية
       var trPeriods = h('tr', null,
         h('th', {
           rowspan: 2,
-          style: 'width:110px; background:#14532D; color:#FFFFFF; border:1.5px solid #0F3D2E; padding:10px 8px; font-size:15px; font-weight:800;',
+          style: 'width:90px; background:#14532D; color:#FFFFFF; border:1.5px solid #0F3D2E; padding:10px 4px; font-size:14px; font-weight:800;',
           text: 'اليوم'
         }),
         h('th', {
           colspan: morningSlots.length,
-          style: 'background:#ECFDF5; color:#064E3B; border:1.5px solid #10B981; padding:8px; font-size:14.5px; font-weight:800;',
-          text: 'الفترة الصباحية'
+          style: 'background:#ECFDF5; color:#064E3B; border:1.5px solid #10B981; padding:7px; font-size:14px; font-weight:800;',
+          text: 'الفترة الصباحية (08:00 — 12:00)'
         }),
         h('th', {
           colspan: afternoonSlots.length,
-          style: 'background:#FEF3C7; color:#92400E; border:1.5px solid #F59E0B; padding:8px; font-size:14.5px; font-weight:800;',
-          text: 'الفترة المسائية'
+          style: 'background:#FEF3C7; color:#92400E; border:1.5px solid #F59E0B; padding:7px; font-size:14px; font-weight:800;',
+          text: 'الفترة المسائية (12:00 — 14:00)'
         })
       );
       theadEl.appendChild(trPeriods);
 
-      // صف التوقيتات الدقيقة لكل خانة
+      // 2. صف التوقيتات في مكانه مباشرة (Inline Editing — تعديل في مكانه دون نوافذ منبثقة)
       var trTimes = h('tr', null,
-        currentWeekState.time_slots.map(function (slot) {
+        currentWeekState.time_slots.map(function (slot, slotIdx) {
+          // خلايا التوقيت في مكانها مباشرة: تظهر كنص أنيق وقابلة للتعديل عند النقر أو عبر مدخلات مدمجة
+          var timeBox = h('div', {
+            style: 'display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; padding:3px 2px;'
+          },
+            h('div', { style: 'display:flex; align-items:center; justify-content:center; gap:2px; direction:ltr;' },
+              h('input', {
+                type: 'time',
+                value: slot.start,
+                title: 'تعديل وقت البداية في مكانه',
+                style: 'border:1px solid #CBD5E1; border-radius:4px; padding:2px 3px; font-size:11.5px; font-weight:700; width:68px; text-align:center; background:#FFFFFF; font-family:inherit;',
+                onchange: function (e) {
+                  slot.start = e.target.value;
+                  slot.duration = calcDurationMins(slot.start, slot.end);
+                  syncDaySessionTimes();
+                  toast('تم تحديث التوقيت في مكانه.', 'ok');
+                }
+              }),
+              h('span', { style: 'font-weight:bold; color:#64748B; font-size:11px;', text: '-' }),
+              h('input', {
+                type: 'time',
+                value: slot.end,
+                title: 'تعديل وقت النهاية في مكانه',
+                style: 'border:1px solid #CBD5E1; border-radius:4px; padding:2px 3px; font-size:11.5px; font-weight:700; width:68px; text-align:center; background:#FFFFFF; font-family:inherit;',
+                onchange: function (e) {
+                  slot.end = e.target.value;
+                  slot.duration = calcDurationMins(slot.start, slot.end);
+                  syncDaySessionTimes();
+                  toast('تم تحديث التوقيت في مكانه.', 'ok');
+                }
+              })
+            ),
+            h('span', { style: 'font-size:10px; color:#64748B; font-weight:600;', text: slot.duration ? (slot.duration + ' د') : '' })
+          );
+
           return h('th', {
-            style: 'background:#F8FAF9; color:#1E293B; border:1.5px solid #CBD5E1; padding:7px 4px; font-size:12px; font-weight:700; direction:ltr;',
-            text: slot.start + ' - ' + slot.end
-          });
+            style: 'background:#F8FAF9; border:1.5px solid #CBD5E1; padding:4px 2px; vertical-align:middle;'
+          }, timeBox);
         })
       );
       theadEl.appendChild(trTimes);
       tableEl.appendChild(theadEl);
 
-      // جسم الجدول: 5 صفوف للأيام (الأحد إلى الخميس) مع الخانات الفارغة أو المعبأة أو المدمجة
+      // دالة مزامنة توقيتات الحصص مع ترويسة التوقيت المعدلة
+      function syncDaySessionTimes() {
+        currentWeekState.days.forEach(function (dy) {
+          (dy.sessions || []).forEach(function (s) {
+            var bs = currentWeekState.time_slots[s.slot_id];
+            if (bs) {
+              s.start = bs.start;
+              var endSlotIdx = Math.min(currentWeekState.time_slots.length - 1, s.slot_id + (s.colspan || 1) - 1);
+              s.end = currentWeekState.time_slots[endSlotIdx].end;
+            }
+          });
+        });
+      }
+
+      // جسم الجدول: الأيام الخمسة مع دعم الدمج الأفقي والرأسي (بين الأيام)
       var tbodyEl = h('tbody');
 
-      currentWeekState.days.forEach(function (dayObj) {
+      // مصفوفة لتتبع الخانات المغطاة بـ rowspan من الأيام السابقة لنفس slot_id
+      var coveredSlotsByDay = {}; // "dayIdx:slotId" : true
+
+      currentWeekState.days.forEach(function (dayObj, dayIdx) {
         var trDay = h('tr', null,
           h('td', {
-            style: 'background:#14532D; color:#FFFFFF; border:1.5px solid #0F3D2E; padding:12px 6px; font-weight:800; font-size:15px;',
+            style: 'background:#14532D; color:#FFFFFF; border:1.5px solid #0F3D2E; padding:10px 4px; font-weight:800; font-size:14px; width:90px;',
             text: dayObj.label
           })
         );
 
-        // رسم خانات اليوم مع دعم span للمدمجة
-        var renderedSlotCursor = 0;
-        dayObj.sessions.forEach(function (sess) {
-          var span = sess.span || 1;
-          var cellKey = dayObj.day + ':' + sess.slot_id;
-          var isSelectedForMerge = !!mergeSelectedCells[cellKey];
-
-          // تصميم الخانة حسب نوعها (فارغة / مكتبة / يدوي / نشاط يومي)
-          var cellBg = '#FFFFFF';
-          var cellBorder = '1.5px solid #CBD5E1';
-          var cellTextColor = '#1E293B';
-          var isFilled = (sess.kind && sess.kind !== 'empty');
-
-          if (isSelectedForMerge) {
-            cellBg = '#FEF3C7';
-            cellBorder = '2px dashed #D97706';
-          } else if (sess.kind === 'library') {
-            cellBg = '#F0FDF4';
-            cellBorder = '1.5px solid #10B981';
-            cellTextColor = '#064E3B';
-          } else if (sess.kind === 'activity') {
-            cellBg = '#FFFBEB';
-            cellBorder = '1.5px solid #F59E0B';
-            cellTextColor = '#92400E';
-          } else if (sess.kind === 'manual') {
-            cellBg = '#EFF6FF';
-            cellBorder = '1.5px solid #3B82F6';
-            cellTextColor = '#1E3A8A';
+        var sessions = dayObj.sessions || [];
+        sessions.forEach(function (sess, sessIdx) {
+          var coveredKey = dayIdx + ':' + sess.slot_id;
+          if (coveredSlotsByDay[coveredKey]) {
+            // الخانة مغطاة برمجياً من يوم سابق بواسطة rowspan
+            return;
           }
 
-          var tdCell = h('td', {
-            colspan: span,
-            style: 'background:' + cellBg + '; border:' + cellBorder + '; color:' + cellTextColor + '; padding:8px 6px; vertical-align:middle; cursor:pointer; height:68px; transition:all 0.15s ease;'
+          var colspan = sess.colspan || 1;
+          var rowspan = sess.rowspan || 1;
+
+          // وضع علامات التغطية للأيام اللاحقة إن كان هناك دمج بين الأيام (rowspan > 1)
+          if (rowspan > 1) {
+            for (var r = 1; r < rowspan; r++) {
+              for (var c = 0; c < colspan; c++) {
+                coveredSlotsByDay[(dayIdx + r) + ':' + (sess.slot_id + c)] = true;
+              }
+            }
+          }
+
+          var cellKey = dayObj.day + ':' + sess.slot_id;
+          var isSelected = !!mergeSelectedCells[cellKey];
+
+          // تصميم واحترافية الخانة: ألوان متناسقة وخفيفة، محتوى بحجم متناسب تماماً
+          var bg = '#FFFFFF';
+          var border = '1px solid #CBD5E1';
+          var textClr = '#1E293B';
+          var isFilled = (sess.kind && sess.kind !== 'empty');
+
+          if (isSelected) {
+            bg = '#FEF3C7';
+            border = '2px dashed #D97706';
+          } else if (sess.kind === 'activity') {
+            bg = '#FFFBEB';
+            border = '1.5px solid #F59E0B';
+            textClr = '#92400E';
+          } else if (sess.kind === 'library') {
+            bg = '#F0FDF4';
+            border = '1.5px solid #10B981';
+            textClr = '#064E3B';
+          } else if (sess.kind === 'manual') {
+            bg = '#EFF6FF';
+            border = '1.5px solid #3B82F6';
+            textClr = '#1E3A8A';
+          }
+
+          var td = h('td', {
+            colspan: colspan,
+            rowspan: rowspan,
+            style: 'background:' + bg + '; border:' + border + '; color:' + textClr + '; padding:6px 4px; vertical-align:middle; cursor:pointer; height:54px; transition:all 0.15s ease;'
           });
 
-          // محتوى الخانة
           if (!isFilled) {
-            tdCell.appendChild(h('span', {
-              style: 'color:#94A3B8; font-size:12px; font-weight:600; display:block; border:1px dashed #E2E8F0; padding:6px 2px; border-radius:6px;',
-              text: isMergeMode ? (isSelectedForMerge ? '✓ محددة' : 'اضغط للتحديد') : '+ تعبئة'
+            td.appendChild(h('span', {
+              style: 'color:#94A3B8; font-size:11px; font-weight:600; display:block; border:1px dashed #E2E8F0; padding:4px 2px; border-radius:4px;',
+              text: isMergeMode ? (isSelected ? '✓ محددة' : 'اضغط للتحديد') : '+ تعبئة'
             }));
           } else {
             var contentWrap = h('div', { style: 'display:flex; flex-direction:column; gap:2px; justify-content:center; align-items:center;' });
-            if (span > 1) {
+            if (rowspan > 1 || colspan > 1) {
+              var spanTag = (rowspan > 1 && colspan > 1) ? ('مدمجة ' + rowspan + '×' + colspan) : (rowspan > 1 ? ('ممتدة ' + rowspan + ' أيام') : ('مدمجة ' + colspan + ' حصص'));
               contentWrap.appendChild(h('span', {
-                style: 'font-size:10px; background:#FEF3C7; color:#B45309; padding:1px 6px; border-radius:4px; font-weight:800;',
-                text: 'مدمجة (' + span + ' خانات)'
+                style: 'font-size:9.5px; background:#FEF3C7; color:#B45309; padding:1px 5px; border-radius:3px; font-weight:800;',
+                text: spanTag
               }));
             }
-            if (sess.kind === 'library') {
-              contentWrap.appendChild(h('span', { style: 'font-size:11px; font-weight:800; color:#059669;', text: sess.domain }));
-              contentWrap.appendChild(h('strong', { style: 'font-size:12.5px; color:#064E3B; line-height:1.3;', text: sess.skill }));
-            } else if (sess.kind === 'activity') {
-              contentWrap.appendChild(h('span', { style: 'font-size:10.5px; font-weight:800; color:#D97706;', text: 'نشاط يومي' }));
-              contentWrap.appendChild(h('strong', { style: 'font-size:13px; color:#78350F;', text: sess.activity || sess.title }));
+            if (sess.kind === 'activity') {
+              contentWrap.appendChild(h('strong', { style: 'font-size:12.5px; color:#78350F; line-height:1.25;', text: sess.activity || sess.title }));
+            } else if (sess.kind === 'library') {
+              contentWrap.appendChild(h('span', { style: 'font-size:10px; font-weight:800; color:#059669;', text: sess.domain }));
+              contentWrap.appendChild(h('strong', { style: 'font-size:12px; color:#064E3B; line-height:1.25;', text: sess.skill }));
             } else if (sess.kind === 'manual') {
-              contentWrap.appendChild(h('span', { style: 'font-size:10.5px; font-weight:800; color:#2563EB;', text: 'إدخال يدوي' }));
-              contentWrap.appendChild(h('strong', { style: 'font-size:12.5px; color:#1E3A8A; line-height:1.3;', text: sess.manual_text || sess.title }));
+              contentWrap.appendChild(h('strong', { style: 'font-size:12px; color:#1E3A8A; line-height:1.25;', text: sess.manual_text || sess.title }));
             }
-            tdCell.appendChild(contentWrap);
+            td.appendChild(contentWrap);
           }
 
-          // النقر على الخانة: في وضع الدمج يحدد الخانة، وفي الوضع العادي يفتح نافذة التعبئة الأنيقة
-          tdCell.addEventListener('click', function () {
+          td.addEventListener('click', function () {
             if (isMergeMode) {
               if (mergeSelectedCells[cellKey]) {
                 delete mergeSelectedCells[cellKey];
               } else {
-                mergeSelectedCells[cellKey] = { day: dayObj.day, slot_id: sess.slot_id, span: span };
+                mergeSelectedCells[cellKey] = { dayIdx: dayIdx, slot_id: sess.slot_id, colspan: colspan, rowspan: rowspan };
               }
               renderFullView();
             } else {
-              openCellFillModal(dayObj, sess);
+              openHorizontalFillModal(dayObj, sess, dayIdx);
             }
           });
 
-          trDay.appendChild(tdCell);
+          trDay.appendChild(td);
         });
 
         tbodyEl.appendChild(trDay);
       });
+
       tableEl.appendChild(tbodyEl);
       sheetPaperCard.appendChild(tableEl);
 
-      // ج) تذييل التوقيعات الثلاثة للورقة الرسمية
+      // د) تذييل التوقيعات الثلاثة للورقة الرسمية
       var sheetFooter = h('div', {
-        style: 'display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin-top:20px; padding-top:16px; border-top:1.5px solid #E2E8F0; text-align:center;'
+        style: 'display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin-top:20px; padding-top:16px; border-top:1.5px solid #14532D; text-align:center;'
       },
         h('div', { style: 'background:#F8FAF9; padding:10px; border-radius:10px; border:1px solid #E2E8F0;' },
-          h('strong', { style: 'display:block; color:#14532D; font-size:13.5px; margin-bottom:4px;', text: 'توقيع المربي(ة) المشرف(ة)' }),
+          h('strong', { style: 'display:block; color:#14532D; font-size:13.5px; margin-bottom:4px;', text: 'توقيع المربية' }),
           h('input', {
             class: 'input small',
             type: 'text',
-            placeholder: 'اسم المربي(ة)...',
+            placeholder: 'اسم المربية...',
             value: currentWeekState.educator_name || '',
-            style: 'text-align:center; font-size:12px; margin-bottom:6px;',
+            style: 'text-align:center; font-size:12px; margin-bottom:4px;',
             onchange: function (e) { currentWeekState.educator_name = e.target.value; }
           }),
           h('span', { class: 'small muted', text: 'الإمضاء والتأشيرة' })
         ),
         h('div', { style: 'background:#F8FAF9; padding:10px; border-radius:10px; border:1px solid #E2E8F0;' },
-          h('strong', { style: 'display:block; color:#14532D; font-size:13.5px; margin-bottom:4px;', text: 'توقيع المشرف البيداغوجي' }),
+          h('strong', { style: 'display:block; color:#14532D; font-size:13.5px; margin-bottom:4px;', text: 'المشرف البيداغوجي' }),
           h('input', {
             class: 'input small',
             type: 'text',
             placeholder: 'اسم المشرف البيداغوجي...',
             value: currentWeekState.supervisor_name || '',
-            style: 'text-align:center; font-size:12px; margin-bottom:6px;',
+            style: 'text-align:center; font-size:12px; margin-bottom:4px;',
             onchange: function (e) { currentWeekState.supervisor_name = e.target.value; }
           }),
-          h('span', { class: 'small muted', text: 'الإمضاء والختم' })
+          h('span', { class: 'small muted', text: 'الإمضاء والتأشيرة' })
         ),
         h('div', { style: 'background:#F8FAF9; padding:10px; border-radius:10px; border:1px solid #E2E8F0;' },
-          h('strong', { style: 'display:block; color:#14532D; font-size:13.5px; margin-bottom:4px;', text: 'توقيع وختم مدير المركز' }),
+          h('strong', { style: 'display:block; color:#14532D; font-size:13.5px; margin-bottom:4px;', text: 'توقيع وختم المدير' }),
           h('input', {
             class: 'input small',
             type: 'text',
             placeholder: 'اسم المدير...',
             value: currentWeekState.director_name || '',
-            style: 'text-align:center; font-size:12px; margin-bottom:6px;',
+            style: 'text-align:center; font-size:12px; margin-bottom:4px;',
             onchange: function (e) { currentWeekState.director_name = e.target.value; }
           }),
           h('span', { class: 'small muted', text: 'التأشيرة والختم الرسمي' })
@@ -3555,24 +3708,25 @@
       mainContainer.appendChild(sheetPaperCard);
     }
 
-    // 3. نافذة تعبئة الخانة الأنيقة (المكتبة البيداغوجية الحقيقية / الملء اليدوي / الأنشطة اليومية)
-    function openCellFillModal(dayObj, sessObj) {
+    // 3. نافذة التعديل والتعبئة بالعرض (Horizontal Layout) بدلاً من الطول العمودي الضيق
+    function openHorizontalFillModal(dayObj, sessObj, dayIdx) {
       var lib = getPedagogicalLibrary();
       var domKeys = Object.keys(lib);
       var dailyActs = getDailyActivitiesList();
 
-      var currentKind = sessObj.kind && sessObj.kind !== 'empty' ? sessObj.kind : 'library';
+      var currentKind = sessObj.kind && sessObj.kind !== 'empty' ? sessObj.kind : 'activity';
       var selectedDomain = (sessObj.domain && lib[sessObj.domain]) ? sessObj.domain : (domKeys[0] || '');
       var selectedSkill = sessObj.skill || ((lib[selectedDomain] && lib[selectedDomain][0]) || '');
       var manualText = sessObj.manual_text || (currentKind === 'manual' ? sessObj.title : '');
       var selectedActivity = sessObj.activity || (currentKind === 'activity' ? sessObj.title : dailyActs[0]);
 
+      // حاوية النافذة بالعرض (Horizontal Wide Layout) بمقاس واسع وتنسيق متجاوب
       var modalBox = h('div', {
-        class: 'modal card',
-        style: 'max-width:580px; width:95%; background:#FFFFFF; padding:22px; border-radius:16px; box-shadow:0 20px 50px rgba(20,83,45,0.25); border:1px solid #CBD5E1; max-height:90vh; overflow-y:auto;'
+        class: 'modal card wk-horizontal-fill-modal',
+        style: 'max-width:880px; width:95%; background:#FFFFFF; padding:24px; border-radius:16px; box-shadow:0 20px 50px rgba(20,83,45,0.25); border:1.5px solid #14532D; max-height:90vh; overflow-y:auto; display:flex; flex-direction:column; gap:16px;'
       });
 
-      function renderModalContent() {
+      function renderModalFields() {
         modalBox.textContent = '';
         var domainSkills = lib[selectedDomain] || [];
         if (!selectedSkill || domainSkills.indexOf(selectedSkill) < 0) {
@@ -3580,148 +3734,145 @@
         }
 
         // ترويسة النافذة
-        var modalHead = h('div', {
-          class: 'bar-sub',
-          style: 'margin-bottom:14px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #E2E8F0; padding-bottom:10px;'
+        var head = h('div', {
+          style: 'display:flex; justify-content:space-between; align-items:center; border-bottom:1.5px solid #E2E8F0; padding-bottom:12px;'
         },
           h('div', null,
-            h('h3', { style: 'margin:0; color:#14532D; font-size:16px;', text: 'تعبئة الخانة — يوم ' + dayObj.label + ' (' + sessObj.start + ' - ' + sessObj.end + ')' }),
-            sessObj.span > 1 ? h('span', { class: 'small gold', text: 'خانة مدمجة تشمل ' + sessObj.span + ' فترات' }) : null
+            h('h3', { style: 'margin:0; color:#14532D; font-size:17px;', text: 'تعديل وتعبئة الخانة — يوم ' + dayObj.label + ' (' + sessObj.start + ' - ' + sessObj.end + ')' }),
+            sessObj.rowspan > 1 || sessObj.colspan > 1 ? h('span', { class: 'small gold', text: 'خانة مدمجة تشمل ' + (sessObj.rowspan > 1 ? (sessObj.rowspan + ' أيام ') : '') + (sessObj.colspan > 1 ? (sessObj.colspan + ' فترات') : '') }) : null
           ),
-          h('button', {
-            type: 'button',
-            class: 'btn small light',
-            text: '✕',
-            onclick: function () { dlg.remove(); }
-          })
+          h('button', { type: 'button', class: 'btn small light', text: '✕', onclick: function () { dlg.remove(); } })
         );
-        modalBox.appendChild(modalHead);
+        modalBox.appendChild(head);
 
-        // تبويبات طريقة التعبئة الثلاثة
-        var tabsNav = h('div', {
-          style: 'display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; margin-bottom:14px; background:#F1F5F9; padding:4px; border-radius:10px;'
+        // تبويبات طريقة التعبئة على العرض (أفقية واسعة)
+        var modeTabs = h('div', {
+          style: 'display:flex; justify-content:center; gap:10px; background:#F8FAF9; padding:6px; border-radius:12px; border:1px solid #CBD5E1; flex-wrap:wrap;'
         },
           h('button', {
             type: 'button',
-            class: 'btn small ' + (currentKind === 'library' ? '' : 'light'),
-            style: currentKind === 'library' ? 'background:#14532D; color:#fff; font-weight:800;' : '',
-            onclick: function () { currentKind = 'library'; renderModalContent(); }
-          }, makeSvgIcon('s-book'), h('span', { text: 'من المكتبة' })),
+            class: 'btn ' + (currentKind === 'activity' ? 'gold' : 'light'),
+            style: 'flex:1 1 200px; padding:10px 16px; font-weight:800; font-size:14px;',
+            onclick: function () { currentKind = 'activity'; renderModalFields(); }
+          }, makeSvgIcon('s-star'), h('span', { text: 'أنشطة وفترات يومية' })),
           h('button', {
             type: 'button',
-            class: 'btn small ' + (currentKind === 'manual' ? '' : 'light'),
-            style: currentKind === 'manual' ? 'background:#1E3A8A; color:#fff; font-weight:800;' : '',
-            onclick: function () { currentKind = 'manual'; renderModalContent(); }
-          }, makeSvgIcon('s-edit'), h('span', { text: 'ملء يدوي' })),
+            class: 'btn ' + (currentKind === 'library' ? '' : 'light'),
+            style: 'flex:1 1 200px; padding:10px 16px; font-weight:800; font-size:14px; ' + (currentKind === 'library' ? 'background:#14532D; color:#fff;' : ''),
+            onclick: function () { currentKind = 'library'; renderModalFields(); }
+          }, makeSvgIcon('s-book'), h('span', { text: 'من المكتبة البيداغوجية' })),
           h('button', {
             type: 'button',
-            class: 'btn small ' + (currentKind === 'activity' ? 'gold' : 'light'),
-            style: currentKind === 'activity' ? 'font-weight:800;' : '',
-            onclick: function () { currentKind = 'activity'; renderModalContent(); }
-          }, makeSvgIcon('s-star'), h('span', { text: 'أنشطة يومية' }))
+            class: 'btn ' + (currentKind === 'manual' ? '' : 'light'),
+            style: 'flex:1 1 200px; padding:10px 16px; font-weight:800; font-size:14px; ' + (currentKind === 'manual' ? 'background:#1E3A8A; color:#fff;' : ''),
+            onclick: function () { currentKind = 'manual'; renderModalFields(); }
+          }, makeSvgIcon('s-edit'), h('span', { text: 'ملء يدوي حر' }))
         );
-        modalBox.appendChild(tabsNav);
+        modalBox.appendChild(modeTabs);
 
-        // محتوى التبويب المختار
-        if (currentKind === 'library') {
-          // الطريقة الأولى: الاختيار من المكتبة البيداغوجية
+        // محتوى الخيارات موزع أفقياً على العرض
+        if (currentKind === 'activity') {
+          // عرض الأنشطة اليومية في شبكة أفقية عريضة
+          var actGrid = h('div', {
+            style: 'display:grid; grid-template-columns:repeat(auto-fill, minmax(135px, 1fr)); gap:10px; padding:8px 0;'
+          });
+          dailyActs.forEach(function (actName) {
+            var isSel = (actName === selectedActivity);
+            var actBtn = h('button', {
+              type: 'button',
+              style: 'padding:10px 8px; border-radius:10px; border:2px solid ' + (isSel ? '#D97706' : '#FDE68A') + '; background:' + (isSel ? '#F59E0B' : '#FFFBEB') + '; color:' + (isSel ? '#FFFFFF' : '#92400E') + '; font-weight:800; font-size:13.5px; cursor:pointer; text-align:center; font-family:inherit; transition:all 0.15s ease;',
+              onclick: function () { selectedActivity = actName; renderModalFields(); }
+            }, actName);
+            actGrid.appendChild(actBtn);
+          });
+
+          modalBox.appendChild(h('div', {
+            style: 'background:#FFFBEB; border:1px solid #FDE68A; border-radius:12px; padding:16px;'
+          },
+            h('label', { style: 'display:block; font-weight:800; color:#92400E; margin-bottom:10px; font-size:14px;', text: 'اختر النشاط اليومي أو الفترة التنظيمية (توزيع أفقي مريح):' }),
+            actGrid
+          ));
+
+        } else if (currentKind === 'library') {
+          // عرض المجالات والمهارات على العرض في عمودين متجاورين أفقيين
           var domSelect = h('select', {
             class: 'input',
-            style: 'width:100%; font-weight:700; margin-bottom:8px;',
+            style: 'width:100%; font-weight:700; margin-bottom:8px; font-size:14px;',
             onchange: function (e) {
               selectedDomain = e.target.value;
               selectedSkill = (lib[selectedDomain] && lib[selectedDomain][0]) || '';
-              renderModalContent();
+              renderModalFields();
             }
           }, domKeys.map(function (dk) {
             return h('option', { value: dk, selected: dk === selectedDomain ? 'selected' : null, text: dk });
           }));
 
-          var skillsListWrap = h('div', {
-            style: 'display:flex; flex-direction:column; gap:6px; max-height:200px; overflow-y:auto; border:1px solid #CBD5E1; border-radius:10px; padding:8px; background:#F8FAF9;'
+          var skillsGrid = h('div', {
+            style: 'display:grid; grid-template-columns:repeat(auto-fill, minmax(240px, 1fr)); gap:8px; max-height:240px; overflow-y:auto; padding:8px; border:1px solid #CBD5E1; border-radius:10px; background:#F8FAF9;'
           });
-
           domainSkills.forEach(function (sk) {
             var isSel = (sk === selectedSkill);
-            var skItem = h('button', {
+            var skBtn = h('button', {
               type: 'button',
-              style: 'text-align:right; padding:8px 12px; border-radius:8px; border:1.5px solid ' + (isSel ? '#10B981' : '#E2E8F0') + '; background:' + (isSel ? '#ECFDF5' : '#FFFFFF') + '; color:' + (isSel ? '#064E3B' : '#1E293B') + '; font-weight:' + (isSel ? '800' : '600') + '; cursor:pointer; font-size:13.5px; font-family:inherit;',
-              onclick: function () {
-                selectedSkill = sk;
-                renderModalContent();
-              }
+              style: 'padding:8px 12px; text-align:right; border-radius:8px; border:1.5px solid ' + (isSel ? '#10B981' : '#E2E8F0') + '; background:' + (isSel ? '#ECFDF5' : '#FFFFFF') + '; color:' + (isSel ? '#064E3B' : '#1E293B') + '; font-weight:' + (isSel ? '800' : '600') + '; font-size:13px; cursor:pointer; font-family:inherit;',
+              onclick: function () { selectedSkill = sk; renderModalFields(); }
             }, (isSel ? '✓ ' : '• ') + sk);
-            skillsListWrap.appendChild(skItem);
+            skillsGrid.appendChild(skBtn);
           });
 
-          modalBox.appendChild(h('div', { style: 'background:#F0FDF4; border:1px solid #BBF7D0; border-radius:12px; padding:12px;' },
-            h('label', { style: 'display:block; font-weight:800; color:#065F46; margin-bottom:4px; font-size:13.5px;', text: '1. اختيار المجال البيداغوجي:' }),
-            domSelect,
-            h('label', { style: 'display:block; font-weight:800; color:#065F46; margin-bottom:4px; font-size:13.5px;', text: '2. اختيار المهارة التابعة له (تُدرج تلقائياً في الخانة):' }),
-            skillsListWrap,
-            h('div', { style: 'margin-top:8px; font-size:13px; color:#047857; font-weight:700;', text: 'المهارة المختارة: ' + (selectedSkill || '—') })
+          modalBox.appendChild(h('div', {
+            style: 'background:#F0FDF4; border:1px solid #BBF7D0; border-radius:12px; padding:16px; display:flex; flex-direction:column; gap:10px;'
+          },
+            h('div', null,
+              h('label', { style: 'display:block; font-weight:800; color:#065F46; margin-bottom:4px; font-size:13.5px;', text: '1. اختيار المجال البيداغوجي:' }),
+              domSelect
+            ),
+            h('div', null,
+              h('label', { style: 'display:block; font-weight:800; color:#065F46; margin-bottom:4px; font-size:13.5px;', text: '2. اختيار المهارة التابعة له (توزيع أفقي مريح):' }),
+              skillsGrid
+            ),
+            h('div', { style: 'font-weight:700; color:#047857; font-size:13px;', text: 'المهارة المختارة: ' + (selectedSkill || '—') })
           ));
 
         } else if (currentKind === 'manual') {
-          // الطريقة الثانية: الملء اليدوي المستقل
-          var manualArea = h('textarea', {
+          // الملء اليدوي الحر
+          var manualInp = h('textarea', {
             class: 'input',
             rows: 3,
-            placeholder: 'اكتب محتوى الخانة أو النشاط يدوياً (مستقل تماماً عن المكتبة)...',
+            placeholder: 'اكتب محتوى الخانة أو النشاط يدوياً...',
             value: manualText,
             style: 'width:100%; font-size:14px; line-height:1.5;',
             oninput: function (e) { manualText = e.target.value; }
           });
 
-          modalBox.appendChild(h('div', { style: 'background:#EFF6FF; border:1px solid #BFDBFE; border-radius:12px; padding:12px;' },
-            h('label', { style: 'display:block; font-weight:800; color:#1E3A8A; margin-bottom:6px; font-size:13.5px;', text: 'الملء اليدوي المباشر للخانة:' }),
-            manualArea,
-            h('p', { class: 'small muted', style: 'margin:6px 0 0;', text: 'ملاحظة: الملء اليدوي مستقل عن المكتبة البيداغوجية ولا يضيف النص إلى قائمة المهارات.' })
-          ));
-
-        } else if (currentKind === 'activity') {
-          // الأنشطة اليومية والفترات الخاصة
-          var actGrid = h('div', { style: 'display:flex; flex-wrap:wrap; gap:8px;' });
-          dailyActs.forEach(function (actName) {
-            var isSel = (actName === selectedActivity);
-            var actBtn = h('button', {
-              type: 'button',
-              style: 'padding:8px 14px; border-radius:20px; border:1.5px solid ' + (isSel ? '#D97706' : '#FDE68A') + '; background:' + (isSel ? '#F59E0B' : '#FFFBEB') + '; color:' + (isSel ? '#FFFFFF' : '#92400E') + '; font-weight:800; cursor:pointer; font-family:inherit; font-size:13.5px;',
-              onclick: function () {
-                selectedActivity = actName;
-                renderModalContent();
-              }
-            }, actName);
-            actGrid.appendChild(actBtn);
-          });
-
-          modalBox.appendChild(h('div', { style: 'background:#FFFBEB; border:1px solid #FDE68A; border-radius:12px; padding:12px;' },
-            h('label', { style: 'display:block; font-weight:800; color:#92400E; margin-bottom:8px; font-size:13.5px;', text: 'اختر النشاط اليومي أو الفترة التنظيمية (لا تُصنف كمهارة بيداغوجية):' }),
-            actGrid
+          modalBox.appendChild(h('div', {
+            style: 'background:#EFF6FF; border:1px solid #BFDBFE; border-radius:12px; padding:16px;'
+          },
+            h('label', { style: 'display:block; font-weight:800; color:#1E3A8A; margin-bottom:6px; font-size:14px;', text: 'الملء اليدوي المستقل:' }),
+            manualInp,
+            h('p', { class: 'small muted', style: 'margin:6px 0 0;', text: 'الملء اليدوي مستقل عن المكتبة البيداغوجية ولا يغير تصنيفاتها.' })
           ));
         }
 
-        // أزرار الحفظ وتفريغ الخانة وإلغاء الدمج إن كانت مدمجة
-        var actionsRow = h('div', {
-          style: 'display:flex; justify-content:space-between; align-items:center; gap:8px; margin-top:16px; padding-top:12px; border-top:1px solid #E2E8F0; flex-wrap:wrap;'
+        // أزرار الحفظ والإجراءات على العرض
+        var footBar = h('div', {
+          style: 'display:flex; justify-content:space-between; align-items:center; border-top:1.5px solid #E2E8F0; padding-top:14px; flex-wrap:wrap; gap:10px;'
         });
 
-        // زر إلغاء الدمج إن كانت الخانة مدمجة
-        if (sessObj.span > 1) {
-          actionsRow.appendChild(h('button', {
+        // زر إلغاء الدمج أو تفريغ الخانة
+        if (sessObj.rowspan > 1 || sessObj.colspan > 1) {
+          footBar.appendChild(h('button', {
             type: 'button',
             class: 'btn small light',
-            title: 'إلغاء دمج هذه الخانة وإعادتها إلى فتراتها الأصلية',
             onclick: function () {
-              unmergeCell(dayObj, sessObj);
+              unmergeAnyCell(sessObj, dayIdx);
               dlg.remove();
               renderFullView();
-              toast('تم إلغاء الدمج واستعادة الفترات الأصلية.', 'ok');
+              toast('تم إلغاء دمج الخانة واستعادة الخلايا الأصلية.', 'ok');
             }
-          }, makeSvgIcon('s-x-circle'), h('span', { text: 'إلغاء الدمج' })));
+          }, makeSvgIcon('s-x-circle'), h('span', { text: 'إلغاء دمج الخانة' })));
         } else if (sessObj.kind !== 'empty') {
-          // زر تفريغ الخانة
-          actionsRow.appendChild(h('button', {
+          footBar.appendChild(h('button', {
             type: 'button',
             class: 'btn small danger',
             onclick: function () {
@@ -3737,339 +3888,111 @@
             }
           }, makeSvgIcon('s-trash'), h('span', { text: 'تفريغ الخانة' })));
         } else {
-          actionsRow.appendChild(h('div'));
+          footBar.appendChild(h('div'));
         }
 
-        var saveBtn = h('button', {
+        var saveCellBtn = h('button', {
           type: 'button',
           class: 'btn',
-          style: 'background:#14532D; color:#fff; font-weight:800;',
+          style: 'background:#14532D; color:#fff; font-weight:800; padding:10px 22px;',
           onclick: function () {
-            if (currentKind === 'library') {
-              if (!selectedSkill) return toast('يرجى اختيار مهارة بيداغوجية.', 'bad');
+            if (currentKind === 'activity') {
+              sessObj.kind = 'activity';
+              sessObj.activity = selectedActivity;
+              sessObj.title = selectedActivity;
+            } else if (currentKind === 'library') {
+              if (!selectedSkill) return toast('اختر مهارة بيداغوجية.', 'bad');
               sessObj.kind = 'library';
               sessObj.domain = selectedDomain;
               sessObj.skill = selectedSkill;
               sessObj.title = selectedDomain + ' — ' + selectedSkill;
             } else if (currentKind === 'manual') {
               var txt = String(manualText || '').trim();
-              if (!txt) return toast('أدخل محتوى الخانة اليدوي.', 'bad');
+              if (!txt) return toast('أدخل نصاً للخانة.', 'bad');
               sessObj.kind = 'manual';
               sessObj.manual_text = txt;
               sessObj.title = txt;
-            } else if (currentKind === 'activity') {
-              sessObj.kind = 'activity';
-              sessObj.activity = selectedActivity;
-              sessObj.title = selectedActivity;
             }
             dlg.remove();
             renderFullView();
-            toast('تم تحديث محتوى الخانة بنجاح.', 'ok');
+            toast('تم حفظ وتحديث محتوى الخانة.', 'ok');
           }
         }, makeSvgIcon('s-check'), h('span', { text: 'تأكيد وحفظ الخانة' }));
 
-        actionsRow.appendChild(h('div', { style: 'display:flex; gap:8px;' },
+        footBar.appendChild(h('div', { style: 'display:flex; gap:8px;' },
           h('button', { type: 'button', class: 'btn light', text: 'إلغاء', onclick: function () { dlg.remove(); } }),
-          saveBtn
+          saveCellBtn
         ));
 
-        modalBox.appendChild(actionsRow);
+        modalBox.appendChild(footBar);
       }
 
-      renderModalContent();
-
+      renderModalFields();
       var dlg = h('div', { class: 'modal-back' }, modalBox);
       document.body.appendChild(dlg);
     }
 
-    // 4. تنفيذ دمج الخانات المحددة
-    function executeMergeSelection() {
+    // 4. تنفيذ الدمج متعدد الاتجاهات (دمج أفقي في نفس اليوم أو رأسي بين الأيام لنفس التوقيت)
+    function executeMultiDirectionalMerge() {
       var keys = Object.keys(mergeSelectedCells);
       if (keys.length < 2) {
         return toast('يرجى تحديد خانتين متجاورتين أو أكثر لدمجهما.', 'bad');
       }
 
-      // التحقق من أن جميع الخانات تنتمي لنفس اليوم
-      var dayKeys = keys.map(function (k) { return k.split(':')[0]; });
-      var firstDay = dayKeys[0];
-      var sameDay = dayKeys.every(function (dk) { return dk === firstDay; });
-      if (!sameDay) {
-        return toast('لا يمكن دمج خانات من أيام مختلفة! يرجى اختيار خانات في نفس اليوم فقط.', 'bad');
+      var dayIdxs = keys.map(function (k) { return mergeSelectedCells[k].dayIdx; }).sort(function (a, b) { return a - b; });
+      var slotIds = keys.map(function (k) { return mergeSelectedCells[k].slot_id; }).sort(function (a, b) { return a - b; });
+
+      var minDay = Math.min.apply(null, dayIdxs);
+      var maxDay = Math.max.apply(null, dayIdxs);
+      var minSlot = Math.min.apply(null, slotIds);
+      var maxSlot = Math.max.apply(null, slotIds);
+
+      var numDaysSpan = (maxDay - minDay + 1);
+      var numSlotsSpan = (maxSlot - minSlot + 1);
+
+      // تحقق من اكتمال المستطيل المحدد للدمج
+      var expectedCount = numDaysSpan * numSlotsSpan;
+      if (keys.length !== expectedCount) {
+        return toast('يجب أن تكون الخانات المحددة متجاورة هندسياً في شكل مستطيل أو خط متصل.', 'bad');
       }
 
-      var dayObj = currentWeekState.days.filter(function (d) { return d.day === firstDay; })[0];
-      var slotIds = keys.map(function (k) { return parseInt(k.split(':')[1], 10); }).sort(function (a, b) { return a - b; });
+      // الخلية الرئيسية الأولى (أعلى اليمين)
+      var targetDayObj = currentWeekState.days[minDay];
+      var targetSess = targetDayObj.sessions.filter(function (s) { return s.slot_id === minSlot; })[0];
+      if (!targetSess) return toast('تعذر تحديد الخلية الرئيسية للدمج.', 'bad');
 
-      // التحقق من التجاور الصارم
-      var targetSessions = [];
-      for (var i = 0; i < slotIds.length; i++) {
-        var sid = slotIds[i];
-        var foundS = dayObj.sessions.filter(function (s) { return s.slot_id === sid; })[0];
-        if (!foundS) return toast('تعذر العثور على إحدى الخانات المحددة.', 'bad');
-        targetSessions.push(foundS);
-      }
+      targetSess.rowspan = numDaysSpan;
+      targetSess.colspan = numSlotsSpan;
 
-      // فحص التجاور في مصفوفة dayObj.sessions
-      var idxsInDay = targetSessions.map(function (s) { return dayObj.sessions.indexOf(s); }).sort(function (a, b) { return a - b; });
-      for (var j = 0; j < idxsInDay.length - 1; j++) {
-        if (idxsInDay[j + 1] !== idxsInDay[j] + 1) {
-          return toast('الخانات المحددة غير متجاورة! لا يمكن دمج إلا الخانات المتجاورة مباشرة.', 'bad');
-        }
-      }
-
-      // تنفيذ الدمج
-      var firstSess = dayObj.sessions[idxsInDay[0]];
-      var lastSess = dayObj.sessions[idxsInDay[idxsInDay.length - 1]];
-
-      var totalSpan = 0;
-      var allMergedSlotIds = [];
-      targetSessions.forEach(function (ts) {
-        totalSpan += (ts.span || 1);
-        var subIds = (ts.merged_slot_ids && ts.merged_slot_ids.length) ? ts.merged_slot_ids : [ts.slot_id];
-        allMergedSlotIds = allMergedSlotIds.concat(subIds);
-      });
-
-      firstSess.span = totalSpan;
-      firstSess.end = lastSess.end;
-      firstSess.merged_slot_ids = allMergedSlotIds;
-
-      // إزالة الخانات التي دُمجت باستثناء الأولى
-      for (var k = idxsInDay.length - 1; k >= 1; k--) {
-        dayObj.sessions.splice(idxsInDay[k], 1);
-      }
+      var endSlotIdx = Math.min(currentWeekState.time_slots.length - 1, minSlot + numSlotsSpan - 1);
+      targetSess.end = currentWeekState.time_slots[endSlotIdx].end;
 
       isMergeMode = false;
       mergeSelectedCells = {};
       renderFullView();
-      toast('تم دمج الخانات المتجاورة بنجاح في خانة واحدة.', 'ok');
+      toast('تم دمج الخانات بنجاح (' + (numDaysSpan > 1 ? (numDaysSpan + ' أيام ') : '') + (numSlotsSpan > 1 ? (numSlotsSpan + ' حصص') : '') + ').', 'ok');
     }
 
-    // إلغاء دمج خانة وإعادتها لفتراتها الأصلية
-    function unmergeCell(dayObj, sessObj) {
-      if (!sessObj || sessObj.span <= 1) return;
-      var cellIdx = dayObj.sessions.indexOf(sessObj);
-      if (cellIdx < 0) return;
-
-      var mergedIds = (sessObj.merged_slot_ids && sessObj.merged_slot_ids.length)
-        ? sessObj.merged_slot_ids
-        : [sessObj.slot_id];
-
-      var restored = [];
-      mergedIds.forEach(function (sid, idx) {
-        var baseSlot = currentWeekState.time_slots.filter(function (ts) { return ts.id === sid; })[0]
-          || { id: sid, start: sessObj.start, end: sessObj.end };
-        restored.push({
-          slot_id: sid,
-          start: baseSlot.start,
-          end: baseSlot.end,
-          span: 1,
-          merged_slot_ids: [sid],
-          kind: idx === 0 ? sessObj.kind : 'empty',
-          domain: idx === 0 ? sessObj.domain : '',
-          skill: idx === 0 ? sessObj.skill : '',
-          title: idx === 0 ? sessObj.title : '',
-          manual_text: idx === 0 ? sessObj.manual_text : '',
-          activity: idx === 0 ? sessObj.activity : ''
-        });
-      });
-
-      // استبدال الخانة المدمجة بالخانات المستعادة
-      dayObj.sessions.splice(cellIdx, 1);
-      restored.forEach(function (r, rIdx) {
-        dayObj.sessions.splice(cellIdx + rIdx, 0, r);
-      });
+    function unmergeAnyCell(sessObj, dayIdx) {
+      sessObj.rowspan = 1;
+      sessObj.colspan = 1;
+      var bs = currentWeekState.time_slots[sessObj.slot_id];
+      if (bs) sessObj.end = bs.end;
     }
 
-    // 5. نافذة التحكم في التوقيتات وتعديل الفترات
-    function openTimeSlotsManagerModal() {
-      var localSlots = currentWeekState.time_slots.map(function (ts) { return Object.assign({}, ts); });
-
-      var modalBox = h('div', {
-        class: 'modal card',
-        style: 'max-width:620px; width:95%; background:#FFFFFF; padding:22px; border-radius:16px; box-shadow:0 20px 50px rgba(20,83,45,0.25); border:1px solid #CBD5E1; max-height:90vh; overflow-y:auto;'
-      });
-
-      function renderSlotsList() {
-        modalBox.textContent = '';
-
-        var head = h('div', {
-          class: 'bar-sub',
-          style: 'margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #E2E8F0; padding-bottom:8px;'
-        },
-          h('h3', { style: 'margin:0; color:#14532D;', text: 'التحكم في التوقيتات وفترات الجدول الأسبوعي' }),
-          h('button', { type: 'button', class: 'btn small light', text: '✕', onclick: function () { dlg.remove(); } })
-        );
-        modalBox.appendChild(head);
-
-        var listWrap = h('div', { style: 'display:flex; flex-direction:column; gap:8px; max-height:360px; overflow-y:auto; margin-bottom:14px;' });
-
-        localSlots.forEach(function (slot, sIdx) {
-          var startInp = h('input', {
-            class: 'input small',
-            type: 'time',
-            value: slot.start,
-            style: 'width:95px;',
-            onchange: function (e) {
-              slot.start = e.target.value;
-              slot.duration = calcDurationMins(slot.start, slot.end);
-            }
-          });
-          var endInp = h('input', {
-            class: 'input small',
-            type: 'time',
-            value: slot.end,
-            style: 'width:95px;',
-            onchange: function (e) {
-              slot.end = e.target.value;
-              slot.duration = calcDurationMins(slot.start, slot.end);
-            }
-          });
-          var periodSelect = h('select', {
-            class: 'input small',
-            onchange: function (e) { slot.period = e.target.value; }
-          },
-            h('option', { value: 'morning', selected: slot.period === 'morning' ? 'selected' : null, text: 'الفترة الصباحية' }),
-            h('option', { value: 'afternoon', selected: slot.period === 'afternoon' ? 'selected' : null, text: 'الفترة المسائية' })
-          );
-
-          var delBtn = h('button', {
-            type: 'button',
-            class: 'btn small danger',
-            text: 'حذف',
-            onclick: function () {
-              if (localSlots.length <= 2) return toast('يجب الإبقاء على فترتين على الأقل.', 'bad');
-              localSlots.splice(sIdx, 1);
-              renderSlotsList();
-            }
-          });
-
-          var rowCard = h('div', {
-            style: 'display:flex; align-items:center; justify-content:space-between; gap:8px; padding:8px 12px; background:#F8FAF9; border:1px solid #E2E8F0; border-radius:10px; flex-wrap:wrap;'
-          },
-            h('span', { style: 'font-weight:800; color:#14532D; min-width:30px;', text: '#' + (sIdx + 1) }),
-            h('div', { style: 'display:flex; align-items:center; gap:6px;' },
-              h('span', { class: 'small muted', text: 'من' }), startInp,
-              h('span', { class: 'small muted', text: 'إلى' }), endInp
-            ),
-            periodSelect,
-            delBtn
-          );
-          listWrap.appendChild(rowCard);
-        });
-        modalBox.appendChild(listWrap);
-
-        // إضافة فترة جديدة
-        var addSlotBtn = h('button', {
-          type: 'button',
-          class: 'btn small light',
-          style: 'margin-bottom:14px;',
-          onclick: function () {
-            var last = localSlots[localSlots.length - 1];
-            var nStart = last ? last.end : '14:00';
-            var nEnd = minutesToTime(timeToMinutes(nStart) + 30);
-            var nextId = localSlots.length ? Math.max.apply(null, localSlots.map(function (x) { return x.id != null ? x.id : 0; })) + 1 : 0;
-            localSlots.push({
-              id: nextId,
-              start: nStart,
-              end: nEnd,
-              period: timeToMinutes(nStart) >= 750 ? 'afternoon' : 'morning',
-              duration: 30,
-              label: nStart + ' - ' + nEnd
-            });
-            renderSlotsList();
-          }
-        }, makeSvgIcon('s-plus'), h('span', { text: '+ إضافة فترة زمنية جديدة' }));
-        modalBox.appendChild(addSlotBtn);
-
-        // زر التأكيد وحفظ التوقيتات
-        var confirmBtn = h('button', {
-          type: 'button',
-          class: 'btn',
-          style: 'background:#14532D; color:#fff; font-weight:800;',
-          onclick: function () {
-            // فحص صحة التوقيتات والترتيب
-            localSlots.sort(function (a, b) { return timeToMinutes(a.start) - timeToMinutes(b.start); });
-            for (var i = 0; i < localSlots.length; i++) {
-              if (timeToMinutes(localSlots[i].end) <= timeToMinutes(localSlots[i].start)) {
-                return toast('التوقيت غير صحيح في الفترة #' + (i + 1) + ': وقت النهاية يجب أن يكون بعد وقت البداية.', 'bad');
-              }
-              if (i < localSlots.length - 1 && timeToMinutes(localSlots[i].end) > timeToMinutes(localSlots[i + 1].start)) {
-                toast('تنبيه: يوجد تداخل بين الفترة #' + (i + 1) + ' والفترة #' + (i + 2) + '. تم ضبط التوقيت تلقائياً.', 'gold');
-                localSlots[i + 1].start = localSlots[i].end;
-                localSlots[i + 1].end = minutesToTime(timeToMinutes(localSlots[i + 1].start) + (localSlots[i + 1].duration || 30));
-              }
-            }
-
-            currentWeekState.time_slots = localSlots.map(function (ts, idx) {
-              ts.id = ts.id != null ? ts.id : idx;
-              ts.label = ts.start + ' - ' + ts.end;
-              ts.duration = calcDurationMins(ts.start, ts.end);
-              return ts;
-            });
-
-            // مزامنة خانات الأيام مع التوقيتات الجديدة
-            currentWeekState.days.forEach(function (dayObj) {
-              var oldSess = dayObj.sessions || [];
-              var newSess = currentWeekState.time_slots.map(function (ts) {
-                var found = oldSess.filter(function (os) { return os.slot_id === ts.id || os.start === ts.start; })[0];
-                if (found) {
-                  found.slot_id = ts.id;
-                  found.start = ts.start;
-                  found.end = ts.end;
-                  return found;
-                }
-                return {
-                  slot_id: ts.id,
-                  start: ts.start,
-                  end: ts.end,
-                  span: 1,
-                  merged_slot_ids: [ts.id],
-                  kind: 'empty',
-                  domain: '',
-                  skill: '',
-                  title: '',
-                  manual_text: '',
-                  activity: ''
-                };
-              });
-              dayObj.sessions = newSess;
-            });
-
-            currentWeekState.day_start = localSlots[0].start;
-            currentWeekState.day_end = localSlots[localSlots.length - 1].end;
-
-            dlg.remove();
-            renderFullView();
-            toast('تم تحديث التوقيتات وإعادة ترتيب الجدول الأسبوعي بنجاح.', 'ok');
-          }
-        }, makeSvgIcon('s-check'), h('span', { text: 'تطبيق التوقيتات على الجدول' }));
-
-        var footRow = h('div', { style: 'display:flex; justify-content:flex-end; gap:8px;' },
-          h('button', { type: 'button', class: 'btn light', text: 'إلغاء', onclick: function () { dlg.remove(); } }),
-          confirmBtn
-        );
-        modalBox.appendChild(footRow);
-      }
-
-      renderSlotsList();
-      var dlg = h('div', { class: 'modal-back' }, modalBox);
-      document.body.appendChild(dlg);
-    }
-
-    // 6. معاينة وثيقة PDF الرسمية A4 أفقي Landscape
+    // 5. معاينة وطباعة الوثيقة الرسمية A4 أفقي Landscape مطابقة تماماً لـ 23499.jpg
     function openPdfLandscapePreviewModal() {
       var modalBox = h('div', {
         class: 'modal card',
-        style: 'max-width:960px; width:96%; background:#FFFFFF; padding:20px; border-radius:16px; box-shadow:0 25px 60px rgba(20,83,45,0.3); border:1px solid #CBD5E1; max-height:92vh; overflow-y:auto;'
+        style: 'max-width:1040px; width:96%; background:#FFFFFF; padding:22px; border-radius:16px; box-shadow:0 25px 60px rgba(20,83,45,0.3); border:1.5px solid #14532D; max-height:92vh; overflow-y:auto; display:flex; flex-direction:column; gap:14px;'
       });
 
       var head = h('div', {
-        class: 'bar-sub',
-        style: 'margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; border-bottom:1.5px solid #E2E8F0; padding-bottom:10px;'
+        style: 'display:flex; justify-content:space-between; align-items:center; border-bottom:1.5px solid #E2E8F0; padding-bottom:10px;'
       },
         h('div', null,
-          h('h3', { style: 'margin:0; color:#14532D;', text: 'معاينة الوثيقة الرسمية للبرنامج الأسبوعي (A4 أفقي Landscape)' }),
-          h('span', { class: 'small muted', text: 'معاينة مطابقة تماماً للملف المصدَّر والمطبوع مع إخفاء أدوات التحرير' })
+          h('h3', { style: 'margin:0; color:#14532D;', text: 'معاينة الوثيقة الرسمية — البرنامج المؤقت الأسبوعي (A4 أفقي)' }),
+          h('span', { class: 'small muted', text: 'مطابقة للنموذج المعتمد لمركز دار الإحسان (23499.jpg) مع الحجم الساعي والدمج بين الأيام' })
         ),
         h('div', { style: 'display:flex; gap:8px;' },
           h('button', {
@@ -4080,7 +4003,7 @@
                 if (!window.DE_PDF || !window.DE_PDF.renderWeeklyProgramToPdf) throw new Error('مولد PDF غير متاح');
                 toast('جارٍ تحميل ملف PDF...', 'ok');
                 var bytes = await window.DE_PDF.renderWeeklyProgramToPdf(currentWeekState, getSecName());
-                window.DE_PDF.downloadPdf(bytes, 'البرنامج_الأسبوعي_' + String(getSecName()).replace(/\s+/g, '_') + '.pdf');
+                window.DE_PDF.downloadPdf(bytes, 'البرنامج_المؤقت_الأسبوعي_' + String(getSecName()).replace(/\s+/g, '_') + '.pdf');
               } catch (e) {
                 toast('تعذر تنزيل PDF: ' + e.message, 'bad');
               }
@@ -4098,8 +4021,7 @@
 
       var canvasMount = h('div', {
         style: 'width:100%; background:#fff; border:1px solid #CBD5E1; border-radius:10px; overflow:hidden; padding:4px;'
-      }, h('p', { class: 'muted small', style: 'text-align:center; padding:30px;', text: 'جارٍ توليد المعاينة الرسمية...' }));
-
+      }, h('p', { class: 'muted small', style: 'text-align:center; padding:30px;', text: 'جارٍ توليد المعاينة الرسمية المطابقة...' }));
       modalBox.appendChild(canvasMount);
 
       if (window.DE_PDF && window.DE_PDF.renderWeeklyProgramCanvas) {
@@ -4119,22 +4041,10 @@
       document.body.appendChild(dlg);
     }
 
-    // 7. حفظ البرنامج أو نشره للأولياء
+    // 6. حفظ البرنامج أو نشره للأولياء
     async function saveProgramAction(publishNow) {
       if (!currentWeekState.section_id) {
         return toast('يرجى اختيار الفوج التربوي أولاً.', 'bad');
-      }
-
-      // فحص إن كانت هناك خانات معبأة
-      var totalFilled = 0;
-      currentWeekState.days.forEach(function (d) {
-        (d.sessions || []).forEach(function (s) {
-          if (s.kind && s.kind !== 'empty') totalFilled++;
-        });
-      });
-
-      if (totalFilled === 0 && publishNow) {
-        return toast('الجدول فارغ بالكامل! يرجى تعبئة الحصص قبل نشر البرنامج للأولياء.', 'bad');
       }
 
       var secName = getSecName();
@@ -4167,8 +4077,8 @@
               slot_id: s.slot_id,
               start: s.start,
               end: s.end,
-              span: s.span || 1,
-              merged_slot_ids: s.merged_slot_ids || [s.slot_id],
+              colspan: s.colspan || 1,
+              rowspan: s.rowspan || 1,
               kind: s.kind || 'empty',
               domain: s.domain || '',
               skill: s.skill || '',
@@ -4182,10 +4092,10 @@
 
       var body = {
         section_id: currentWeekState.section_id,
-        title: DE.clean('البرنامج الأسبوعي — ' + secName, 155),
+        title: DE.clean('البرنامج المؤقت الأسبوعي — ' + secName, 155),
         academic_year: currentWeekState.academic_year || '2026/2027',
-        description: DE.clean('البرنامج الأسبوعي المعتمد لفوج ' + secName, 1000),
-        goals: DE.clean('تنمية المهارات البيداغوجية والأنشطة لفوج ' + secName, 1000),
+        description: DE.clean('البرنامج المؤقت الأسبوعي لفوج ' + secName, 1000),
+        goals: DE.clean('الأنصبة والحصص التعليمية الأسبوعية لفوج ' + secName, 1000),
         schedule: schedulePayload,
         status: publishNow ? 'published' : 'draft',
         published_at: publishNow ? nowIso : null
@@ -4209,19 +4119,17 @@
       else sharedList.unshift(localRecord);
       writeSharedProgramsLocal(sharedList);
 
-      // إرسال إشعار للأولياء عند النشر
       if (publishNow) {
         try {
           await C.rest('POST', '/messages', {
             kind: 'notice',
             title: (nextStatus === 'updated' ? 'تحديث البرنامج الأسبوعي — ' : 'نشر البرنامج الأسبوعي — ') + secName,
-            body: 'تم ' + (nextStatus === 'updated' ? 'تحديث' : 'اعتماد ونشر') + ' البرنامج الأسبوعي لفوج «' + secName + '». يمكنكم الاطلاع عليه وتحميله بصيغة PDF من قسم «البرنامج الأسبوعي» في فضاء الأولياء.',
+            body: 'تم ' + (nextStatus === 'updated' ? 'تحديث' : 'اعتماد ونشر') + ' البرنامج المؤقت الأسبوعي لفوج «' + secName + '». يمكنكم الاطلاع عليه من قسم «البرنامج الأسبوعي» في فضاء الأولياء.',
             published_at: nowIso
           });
         } catch (msgErr) {}
 
-        // مشاركة عبر واتساب إن وُجد آباء للفوج
-        toast('تم نشر البرنامج في فضاء الأولياء وتوليد ملف PDF بنجاح!', 'ok');
+        toast('تم اعتماد ونشر البرنامج الأسبوعي في فضاء الأولياء بنجاح!', 'ok');
       } else {
         toast('تم حفظ البرنامج الأسبوعي كمسودة بنجاح.', 'ok');
       }
