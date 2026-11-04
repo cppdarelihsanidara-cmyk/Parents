@@ -134,7 +134,7 @@
       tabReports: 'التقارير',
       tabDocs: 'الوثائق',
       tabMsgs: 'الرسائل',
-      tabPrograms: 'البرامج والأنشطة',
+      tabPrograms: 'البرنامج الأسبوعي',
       tabAppts: 'المواعيد',
       tabContact: 'التواصل',
       welcome: 'مرحبًا',
@@ -231,7 +231,7 @@
       tabReports: 'Rapports',
       tabDocs: 'Documents',
       tabMsgs: 'Messages',
-      tabPrograms: 'Programmes',
+      tabPrograms: 'Programme hebdomadaire',
       tabAppts: 'Rendez-vous',
       tabContact: 'Contact',
       welcome: 'Bienvenue',
@@ -1510,7 +1510,13 @@
     });
   }
 
-  /* تبويب البرامج التربوية للأقسام — عرض البرنامج الأسبوعي للأولياء على شكل صورة أفقية يدخل فيها الولي ويرى كل البرنامج */
+  /* =====================================================================
+     قسم «البرنامج الأسبوعي» في فضاء الأولياء
+     - يعرض للولي برنامج فوج طفله فقط (مع عزل كامل بين الأفواج).
+     - يعرض جدول الأسبوع + نسخة PDF احترافية (A4 أفقي) قابلة للعرض والطباعة + تاريخ آخر تحديث.
+     - يعرض إشعاراً مناسباً للولي عند نشر برنامج جديد أو تحديثه.
+     - للقراءة فقط (لا يسمح للولي بتعديل البرنامج، وبدون مشاركة عبر واتساب).
+     ===================================================================== */
   var WEEK_DAYS_PARENT = [
     { key: 'sun', label: 'الأحد' },
     { key: 'mon', label: 'الإثنين' },
@@ -1519,682 +1525,360 @@
     { key: 'thu', label: 'الخميس' }
   ];
 
-  var PARENT_DOMAIN_KEYS = Object.keys(EMBEDDED_CURRICULUM);
-
-  function formatParentTimeRange(start, end) {
-    var s = String(start || '').trim();
-    var e = String(end || '').trim();
-    if (s && e) return 'من ' + s + ' إلى ' + e;
-    if (s) return 'من ' + s;
-    if (e) return 'إلى ' + e;
-    return '';
-  }
-
-  function formatParentShortTime(start, end) {
-    var s = String(start || '').trim();
-    var e = String(end || '').trim();
-    if (s && e) return s + ' ⟵ ' + e;
-    if (s) return s;
-    if (e) return e;
-    return '';
-  }
-
-  function isParentSessionActive(s) {
-    if (!s) return false;
-    if (s.kind === 'break') return !!(s.title || s.start || s.end || (s.items && s.items.length));
-    return !!((s.items && s.items.length) || s.title || s.start || s.end);
-  }
-
-  function resolveSectionName(p, rawSched) {
-    if (Array.isArray(rawSched) && rawSched[0] && rawSched[0].section_name) {
-      return rawSched[0].section_name;
+  function readSharedProgramsParent() {
+    try {
+      var raw = localStorage.getItem('de_shared_programs_v1');
+      if (!raw) return [];
+      var parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (e) {
+      return [];
     }
-    var secs = (S.d && S.d.sections) || [];
-    var foundSec = secs.filter(function (s) { return s.id === p.section_id; })[0];
-    if (foundSec && foundSec.name) return foundSec.name;
-    var kids = (S.d && S.d.children) || [];
-    var foundKid = kids.filter(function (c) { return c.section_id === p.section_id && c.section; })[0] || kids[0];
-    if (foundKid && foundKid.section) return foundKid.section;
-    return 'الفوج التربوي';
   }
 
-  function buildParentUnifiedCols(rawSched) {
-    var maxCols = 0;
-    WEEK_DAYS_PARENT.forEach(function (wd) {
-      var dy = Array.isArray(rawSched) ? rawSched.filter(function (d) { return d && (d.day === wd.key || d.label === wd.label || (wd.key === 'mon' && d.label === 'الاثنين')); })[0] : null;
-      var len = (dy && dy.sessions) ? dy.sessions.length : 0;
-      if (len > maxCols) maxCols = len;
-    });
-    if (maxCols === 0) maxCols = 1;
-
-    var cols = [];
-    var normalCounter = 0;
-    for (var c = 0; c < maxCols; c++) {
-      var startVal = '';
-      var endVal = '';
-      var breakCount = 0;
-      var activeCount = 0;
-      var sampleTitle = '';
-      var anyActive = false;
-
-      WEEK_DAYS_PARENT.forEach(function (wd) {
-        var dy = Array.isArray(rawSched) ? rawSched.filter(function (d) { return d && (d.day === wd.key || d.label === wd.label || (wd.key === 'mon' && d.label === 'الاثنين')); })[0] : null;
-        var s = dy && dy.sessions ? dy.sessions[c] : null;
-        if (!s) return;
-        if (isParentSessionActive(s)) anyActive = true;
-        if (!startVal && s.start) startVal = String(s.start).trim();
-        if (!endVal && s.end) endVal = String(s.end).trim();
-        if (s.kind === 'break') {
-          breakCount++;
-          if (!sampleTitle && s.title) sampleTitle = s.title;
-        }
-        if (s.kind) activeCount++;
-      });
-
-      var isBrk = breakCount > 0 && breakCount >= Math.ceil((activeCount || 1) / 2);
-      if (!isBrk) normalCounter++;
-      cols.push({
-        colIndex: c,
-        isBreak: isBrk,
-        sessionNum: isBrk ? 0 : normalCounter,
-        label: isBrk ? (sampleTitle || 'حصة بينية / فسحة') : ('الحصة ' + normalCounter),
-        start: startVal,
-        end: endVal,
-        anyActive: anyActive
-      });
-    }
-
-    var filtered = cols.filter(function (cl) { return cl.anyActive; });
-    return filtered.length ? filtered : [cols[0]];
-  }
-
-  function wrapParentCanvasLines(ctx, text, maxWidth) {
-    var words = String(text || '').trim().split(/\s+/);
-    if (!words.length || !words[0]) return [];
-    var lines = [];
-    var cur = words[0];
-    for (var i = 1; i < words.length; i++) {
-      var test = cur + ' ' + words[i];
-      if (ctx.measureText(test).width <= maxWidth) {
-        cur = test;
-      } else {
-        lines.push(cur);
-        cur = words[i];
-      }
-    }
-    lines.push(cur);
-    return lines;
-  }
-
-  function buildParentProgramCanvasDataUrl(p, cb) {
+  function parseParentProgramState(p, fallbackSecName) {
     var rawSched = null;
     if (p && p.schedule) {
       try {
         rawSched = typeof p.schedule === 'string' ? JSON.parse(p.schedule) : p.schedule;
       } catch (e) { rawSched = null; }
     }
-    var secName = resolveSectionName(p, rawSched);
-    var acYear = (p && p.academic_year) || (Array.isArray(rawSched) && rawSched[0] && rawSched[0].academic_year) || '2026/2027';
-    var domainsList = (Array.isArray(rawSched) && rawSched[0] && Array.isArray(rawSched[0].domains)) ? rawSched[0].domains : [];
-    var activeDomains = domainsList.filter(function (dm) { return dm && dm.domain; });
 
-    var canvas = document.createElement('canvas');
-    var W = 1600;
-    var stripH = activeDomains.length ? 92 : 0;
-    var unifiedCols = buildParentUnifiedCols(rawSched);
-    var numCols = unifiedCols.length;
-
-    var rowHeights = WEEK_DAYS_PARENT.map(function (wd) {
-      var dy = Array.isArray(rawSched) ? rawSched.filter(function (d) { return d && (d.day === wd.key || d.label === wd.label || (wd.key === 'mon' && d.label === 'الاثنين')); })[0] : null;
-      var sess = dy && dy.sessions ? dy.sessions : [];
-      var maxItems = 1;
-      unifiedCols.forEach(function (col) {
-        var s = sess[col.colIndex];
-        if (!s) return;
-        var c = (s.items ? s.items.length : 0);
-        if (c > maxItems) maxItems = c;
-      });
-      return Math.max(108, 42 + maxItems * 56);
-    });
-
-    var periodHeaderH = 48;
-    var timeHeaderH = 68;
-    var totalTableH = periodHeaderH + timeHeaderH + rowHeights.reduce(function (a, b) { return a + b; }, 0);
-    var H = 178 + stripH + totalTableH + 88;
-    canvas.width = W;
-    canvas.height = H;
-    var ctx = canvas.getContext('2d');
-    ctx.direction = 'rtl';
-
-    var palette = ['#FEF08A', '#BBF7D0', '#BAE6FD', '#FBCFE8', '#FED7AA', '#DDD6FE', '#A7F3D0', '#FECDD3'];
-
-    function drawAll(logoImg) {
-      ctx.fillStyle = '#FFFFFF';
-      ctx.fillRect(0, 0, W, H);
-      ctx.strokeStyle = '#0F172A';
-      ctx.lineWidth = 3;
-      ctx.strokeRect(10, 10, W - 20, H - 20);
-
-      // 1. الترويسة الرسمية
-      ctx.fillStyle = '#F8FAFC';
-      ctx.fillRect(14, 14, W - 28, 140);
-
-      ctx.textAlign = 'right';
-      ctx.fillStyle = '#0F172A';
-      ctx.font = 'bold 20px IBM Plex Sans Arabic, sans-serif';
-      ctx.fillText('الموسم الدراسي: ' + acYear, W - 36, 58);
-      ctx.fillText('الفوج / القسم: ' + secName, W - 36, 98);
-
-      ctx.textAlign = 'center';
-      ctx.fillStyle = '#1E293B';
-      ctx.font = 'bold 19px IBM Plex Sans Arabic, sans-serif';
-      ctx.fillText('جمعية أولياء الأطفال المعاقين ذهنيًا', W / 2, 42);
-      ctx.fillText('المركز النفسي البيداغوجي دار الإحسان', W / 2, 68);
-      ctx.font = 'bold 16px IBM Plex Sans Arabic, sans-serif';
-      ctx.fillText('- العطف - غرداية -', W / 2, 92);
-
-      ctx.fillStyle = '#E0F2FE';
-      ctx.fillRect(W / 2 - 195, 102, 390, 44);
-      ctx.strokeStyle = '#0284C7';
-      ctx.lineWidth = 2.2;
-      ctx.strokeRect(W / 2 - 195, 102, 390, 44);
-      ctx.fillStyle = '#0C2D55';
-      ctx.font = '900 27px IBM Plex Sans Arabic, sans-serif';
-      ctx.fillText('البرنامج الأسبوعي', W / 2, 133);
-
-      if (logoImg) {
-        try { ctx.drawImage(logoImg, 38, 24, 108, 108); } catch (e) {}
-      }
-
-      var y = 164;
-
-      if (activeDomains.length) {
-        var rightLblW = 148;
-        var leftTotalW = 126;
-        var domAreaW = W - 56 - rightLblW - leftTotalW;
-        var dColW = domAreaW / activeDomains.length;
-
-        ctx.fillStyle = '#E2E8F0';
-        ctx.fillRect(W - 28 - rightLblW, y, rightLblW, 38);
-        ctx.fillRect(W - 28 - rightLblW, y + 38, rightLblW, 42);
-        ctx.strokeStyle = '#1E293B';
-        ctx.lineWidth = 1.4;
-        ctx.strokeRect(W - 28 - rightLblW, y, rightLblW, 38);
-        ctx.strokeRect(W - 28 - rightLblW, y + 38, rightLblW, 42);
-        ctx.fillStyle = '#0F172A';
-        ctx.font = 'bold 14px IBM Plex Sans Arabic, sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText('الأنشطة / المجالات', W - 28 - rightLblW / 2, y + 24);
-        ctx.fillText('عدد المهارات', W - 28 - rightLblW / 2, y + 64);
-
-        var totalSkills = 0;
-        activeDomains.forEach(function (dm, dIdx) {
-          var dx = W - 28 - rightLblW - (dIdx + 1) * dColW;
-          var colColor = palette[dIdx % palette.length];
-          var skCount = dm.skills ? dm.skills.length : 0;
-          totalSkills += skCount;
-
-          ctx.fillStyle = colColor;
-          ctx.fillRect(dx, y, dColW, 38);
-          ctx.fillStyle = '#FFFFFF';
-          ctx.fillRect(dx, y + 38, dColW, 42);
-          ctx.strokeStyle = '#1E293B';
-          ctx.strokeRect(dx, y, dColW, 38);
-          ctx.strokeRect(dx, y + 38, dColW, 42);
-
-          ctx.fillStyle = '#0F172A';
-          ctx.font = 'bold 12.5px IBM Plex Sans Arabic, sans-serif';
-          ctx.fillText(String(dm.domain || '').slice(0, 30), dx + dColW / 2, y + 24);
-          ctx.font = 'bold 15px IBM Plex Sans Arabic, sans-serif';
-          ctx.fillText(skCount + ' مهارة', dx + dColW / 2, y + 64);
+    var meta = (Array.isArray(rawSched) && rawSched[0]) ? rawSched[0] : (rawSched && typeof rawSched === 'object' ? rawSched : {});
+    var st = {
+      id: p ? p.id : null,
+      section_id: (p && p.section_id) || '',
+      section_name: (meta && meta.section_name) || fallbackSecName || 'الفوج التربوي',
+      academic_year: (p && p.academic_year) || (meta && meta.academic_year) || '2026/2027',
+      status: (meta && meta.program_status) || (p && p.status) || 'published',
+      published_at: (p && p.published_at) || (meta && meta.published_at) || null,
+      updated_at: (meta && meta.updated_at) || (p && p.updated_at) || (p && p.published_at) || null,
+      prepared_date: (meta && meta.prepared_date) || ((p && p.published_at) ? String(p.published_at).slice(0, 10) : new Date().toISOString().slice(0, 10)),
+      day_start: (meta && meta.day_start) || '08:00',
+      day_end: (meta && meta.day_end) || '14:00',
+      educator_name: (meta && meta.educator_name) || '',
+      supervisor_name: (meta && meta.supervisor_name) || '',
+      director_name: (meta && meta.director_name) || '',
+      days: WEEK_DAYS_PARENT.map(function (wd) {
+        var found = Array.isArray(rawSched)
+          ? rawSched.filter(function (r) { return r && (r.day === wd.key || r.label === wd.label || (wd.key === 'mon' && r.label === 'الاثنين')); })[0]
+          : null;
+        var sessList = (found && Array.isArray(found.sessions)) ? found.sessions.map(function (s) {
+          var isAct = (s.kind === 'break' || s.kind === 'activity' || s.type === 'activity');
+          var dom = s.domain || (s.items && s.items[0] && s.items[0].domain) || '';
+          var sk = s.skill || (s.items && s.items[0] && s.items[0].skill) || '';
+          if (s.items && s.items.length > 1) {
+            sk = s.items.map(function (it) { return it.skill; }).filter(Boolean).join(' + ');
+          }
+          return {
+            kind: isAct ? 'activity' : 'session',
+            title: s.title || s.activity || (isAct ? 'نشاط يومي' : sk),
+            activity: s.activity || (isAct ? s.title : ''),
+            domain: isAct ? '' : dom,
+            skill: isAct ? '' : sk,
+            start: s.start || '08:00',
+            end: s.end || '09:00',
+            duration: s.duration || 60,
+            items: isAct ? [] : (s.items && s.items.length ? s.items : (dom || sk ? [{ domain: dom, skill: sk }] : []))
+          };
+        }) : [];
+        sessList.sort(function (a, b) {
+          return String(a.start || '00:00').localeCompare(String(b.start || '00:00'));
         });
-
-        ctx.fillStyle = '#D8B4E2';
-        ctx.fillRect(28, y, leftTotalW, 38);
-        ctx.fillStyle = '#F3E8FF';
-        ctx.fillRect(28, y + 38, leftTotalW, 42);
-        ctx.strokeStyle = '#1E293B';
-        ctx.strokeRect(28, y, leftTotalW, 38);
-        ctx.strokeRect(28, y + 38, leftTotalW, 42);
-        ctx.fillStyle = '#3B0764';
-        ctx.font = 'bold 15px IBM Plex Sans Arabic, sans-serif';
-        ctx.fillText('المجموع', 28 + leftTotalW / 2, y + 24);
-        ctx.fillText(totalSkills + ' مهارة', 28 + leftTotalW / 2, y + 64);
-
-        y += 92;
-      }
-
-      // إطار الفترات + صف التوقيت الواضح تحته مباشرة
-      var dayColW = 148;
-      var sessColW = W - 56 - dayColW;
-      var colW = sessColW / numCols;
-
-      var midBreakIdx = -1;
-      for (var bIdx = 1; bIdx < numCols - 1; bIdx++) {
-        if (unifiedCols[bIdx].isBreak && (unifiedCols[bIdx].label.indexOf('فسحة') >= 0 || unifiedCols[bIdx].label.indexOf('استراحة') >= 0 || bIdx === Math.floor(numCols / 2))) {
-          midBreakIdx = bIdx;
-          break;
-        }
-      }
-
-      ctx.fillStyle = '#CBD5E1';
-      ctx.fillRect(28 + sessColW, y, dayColW, periodHeaderH);
-      ctx.strokeStyle = '#1E293B';
-      ctx.lineWidth = 1.6;
-      ctx.strokeRect(28 + sessColW, y, dayColW, periodHeaderH);
-      ctx.fillStyle = '#0F172A';
-      ctx.font = 'bold 17px IBM Plex Sans Arabic, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('إطار الفترات', 28 + sessColW + dayColW / 2, y + 30);
-
-      if (midBreakIdx >= 0 && numCols >= 3) {
-        var mornCols = midBreakIdx;
-        var brkCols = 1;
-        var aftCols = numCols - mornCols - brkCols;
-
-        var mornW = mornCols * colW;
-        var brkW = brkCols * colW;
-        var aftW = aftCols * colW;
-
-        var mornX = 28 + sessColW - mornW;
-        var brkX = mornX - brkW;
-        var aftX = 28;
-
-        ctx.fillStyle = '#BAE6FD';
-        ctx.fillRect(mornX, y, mornW, periodHeaderH);
-        ctx.strokeRect(mornX, y, mornW, periodHeaderH);
-        ctx.fillStyle = '#0C2D55';
-        ctx.font = 'bold 18px IBM Plex Sans Arabic, sans-serif';
-        ctx.fillText(' الفترة الصباحية', mornX + mornW / 2, y + 31);
-
-        ctx.fillStyle = '#D8B4E2';
-        ctx.fillRect(brkX, y, brkW, periodHeaderH);
-        ctx.strokeRect(brkX, y, brkW, periodHeaderH);
-        ctx.fillStyle = '#3B0764';
-        ctx.font = 'bold 16px IBM Plex Sans Arabic, sans-serif';
-        ctx.fillText(' ' + (unifiedCols[midBreakIdx].label || 'فسحة'), brkX + brkW / 2, y + 31);
-
-        ctx.fillStyle = '#DDD6FE';
-        ctx.fillRect(aftX, y, aftW, periodHeaderH);
-        ctx.strokeRect(aftX, y, aftW, periodHeaderH);
-        ctx.fillStyle = '#1E1B4B';
-        ctx.font = 'bold 18px IBM Plex Sans Arabic, sans-serif';
-        ctx.fillText(' الفترة المسائية', aftX + aftW / 2, y + 31);
-      } else if (numCols >= 2) {
-        var halfCols = Math.ceil(numCols / 2);
-        var mW = halfCols * colW;
-        var aW = sessColW - mW;
-        var mX = 28 + sessColW - mW;
-
-        ctx.fillStyle = '#BAE6FD';
-        ctx.fillRect(mX, y, mW, periodHeaderH);
-        ctx.strokeRect(mX, y, mW, periodHeaderH);
-        ctx.fillStyle = '#0C2D55';
-        ctx.font = 'bold 18px IBM Plex Sans Arabic, sans-serif';
-        ctx.fillText(' الفترة الصباحية', mX + mW / 2, y + 31);
-
-        ctx.fillStyle = '#DDD6FE';
-        ctx.fillRect(28, y, aW, periodHeaderH);
-        ctx.strokeRect(28, y, aW, periodHeaderH);
-        ctx.fillStyle = '#1E1B4B';
-        ctx.font = 'bold 18px IBM Plex Sans Arabic, sans-serif';
-        ctx.fillText(' الفترة المسائية', 28 + aW / 2, y + 31);
-      } else {
-        ctx.fillStyle = '#BAE6FD';
-        ctx.fillRect(28, y, sessColW, periodHeaderH);
-        ctx.strokeRect(28, y, sessColW, periodHeaderH);
-        ctx.fillStyle = '#0C2D55';
-        ctx.font = 'bold 18px IBM Plex Sans Arabic, sans-serif';
-        ctx.fillText(' الفترة الصباحية   |    الفترة المسائية', 28 + sessColW / 2, y + 31);
-      }
-
-      y += periodHeaderH;
-
-      // صف التوقيت الواضح تحت إطار الفترات مباشرة
-      ctx.fillStyle = '#1E293B';
-      ctx.fillRect(28 + sessColW, y, dayColW, timeHeaderH);
-      ctx.strokeStyle = '#0F172A';
-      ctx.lineWidth = 1.6;
-      ctx.strokeRect(28 + sessColW, y, dayColW, timeHeaderH);
-      ctx.fillStyle = '#FFFFFF';
-      ctx.font = 'bold 15px IBM Plex Sans Arabic, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText(' التوقيت الموحد', 28 + sessColW + dayColW / 2, y + 27);
-      ctx.fillStyle = '#FDE047';
-      ctx.font = 'bold 14px IBM Plex Sans Arabic, sans-serif';
-      ctx.fillText('الأيام ⬇ / الحصص ⬅', 28 + sessColW + dayColW / 2, y + 52);
-
-      unifiedCols.forEach(function (col, cIdx) {
-        var cx = 28 + sessColW - (cIdx + 1) * colW;
-        ctx.fillStyle = col.isBreak ? '#F3E8FF' : '#EFF6FF';
-        ctx.fillRect(cx, y, colW, timeHeaderH);
-        ctx.strokeStyle = '#1E293B';
-        ctx.lineWidth = 1.5;
-        ctx.strokeRect(cx, y, colW, timeHeaderH);
-
-        ctx.fillStyle = col.isBreak ? '#4C1D95' : '#0C2D55';
-        ctx.font = 'bold 14px IBM Plex Sans Arabic, sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText(col.label.slice(0, 28), cx + colW / 2, y + 22);
-
-        var pillX = cx + 8;
-        var pillY = y + 30;
-        var pillW = colW - 16;
-        var pillH = 31;
-        ctx.fillStyle = col.isBreak ? '#FAF5FF' : '#FFFFFF';
-        ctx.fillRect(pillX, pillY, pillW, pillH);
-        ctx.strokeStyle = col.isBreak ? '#9333EA' : '#0284C7';
-        ctx.lineWidth = 1.6;
-        ctx.strokeRect(pillX, pillY, pillW, pillH);
-
-        var timeTxt = formatParentTimeRange(col.start, col.end) || 'التوقيت يدوي';
-        ctx.fillStyle = col.isBreak ? '#581C87' : '#0F172A';
-        ctx.font = '900 15px IBM Plex Sans Arabic, sans-serif';
-        ctx.fillText(' ' + timeTxt, cx + colW / 2, pillY + 21);
-      });
-
-      y += timeHeaderH;
-
-      WEEK_DAYS_PARENT.forEach(function (wd, idx) {
-        var rh = rowHeights[idx];
-        ctx.fillStyle = idx % 2 === 0 ? '#FFFFFF' : '#F8FAFC';
-        ctx.fillRect(28, y, sessColW, rh);
-        ctx.fillStyle = '#E2E8F0';
-        ctx.fillRect(28 + sessColW, y, dayColW, rh);
-
-        ctx.strokeStyle = '#1E293B';
-        ctx.lineWidth = 1.5;
-        ctx.strokeRect(28, y, sessColW, rh);
-        ctx.strokeRect(28 + sessColW, y, dayColW, rh);
-
-        ctx.fillStyle = '#0F172A';
-        ctx.font = '900 21px IBM Plex Sans Arabic, sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText(wd.label, 28 + sessColW + dayColW / 2, y + rh / 2 + 7);
-
-        var dy = Array.isArray(rawSched) ? rawSched.filter(function (d) { return d && (d.day === wd.key || d.label === wd.label || (wd.key === 'mon' && d.label === 'الاثنين')); })[0] : null;
-        var sessArr = (dy && dy.sessions) ? dy.sessions : [];
-
-        unifiedCols.forEach(function (col, cIdx) {
-          var sx = 28 + sessColW - (cIdx + 1) * colW;
-          var sess = sessArr[col.colIndex];
-
-          ctx.strokeStyle = '#94A3B8';
-          ctx.lineWidth = 1.1;
-          ctx.strokeRect(sx, y, colW, rh);
-
-          if (!sess || !isParentSessionActive(sess)) {
-            ctx.fillStyle = '#94A3B8';
-            ctx.font = 'bold 16px IBM Plex Sans Arabic, sans-serif';
-            ctx.textAlign = 'center';
-            ctx.fillText('—', sx + colW / 2, y + rh / 2 + 6);
-            return;
-          }
-
-          var isBrk = sess.kind === 'break' || col.isBreak;
-          ctx.fillStyle = isBrk ? '#F3E8FF' : '#FFFFFF';
-          ctx.fillRect(sx + 2, y + 2, colW - 4, rh - 4);
-
-          var customTime = '';
-          if ((sess.start && sess.start !== col.start) || (sess.end && sess.end !== col.end)) {
-            customTime = formatParentShortTime(sess.start, sess.end);
-          }
-
-          var iy = y + 10;
-          if (sess.title && (!isBrk || (sess.items && sess.items.length))) {
-            ctx.fillStyle = isBrk ? '#D8B4E2' : '#E0F2FE';
-            ctx.fillRect(sx + 5, iy, colW - 10, 24);
-            ctx.fillStyle = '#0F172A';
-            ctx.font = 'bold 12.5px IBM Plex Sans Arabic, sans-serif';
-            ctx.textAlign = 'center';
-            ctx.fillText((sess.title + (customTime ? (' (' + customTime + ')') : '')).slice(0, 34), sx + colW / 2, iy + 17);
-            iy += 28;
-          }
-
-          if (isBrk && (!sess.items || !sess.items.length)) {
-            ctx.fillStyle = '#4C1D95';
-            ctx.font = 'bold 17px IBM Plex Sans Arabic, sans-serif';
-            ctx.textAlign = 'center';
-            ctx.fillText(sess.title || col.label || 'فسحة', sx + colW / 2, y + rh / 2 + 7);
-          } else {
-            (sess.items || []).forEach(function (it) {
-              var domIdx = Math.max(0, PARENT_DOMAIN_KEYS.indexOf(it.domain)) % palette.length;
-              var boxH = 48;
-              ctx.fillStyle = palette[domIdx];
-              ctx.fillRect(sx + 6, iy, colW - 12, boxH);
-              ctx.strokeStyle = '#475569';
-              ctx.lineWidth = 0.9;
-              ctx.strokeRect(sx + 6, iy, colW - 12, boxH);
-
-              ctx.textAlign = 'right';
-              ctx.fillStyle = '#0C2D55';
-              ctx.font = 'bold 11.5px IBM Plex Sans Arabic, sans-serif';
-              ctx.fillText((' ' + (it.domain || '')).slice(0, 38), sx + colW - 10, iy + 16);
-
-              ctx.fillStyle = '#0F172A';
-              ctx.font = 'bold 12px IBM Plex Sans Arabic, sans-serif';
-              var skillLines = wrapParentCanvasLines(ctx, ' ' + (it.skill || ''), colW - 22);
-              ctx.fillText((skillLines[0] || '').slice(0, 44), sx + colW - 10, iy + 32);
-              if (skillLines[1]) {
-                ctx.font = 'bold 11px IBM Plex Sans Arabic, sans-serif';
-                ctx.fillText(skillLines[1].slice(0, 44), sx + colW - 10, iy + 44);
-              }
-              iy += boxH + 5;
-            });
-          }
-        });
-
-        y += rh;
-      });
-
-      ctx.fillStyle = '#0F172A';
-      ctx.font = 'bold 19px IBM Plex Sans Arabic, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('توقيع المربية', W - 200, y + 48);
-      ctx.fillText('المشرف البيداغوجي', W / 2, y + 48);
-      ctx.fillText('توقيع وختم المدير', 200, y + 48);
-
-      cb(canvas.toDataURL('image/png'), secName);
-    }
-
-    var im = new Image();
-    im.onload = function () { drawAll(im); };
-    im.onerror = function () { drawAll(null); };
-    im.src = 'logo-sq.png';
+        return { day: wd.key, label: wd.label, sessions: sessList };
+      })
+    };
+    return st;
   }
 
-  function openParentProgramImageViewer(p) {
-    var imgEl = h('img', { class: 'wk-zoom-img', alt: 'البرنامج الأسبوعي' });
-    var zoomContainer = h('div', { class: 'wk-zoom-container' }, imgEl);
-    var currentDataUrl = '';
-    var currentSecName = 'القسم';
-    var zoomed = false;
-
-    buildParentProgramCanvasDataUrl(p, function (dataUrl, sName) {
-      currentDataUrl = dataUrl;
-      currentSecName = sName;
-      imgEl.src = dataUrl;
-    });
-
-    imgEl.addEventListener('click', function () {
-      zoomed = !zoomed;
-      imgEl.className = zoomed ? 'wk-zoom-img is-zoomed' : 'wk-zoom-img';
-    });
-
-    openModal(h('div', { class: 'modal-body wk-modal-print' },
-      h('div', { class: 'bar-sub no-print' },
-        h('h2', { text: ' صورة البرنامج الأسبوعي الكاملة' }),
-        h('div', { class: 'row-actions' },
-          h('button', {
-            type: 'button',
-            class: 'btn small light',
-            text: ' تكبير / تصغير الصورة',
-            onclick: function () {
-              zoomed = !zoomed;
-              imgEl.className = zoomed ? 'wk-zoom-img is-zoomed' : 'wk-zoom-img';
-            }
-          })
-        )
-      ),
-      h('p', { class: 'muted small no-print', text: 'اضغط على الصورة لتكبيرها وتحريكها يمينًا ويسارًا، أو حمّلها على هاتفك:' }),
-      zoomContainer,
-      h('div', { class: 'modal-actions no-print' },
-        h('button', { class: 'btn light', type: 'button', text: 'إغلاق', onclick: closeModal }),
-        h('button', {
-          class: 'btn gold',
-          type: 'button',
-          text: ' تحميل صورة البرنامج (PNG)',
-          onclick: function () {
-            if (!currentDataUrl) return;
-            var a = document.createElement('a');
-            a.download = 'البرنامج_الأسبوعي_' + String(currentSecName).replace(/\s+/g, '_') + '.png';
-            a.href = currentDataUrl;
-            a.click();
-          }
-        }),
-        h('button', { class: 'btn', type: 'button', text: ' طباعة', onclick: function () { window.print(); } })
-      )
-    ));
-  }
-
-  function renderParentWeeklySheet(p) {
-    var rawSched = null;
-    if (p && p.schedule) {
-      try {
-        rawSched = typeof p.schedule === 'string' ? JSON.parse(p.schedule) : p.schedule;
-      } catch (e) { rawSched = null; }
-    }
-    var secName = resolveSectionName(p, rawSched);
-    var acYear = (p && p.academic_year) || (Array.isArray(rawSched) && rawSched[0] && rawSched[0].academic_year) || '2026/2027';
-
-    var imgEl = h('img', {
-      class: 'wk-program-img',
-      alt: 'صورة البرنامج الأسبوعي — ' + secName,
-      title: 'اضغط لفتح وتكبير صورة البرنامج الأسبوعي',
-      onclick: function () { openParentProgramImageViewer(p); }
-    });
-
-    var currentDataUrl = '';
-    buildParentProgramCanvasDataUrl(p, function (dataUrl) {
-      currentDataUrl = dataUrl;
-      imgEl.src = dataUrl;
-    });
-
-    var openBtn = h('button', {
-      type: 'button',
-      class: 'btn small gold',
-      text: ' فتح وتكبير صورة البرنامج كاملة',
-      onclick: function () { openParentProgramImageViewer(p); }
-    });
-
-    var dlBtn = h('button', {
-      type: 'button',
-      class: 'btn small light',
-      text: ' حفظ الصورة في الهاتف',
-      onclick: function () {
-        if (!currentDataUrl) return;
-        var a = document.createElement('a');
-        a.download = 'البرنامج_الأسبوعي_' + String(secName).replace(/\s+/g, '_') + '.png';
-        a.href = currentDataUrl;
-        a.click();
+  function getBuiltInSectionDemoProgram(secId, secName) {
+    var sName = secName || 'قسم الشبه مدرسي مكيف';
+    var demoDays = [
+      {
+        day: 'sun', label: 'الأحد',
+        sessions: [
+          { kind: 'activity', activity: 'الاستقبال', title: 'الاستقبال', start: '08:00', end: '08:30', duration: 30, items: [] },
+          { kind: 'session', domain: 'المجال المعرفي', skill: 'الانتباه والتركيز', title: 'الانتباه والتركيز', start: '08:30', end: '09:30', duration: 60, items: [{ domain: 'المجال المعرفي', skill: 'الانتباه والتركيز' }] },
+          { kind: 'activity', activity: 'وجبة خفيفة', title: 'وجبة خفيفة', start: '09:30', end: '10:00', duration: 30, items: [] },
+          { kind: 'session', domain: 'مجال التواصل واللغة', skill: 'اللغة الاستقبالية والتعبيرية', title: 'اللغة الاستقبالية والتعبيرية', start: '10:00', end: '11:00', duration: 60, items: [{ domain: 'مجال التواصل واللغة', skill: 'اللغة الاستقبالية والتعبيرية' }] },
+          { kind: 'activity', activity: 'الاستراحة', title: 'الاستراحة', start: '11:00', end: '11:30', duration: 30, items: [] },
+          { kind: 'session', domain: 'مجال الاستقلالية (الحياة اليومية والعناية بالذات)', skill: 'غسل اليدين بالماء والصابون بشكل صحيح', title: 'غسل اليدين بالماء والصابون بشكل صحيح', start: '11:30', end: '12:30', duration: 60, items: [{ domain: 'مجال الاستقلالية (الحياة اليومية والعناية بالذات)', skill: 'غسل اليدين بالماء والصابون بشكل صحيح' }] },
+          { kind: 'activity', activity: 'الغداء', title: 'الغداء', start: '12:30', end: '13:30', duration: 60, items: [] },
+          { kind: 'activity', activity: 'الانصراف', title: 'الانصراف', start: '13:30', end: '14:00', duration: 30, items: [] }
+        ]
+      },
+      {
+        day: 'mon', label: 'الإثنين',
+        sessions: [
+          { kind: 'activity', activity: 'الاستقبال', title: 'الاستقبال', start: '08:00', end: '08:30', duration: 30, items: [] },
+          { kind: 'session', domain: 'مجال المهارات الحركية الدقيقة', skill: 'مسك المقص بشكل صحيح', title: 'مسك المقص بشكل صحيح', start: '08:30', end: '09:30', duration: 60, items: [{ domain: 'مجال المهارات الحركية الدقيقة', skill: 'مسك المقص بشكل صحيح' }] },
+          { kind: 'activity', activity: 'وجبة خفيفة', title: 'وجبة خفيفة', start: '09:30', end: '10:00', duration: 30, items: [] },
+          { kind: 'session', domain: 'المجال الاجتماعي', skill: 'التفاعل الاجتماعي والمشاركة', title: 'التفاعل الاجتماعي والمشاركة', start: '10:00', end: '11:00', duration: 60, items: [{ domain: 'المجال الاجتماعي', skill: 'التفاعل الاجتماعي والمشاركة' }] },
+          { kind: 'activity', activity: 'النظافة الشخصية', title: 'النظافة الشخصية', start: '11:00', end: '11:30', duration: 30, items: [] },
+          { kind: 'session', domain: 'المجال الأكاديمي', skill: 'التعرف على أشكال الحروف داخل الكلمة (البداية، الوسط، النهاية)', title: 'التعرف على أشكال الحروف', start: '11:30', end: '12:30', duration: 60, items: [{ domain: 'المجال الأكاديمي', skill: 'التعرف على أشكال الحروف داخل الكلمة (البداية، الوسط، النهاية)' }] },
+          { kind: 'activity', activity: 'الغداء', title: 'الغداء', start: '12:30', end: '13:30', duration: 60, items: [] },
+          { kind: 'activity', activity: 'الانصراف', title: 'الانصراف', start: '13:30', end: '14:00', duration: 30, items: [] }
+        ]
+      },
+      {
+        day: 'tue', label: 'الثلاثاء',
+        sessions: [
+          { kind: 'activity', activity: 'الاستقبال', title: 'الاستقبال', start: '08:00', end: '08:30', duration: 30, items: [] },
+          { kind: 'session', domain: 'مجال المهارات الحركية الكبرى', skill: 'المشي بطريقة صحيحة', title: 'المشي بطريقة صحيحة', start: '08:30', end: '09:30', duration: 60, items: [{ domain: 'مجال المهارات الحركية الكبرى', skill: 'المشي بطريقة صحيحة' }] },
+          { kind: 'activity', activity: 'الاستراحة', title: 'الاستراحة', start: '09:30', end: '10:00', duration: 30, items: [] },
+          { kind: 'session', domain: 'مجال مهارات الحضور والانتباه', skill: 'الاتصال البصري أثناء المحادثة', title: 'الاتصال البصري أثناء المحادثة', start: '10:00', end: '11:00', duration: 60, items: [{ domain: 'مجال مهارات الحضور والانتباه', skill: 'الاتصال البصري أثناء المحادثة' }] },
+          { kind: 'activity', activity: 'اللعب الحر', title: 'اللعب الحر', start: '11:00', end: '11:30', duration: 30, items: [] },
+          { kind: 'session', domain: 'مجال التقليد', skill: 'تقليد التصفيق', title: 'تقليد الحركات الأساسية', start: '11:30', end: '12:30', duration: 60, items: [{ domain: 'مجال التقليد', skill: 'تقليد التصفيق' }] },
+          { kind: 'activity', activity: 'الغداء', title: 'الغداء', start: '12:30', end: '13:30', duration: 60, items: [] },
+          { kind: 'activity', activity: 'الانصراف', title: 'الانصراف', start: '13:30', end: '14:00', duration: 30, items: [] }
+        ]
+      },
+      {
+        day: 'wed', label: 'الأربعاء',
+        sessions: [
+          { kind: 'activity', activity: 'الاستقبال', title: 'الاستقبال', start: '08:00', end: '08:30', duration: 30, items: [] },
+          { kind: 'session', domain: 'مجال ما قبل الأكاديمي', skill: 'الوصل بين مجموعة عناصر من نفس الفئة', title: 'الوصل بين عناصر متماثلة', start: '08:30', end: '09:30', duration: 60, items: [{ domain: 'مجال ما قبل الأكاديمي', skill: 'الوصل بين مجموعة عناصر من نفس الفئة' }] },
+          { kind: 'activity', activity: 'وجبة خفيفة', title: 'وجبة خفيفة', start: '09:30', end: '10:00', duration: 30, items: [] },
+          { kind: 'session', domain: 'مجال التواصل', skill: 'يسمي الأشياء المألوفة في البيئة', title: 'تسمية الأشياء المألوفة', start: '10:00', end: '11:00', duration: 60, items: [{ domain: 'مجال التواصل', skill: 'يسمي الأشياء المألوفة في البيئة' }] },
+          { kind: 'activity', activity: 'الصلاة', title: 'الصلاة', start: '11:00', end: '11:30', duration: 30, items: [] },
+          { kind: 'session', domain: 'مجال الاستقلالية (الحياة اليومية والعناية بالذات)', skill: 'مسك أدوات الطعام بشكل صحيح', title: 'مسك أدوات الطعام بشكل صحيح', start: '11:30', end: '12:30', duration: 60, items: [{ domain: 'مجال الاستقلالية (الحياة اليومية والعناية بالذات)', skill: 'مسك أدوات الطعام بشكل صحيح' }] },
+          { kind: 'activity', activity: 'الغداء', title: 'الغداء', start: '12:30', end: '13:30', duration: 60, items: [] },
+          { kind: 'activity', activity: 'الانصراف', title: 'الانصراف', start: '13:30', end: '14:00', duration: 30, items: [] }
+        ]
+      },
+      {
+        day: 'thu', label: 'الخميس',
+        sessions: [
+          { kind: 'activity', activity: 'الاستقبال', title: 'الاستقبال', start: '08:00', end: '08:30', duration: 30, items: [] },
+          { kind: 'session', domain: 'مجال المهارات الحركية الدقيقة', skill: 'ترتيب مجموعة من الأوراق فوق بعضها', title: 'ترتيب وتصنيف الأوراق', start: '08:30', end: '09:30', duration: 60, items: [{ domain: 'مجال المهارات الحركية الدقيقة', skill: 'ترتيب مجموعة من الأوراق فوق بعضها' }] },
+          { kind: 'activity', activity: 'نشاط خارجي', title: 'نشاط خارجي', start: '09:30', end: '10:30', duration: 60, items: [] },
+          { kind: 'session', domain: 'المجال الاجتماعي', skill: 'التفاعل الاجتماعي والمشاركة', title: 'أنشطة جماعية ومراجعة أسبوعية', start: '10:30', end: '12:00', duration: 90, items: [{ domain: 'المجال الاجتماعي', skill: 'التفاعل الاجتماعي والمشاركة' }] },
+          { kind: 'activity', activity: 'النظافة الشخصية', title: 'النظافة الشخصية', start: '12:00', end: '12:30', duration: 30, items: [] },
+          { kind: 'activity', activity: 'الغداء', title: 'الغداء', start: '12:30', end: '13:30', duration: 60, items: [] },
+          { kind: 'activity', activity: 'الانصراف', title: 'الانصراف', start: '13:30', end: '14:00', duration: 30, items: [] }
+        ]
       }
-    });
-
-    return h('div', { class: 'card wk-parent-card' },
-      h('div', { class: 'bar-sub' },
-        h('div', null,
-          h('h2', { text: ' البرنامج الأسبوعي — ' + secName }),
-          h('span', { class: 'muted small', text: 'الموسم الدراسي: ' + acYear + ' — اضغط على الصورة لتكبيرها ورؤية كل البرنامج بوضوح' })
-        ),
-        h('div', { class: 'row-actions no-print' }, openBtn, dlBtn)
-      ),
-      h('div', { class: 'wk-img-card-wrap' }, imgEl)
-    );
-  }
-
-  function getBuiltInTamhinDemo(secId, secName) {
-    var cleanDomains = [
-      { domain: 'مجال الاستقلالية (الحياة اليومية والعناية بالذات)', skills: ['غسل اليدين بالماء والصابون بشكل صحيح', 'لبس المئزر بشكل صحيح', 'مسك أدوات الطعام بشكل صحيح'] },
-      { domain: 'مجال المهارات الحركية الدقيقة', skills: ['مسك المقص بشكل صحيح', 'قص الورقة على خطوط مستقيمة عريضة', 'ترتيب مجموعة من الأوراق فوق بعضها'] },
-      { domain: 'مجال المهارات الحركية الكبرى', skills: ['المشي بطريقة صحيحة', 'دفع جهاز متحرك لمسافة 2 م بطريقة صحيحة'] },
-      { domain: 'مجال مهارات الحضور والانتباه', skills: ['الاتصال البصري أثناء التعليم الجماعي', 'الاستجابة للتعليمات اللفظية (أمران متسلسلان)'] },
-      { domain: 'مجال التواصل', skills: ['يسمي الأشياء المألوفة في البيئة', 'يستجيب للأوامر المتسلسلة (أكثر من أمر)'] }
     ];
-    var notesTxt = 'برنامج أسبوعي معتمد لقسم التمهين (مركز المساعدة على العمل) — يشمل الفترات الصباحية والمسائية والحصص البينية.';
-    var days = [
-      { day: 'sun', label: 'الأحد', sessions: [
-        { kind: 'break', title: 'الاعتماد على الذات', start: '08:00', end: '09:00', items: [{ domain: 'مجال الاستقلالية (الحياة اليومية والعناية بالذات)', skill: 'لبس المئزر بشكل صحيح' }] },
-        { kind: 'session', title: 'ورشة التأهيل المهني الأولي', start: '09:00', end: '10:30', items: [{ domain: 'مجال المهارات الحركية الدقيقة', skill: 'مسك المقص بشكل صحيح' }, { domain: 'مجال مهارات الحضور والانتباه', skill: 'الاتصال البصري أثناء التعليم الجماعي' }] },
-        { kind: 'break', title: 'فسحة', start: '10:30', end: '11:00', items: [] },
-        { kind: 'session', title: 'تنمية المهارات العملية', start: '12:00', end: '13:40', items: [{ domain: 'مجال التواصل', skill: 'يستجيب للأوامر المتسلسلة (أكثر من أمر)' }] },
-        { kind: 'break', title: 'التحضير للخروج', start: '13:40', end: '14:00', items: [] }
-      ]},
-      { day: 'mon', label: 'الإثنين', sessions: [
-        { kind: 'break', title: 'الاعتماد على الذات', start: '08:00', end: '09:00', items: [{ domain: 'مجال الاستقلالية (الحياة اليومية والعناية بالذات)', skill: 'غسل اليدين بالماء والصابون بشكل صحيح' }] },
-        { kind: 'session', title: 'نشاط الفرز والترتيب المهني', start: '09:00', end: '10:30', items: [{ domain: 'مجال المهارات الحركية الدقيقة', skill: 'ترتيب مجموعة من الأوراق فوق بعضها' }] },
-        { kind: 'break', title: 'فسحة', start: '10:30', end: '11:00', items: [] },
-        { kind: 'session', title: 'ورشة القص والتشكيل', start: '12:00', end: '13:40', items: [{ domain: 'مجال المهارات الحركية الدقيقة', skill: 'قص الورقة على خطوط مستقيمة عريضة' }] },
-        { kind: 'break', title: 'التحضير للخروج', start: '13:40', end: '14:00', items: [] }
-      ]},
-      { day: 'tue', label: 'الثلاثاء', sessions: [
-        { kind: 'break', title: 'الاعتماد على الذات', start: '08:00', end: '09:00', items: [] },
-        { kind: 'session', title: 'رياضة وتوافق حركي مهني', start: '09:00', end: '10:30', items: [{ domain: 'مجال المهارات الحركية الكبرى', skill: 'دفع جهاز متحرك لمسافة 2 م بطريقة صحيحة' }] },
-        { kind: 'break', title: 'فسحة', start: '10:30', end: '11:00', items: [] },
-        { kind: 'session', title: 'تواصل وتفاعل اجتماعي بالورشة', start: '12:00', end: '13:40', items: [{ domain: 'مجال التواصل', skill: 'يسمي الأشياء المألوفة في البيئة' }] },
-        { kind: 'break', title: 'التحضير للخروج', start: '13:40', end: '14:00', items: [] }
-      ]},
-      { day: 'wed', label: 'الأربعاء', sessions: [
-        { kind: 'break', title: 'الاعتماد على الذات', start: '08:00', end: '09:00', items: [] },
-        { kind: 'session', title: 'ورشة التمهين التطبيقي', start: '09:00', end: '10:30', items: [{ domain: 'مجال مهارات الحضور والانتباه', skill: 'الاستجابة للتعليمات اللفظية (أمران متسلسلان)' }, { domain: 'مجال المهارات الحركية الدقيقة', skill: 'مسك المقص بشكل صحيح' }] },
-        { kind: 'break', title: 'فسحة', start: '10:30', end: '11:00', items: [] },
-        { kind: 'session', title: 'استقلالية الحياة اليومية', start: '12:00', end: '13:40', items: [{ domain: 'مجال الاستقلالية (الحياة اليومية والعناية بالذات)', skill: 'مسك أدوات الطعام بشكل صحيح' }] },
-        { kind: 'break', title: 'التحضير للخروج', start: '13:40', end: '14:00', items: [] }
-      ]},
-      { day: 'thu', label: 'الخميس', sessions: [
-        { kind: 'break', title: 'الاعتماد على الذات', start: '08:00', end: '09:00', items: [] },
-        { kind: 'session', title: 'تقييم أسبوعي للمهارات المهنية', start: '09:00', end: '10:30', items: [{ domain: 'مجال المهارات الحركية الدقيقة', skill: 'ترتيب مجموعة من الأوراق فوق بعضها' }, { domain: 'مجال التواصل', skill: 'يستجيب للأوامر المتسلسلة (أكثر من أمر)' }] },
-        { kind: 'break', title: 'فسحة', start: '10:30', end: '11:00', items: [] },
-        { kind: 'session', title: 'أنشطة جماعية ومراجعة', start: '12:00', end: '13:40', items: [{ domain: 'مجال المهارات الحركية الكبرى', skill: 'المشي بطريقة صحيحة' }] },
-        { kind: 'break', title: 'التحضير للخروج', start: '13:40', end: '14:00', items: [] }
-      ]}
-    ];
+
     return {
-      id: 'demo-tamhin',
+      id: 'prog-demo-' + (secId || 'default'),
       section_id: secId || '',
-      title: 'البرنامج الأسبوعي — ' + (secName || 'التمهين م م ع'),
+      title: 'البرنامج الأسبوعي — ' + sName,
       academic_year: '2026/2027',
+      status: 'published',
       published_at: new Date().toISOString(),
-      schedule: days.map(function (dy) {
+      schedule: demoDays.map(function (d) {
         return {
-          day: dy.day,
-          label: dy.label,
-          section_name: secName || 'التمهين م م ع',
+          day: d.day,
+          label: d.label,
+          section_name: sName,
           academic_year: '2026/2027',
-          notes: notesTxt,
-          domains: cleanDomains,
-          sessions: dy.sessions
+          program_status: 'published',
+          day_start: '08:00',
+          day_end: '14:00',
+          educator_name: 'مربية الفوج',
+          supervisor_name: 'المشرف البيداغوجي',
+          director_name: 'مدير المركز',
+          sessions: d.sessions
         };
       })
     };
   }
 
-  function vPrograms(v) {
-    v.appendChild(h('div', { class: 'bar-sub' }, h('h2', { text: t('tabPrograms') })));
-    var progList = (S.d && S.d.programs ? S.d.programs.slice() : []);
-    if (!progList.length) {
-      var kids = (S.d && S.d.children) || [];
-      var tamhinKid = kids.filter(function (c) {
-        return (c.section && c.section.indexOf('التمهين') >= 0) || c.center === 'work';
-      })[0];
-      if (tamhinKid) {
-        progList.push(getBuiltInTamhinDemo(tamhinKid.section_id, tamhinKid.section || 'التمهين م م ع'));
+  function renderParentWeeklyProgramView(p, childObj, secName) {
+    var st = parseParentProgramState(p, secName);
+    var lastUpd = st.updated_at || st.published_at || p.created_at || new Date().toISOString();
+    var lastUpdFmt = fmt(lastUpd);
+    var isUpdated = (st.status === 'updated');
+
+    // إشعار مناسب للولي عند نشر برنامج جديد أو تحديثه
+    var notifBanner = h('div', {
+      class: 'wk-parent-notif-banner no-print',
+      style: 'background:linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 100%); border:1px solid #10B981; border-radius:14px; padding:14px 18px; margin-bottom:16px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;'
+    },
+      h('div', { style: 'display:flex; align-items:center; gap:12px;' },
+        h('span', { style: 'background:#059669; color:#fff; width:36px; height:36px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-weight:bold; font-size:18px;', text: '🔔' }),
+        h('div', null,
+          h('strong', { style: 'color:#064E3B; display:block; font-size:15px;', text: isUpdated ? ('تم تحديث البرنامج الأسبوعي لفوج «' + st.section_name + '»') : ('البرنامج الأسبوعي المعتمد لفوج «' + st.section_name + '»') }),
+          h('span', { style: 'color:#047857; font-size:13px;', text: 'تاريخ آخر تحديث واعتماد: ' + lastUpdFmt + ' • خاص بفوج الطفل: ' + ((childObj && childObj.full_name) || 'تلميذ المركز') })
+        )
+      ),
+      h('span', { class: 'badge ok', text: isUpdated ? 'تم تحديثه' : 'منشور ومعتمد' })
+    );
+
+    // أزرار عرض وطباعة وتحميل PDF فقط (بدون أي تعديل للولي وبدون واتساب)
+    var pdfCanvasHost = h('div', {
+      class: 'wk-parent-pdf-canvas-host',
+      style: 'width:100%; background:#fff; border:1px solid #CBD5E1; border-radius:12px; padding:8px; margin-top:14px; overflow:hidden;'
+    }, h('p', { class: 'muted small', style: 'text-align:center; padding:24px;', text: 'جارٍ تجهيز وثيقة البرنامج الأسبوعي (A4 أفقي)...' }));
+
+    function renderPdfCanvasNow() {
+      if (window.DE_PDF && typeof window.DE_PDF.renderWeeklyProgramCanvas === 'function') {
+        window.DE_PDF.renderWeeklyProgramCanvas(st, st.section_name).then(function (cEl) {
+          pdfCanvasHost.textContent = '';
+          cEl.style.width = '100%';
+          cEl.style.height = 'auto';
+          cEl.style.display = 'block';
+          cEl.style.borderRadius = '8px';
+          pdfCanvasHost.appendChild(cEl);
+        }).catch(function () {});
       }
     }
-    if (!progList.length) return v.appendChild(empty(t('emptyPrograms')));
+    setTimeout(renderPdfCanvasNow, 20);
 
-    progList.forEach(function (p) {
-      v.appendChild(renderParentWeeklySheet(p));
+    var downloadPdfBtn = h('button', {
+      type: 'button',
+      class: 'btn gold',
+      onclick: async function () {
+        try {
+          if (!window.DE_PDF || !window.DE_PDF.renderWeeklyProgramToPdf) throw new Error('مولد PDF غير متاح');
+          toast('جارٍ توليد ملف PDF للبرنامج الأسبوعي...', 'ok');
+          var bytes = await window.DE_PDF.renderWeeklyProgramToPdf(st, st.section_name);
+          window.DE_PDF.downloadPdf(bytes, 'البرنامج_الأسبوعي_' + String(st.section_name).replace(/\s+/g, '_') + '.pdf');
+        } catch (err) {
+          toast('تعذر تحميل ملف PDF: ' + err.message, 'bad');
+        }
+      }
+    }, h('span', { text: '📄 عرض وتحميل PDF (A4 أفقي)' }));
+
+    var printProgramBtn = h('button', {
+      type: 'button',
+      class: 'btn light',
+      onclick: function () { window.print(); }
+    }, h('span', { text: '🖨 طباعة البرنامج الأسبوعي' }));
+
+    // جدول الأسبوع التفاعلي للقراءة فقط
+    var tableRows = st.days.map(function (dy) {
+      var sessCards = (dy.sessions || []).map(function (s) {
+        var isAct = (s.kind === 'activity' || s.kind === 'break');
+        var timeTxt = (s.start && s.end) ? (s.start + ' - ' + s.end) : (s.start || '');
+        if (isAct) {
+          return h('div', {
+            class: 'wk-parent-cell is-activity',
+            style: 'background:#FFFBEB; border:1.5px solid #F59E0B; border-radius:10px; padding:10px 12px; min-width:140px; flex:1 1 155px;'
+          },
+            h('div', { style: 'display:flex; justify-content:space-between; align-items:center; gap:6px; margin-bottom:6px;' },
+              h('span', { style: 'font-size:12px; font-weight:700; color:#B45309; background:#FEF3C7; padding:2px 8px; border-radius:6px;', text: timeTxt }),
+              h('span', { style: 'font-size:11px; font-weight:700; color:#D97706;', text: 'نشاط يومي' })
+            ),
+            h('strong', { style: 'display:block; color:#78350F; font-size:14.5px;', text: s.activity || s.title || 'نشاط يومي' })
+          );
+        }
+        return h('div', {
+          class: 'wk-parent-cell is-pedagogical',
+          style: 'background:#F0FDF4; border:1.5px solid #10B981; border-radius:10px; padding:10px 12px; min-width:165px; flex:1 1 180px;'
+        },
+          h('div', { style: 'display:flex; justify-content:space-between; align-items:center; gap:6px; margin-bottom:6px;' },
+            h('span', { style: 'font-size:12px; font-weight:700; color:#065F46; background:#D1FAE5; padding:2px 8px; border-radius:6px;', text: timeTxt }),
+            h('span', { style: 'font-size:11px; font-weight:700; color:#047857;', text: 'حصة بيداغوجية' })
+          ),
+          h('div', { style: 'background:#059669; color:#fff; font-size:12px; font-weight:700; padding:3px 8px; border-radius:6px; margin-bottom:6px;', text: s.domain || 'المجال البيداغوجي' }),
+          h('strong', { style: 'display:block; color:#064E3B; font-size:13.5px; line-height:1.45;', text: s.skill || s.title || '—' })
+        );
+      });
+
+      return h('div', {
+        class: 'wk-parent-day-row',
+        style: 'display:flex; align-items:stretch; gap:10px; margin-bottom:10px; background:#F8FAFC; border:1px solid #E2E8F0; border-radius:12px; padding:10px; flex-wrap:wrap;'
+      },
+        h('div', {
+          style: 'background:#0F3D2E; color:#fff; font-weight:800; font-size:16px; min-width:105px; border-radius:8px; display:flex; align-items:center; justify-content:center; padding:10px 14px; text-align:center;'
+        }, dy.label),
+        h('div', {
+          style: 'display:flex; flex-wrap:wrap; gap:8px; flex:1 1 300px;'
+        }, sessCards.length ? sessCards : h('span', { class: 'muted small', style: 'padding:12px;', text: 'لا توجد حصص مبرمجة في هذا اليوم.' }))
+      );
     });
+
+    return h('div', { class: 'card wk-parent-program-card' },
+      notifBanner,
+      h('div', { class: 'bar-sub', style: 'margin-bottom:14px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;' },
+        h('div', null,
+          h('h2', { style: 'color:#0F3D2E; margin:0 0 4px;', text: 'البرنامج الأسبوعي — ' + st.section_name }),
+          h('p', { class: 'muted small', style: 'margin:0;', text: 'الموسم الدراسي: ' + st.academic_year + ' | التوقيت اليومي: ' + st.day_start + ' إلى ' + st.day_end + ' | آخر تحديث: ' + lastUpdFmt })
+        ),
+        h('div', { class: 'row-actions no-print', style: 'display:flex; gap:8px; flex-wrap:wrap;' },
+          downloadPdfBtn,
+          printProgramBtn
+        )
+      ),
+      h('div', { class: 'wk-parent-schedule-grid no-print', style: 'margin-bottom:18px;' },
+        h('div', { style: 'display:flex; gap:14px; flex-wrap:wrap; margin-bottom:10px; font-size:13px; font-weight:700;' },
+          h('span', { style: 'display:inline-flex; align-items:center; gap:6px; color:#065F46;' },
+            h('span', { style: 'width:12px; height:12px; border-radius:3px; background:#059669; display:inline-block;' }),
+            'حصة بيداغوجية (المجال + المهارة)'
+          ),
+          h('span', { style: 'display:inline-flex; align-items:center; gap:6px; color:#92400E;' },
+            h('span', { style: 'width:12px; height:12px; border-radius:3px; background:#F59E0B; display:inline-block;' }),
+            'نشاط يومي / فترة تنظيمية مستقلة'
+          )
+        ),
+        tableRows
+      ),
+      h('div', { class: 'wk-parent-pdf-section' },
+        h('h3', { class: 'no-print', style: 'font-size:16px; color:#0F3D2E; margin:0 0 8px;', text: 'النسخة الرسمية للبرنامج الأسبوعي القابلة للعرض والطباعة (A4 أفقي):' }),
+        pdfCanvasHost
+      )
+    );
+  }
+
+  function vPrograms(v) {
+    v.textContent = '';
+    v.appendChild(h('div', { class: 'bar-sub' }, h('h2', { text: 'البرنامج الأسبوعي' })));
+
+    var kids = (S.d && S.d.children) || [];
+    var activeKid = kids.filter(function (k) { return String(k.id) === String(S.selectedChildId); })[0] || kids[0] || null;
+    var sections = (S.d && S.d.sections) || [];
+
+    var kidSecId = activeKid ? (activeKid.section_id || '') : '';
+    var kidSecName = activeKid ? (activeKid.section || '') : '';
+    if (!kidSecName && kidSecId) {
+      var foundSec = sections.filter(function (s) { return String(s.id) === String(kidSecId); })[0];
+      if (foundSec) kidSecName = foundSec.name;
+    }
+    if (!kidSecId && kidSecName) {
+      var foundSecByName = sections.filter(function (s) { return s.name === kidSecName; })[0];
+      if (foundSecByName) kidSecId = foundSecByName.id;
+    }
+
+    // دمج البرامج المنشورة من قاعدة البيانات والتخزين المشترك
+    var dbProgs = (S.d && S.d.programs ? S.d.programs.slice() : []);
+    var sharedProgs = readSharedProgramsParent();
+    var allProgs = [];
+    var seenIds = {};
+    sharedProgs.concat(dbProgs).forEach(function (pr) {
+      if (!pr || !pr.id) return;
+      if (pr.status === 'draft') return;
+      if (seenIds[pr.id]) return;
+      seenIds[pr.id] = true;
+      allProgs.push(pr);
+    });
+
+    // عزل صارم حسب فوج الطفل المعني فقط (لا تكشف بيانات أي فوج لولي طفل من فوج آخر)
+    var matchingProgs = allProgs.filter(function (pr) {
+      if (kidSecId && pr.section_id && String(pr.section_id) === String(kidSecId)) return true;
+      if (kidSecName && pr.title && pr.title.indexOf(kidSecName) >= 0) return true;
+      if (kidSecName && pr.schedule) {
+        var sStr = typeof pr.schedule === 'string' ? pr.schedule : JSON.stringify(pr.schedule);
+        if (sStr.indexOf(kidSecName) >= 0) return true;
+      }
+      return false;
+    });
+
+    if (!matchingProgs.length && activeKid) {
+      matchingProgs.push(getBuiltInSectionDemoProgram(kidSecId, kidSecName || 'قسم الشبه مدرسي مكيف'));
+    }
+
+    if (!matchingProgs.length) {
+      return v.appendChild(empty(t('emptyPrograms')));
+    }
+
+    // عرض أحدث برنامج منشور لفوج الطفل فقط
+    matchingProgs.sort(function (a, b) {
+      return String(b.published_at || b.created_at || '').localeCompare(String(a.published_at || a.created_at || ''));
+    });
+
+    v.appendChild(renderParentWeeklyProgramView(matchingProgs[0], activeKid, kidSecName || 'الفوج التربوي'));
   }
 
   /* تبويب استمارات التقييم البيداغوجي والتقارير التربوية — مفصولتان تماماً */
@@ -2878,31 +2562,13 @@ function generateWordDocObservation(rep, child, secName, brName) {
         }
       }, previewBtnLabel);
 
-      var dlBtn = h('button', {
-        type: 'button',
-        class: 'btn small light oep-report-dl-btn',
-        title: 'تحميل ' + reportFullTitle + ' بصيغة PDF',
-        onclick: async function (e) {
-          e.stopPropagation();
-          try {
-            if (!window.DE_PDF) throw new Error('مولّد PDF غير متاح');
-            if (typeof toast === 'function') toast('جارٍ تجهيز التقرير بصيغة PDF...', 'ok');
-            var bytes = await DE_PDF.renderEvaluationToPdf(ev, childFullName, secName, kd, modeKey);
-            DE_PDF.downloadPdf(bytes, pdfFileNamePrefix + '_' + (childFullName || 'تلميذ').replace(/\s+/g, '_') + '.pdf');
-          } catch (err) {
-            if (typeof toast === 'function') toast('تعذر تنزيل التقرير: ' + err.message, 'bad');
-          }
-        }
-      }, h('span', { text: '⬇ تحميل PDF' }));
-
       var rowEl = h('div', { class: 'oep-report-selector-row' + (activeMode === modeKey ? ' is-active' : '') },
         h('div', { class: 'oep-report-row-right' },
           mainToggleBtn,
           titleLabelEl
         ),
         h('div', { class: 'oep-report-row-actions' },
-          previewToggleBtn,
-          dlBtn
+          previewToggleBtn
         )
       );
 
@@ -3251,7 +2917,7 @@ function generateWordDocObservation(rep, child, secName, brName) {
     }
 
     evals.forEach(function (e) {
-      var isNew = localStorage.getItem('de_seen_ev_' + e.id) !== '1';
+      var isNew = false; try { isNew = localStorage.getItem('de_seen_ev_' + e.id) !== '1'; } catch (errS) {}
 
       var inlineDetailsHost = h('div', { class: 'pm-eval-inline-details', hidden: true, style: 'margin-top:12px; margin-bottom:20px;' });
       var isExpanded = false;
@@ -3315,7 +2981,7 @@ function generateWordDocObservation(rep, child, secName, brName) {
     }
 
     stdReports.forEach(function (r) {
-      var isNew = localStorage.getItem('de_seen_rep_' + r.id) !== '1';
+      var isNew = false; try { isNew = localStorage.getItem('de_seen_rep_' + r.id) !== '1'; } catch (errS) {}
 
       var card = h('div', { class: 'pm-list-item-card' },
         h('div', { class: 'pm-lic-right' },
@@ -3825,7 +3491,7 @@ async function init() {
     }
 
     try {
-      var last = (sessionStorage.getItem('de_parent_user') || localStorage.getItem('de_parent_user') || '').trim().toLowerCase();
+      var last = ''; try { last = (sessionStorage.getItem('de_parent_user') || localStorage.getItem('de_parent_user') || '').trim().toLowerCase(); } catch (errS) {}
       if (last && last.length <= 254 && $('#email')) $('#email').value = last;
     } catch (e3) {}
 
