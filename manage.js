@@ -82,7 +82,8 @@
           else if (k === 'text') el.textContent = v;
           else if (k.slice(0, 2) === 'on' && typeof v === 'function') el.addEventListener(k.slice(2), v);
           else if (k === 'value' || k === 'checked' || k === 'disabled' || k === 'hidden' || k === 'selected') el[k] = v;
-          else if (k === 'style' || /^on/i.test(k) || k === 'innerHTML' || k === 'outerHTML' || k === 'srcdoc') return;
+          else if (k === 'style') { el.style.cssText = String(v); }
+          else if (/^on/i.test(k) || k === 'innerHTML' || k === 'outerHTML' || k === 'srcdoc') return;
           else if ((k === 'href' || k === 'src') && !/^(https:|blob:|#)/i.test(String(v))) return;
           else el.setAttribute(k, v === true ? '' : String(v));
         });
@@ -2895,16 +2896,22 @@
     });
   }
 
-  /* =====================================================================
-     4. نظام البرامج الأسبوعية الاحترافي — دار الإحسان (Weekly Programs System)
-     - جدول أسبوعي مرئي تفاعلي (الأيام في أعمدة والتوقيتات منظمة عمودياً).
-     - إضافة الحصة بالنقر على أي خانة فارغة، وتعديل/حذف الحصة بالنقر عليها.
-     - دعم نوعين من الحصص:
-       1) حصة بيداغوجية: اختيار المجال من المكتبة البيداغوجية ثم المهارات التابعة له فقط (مع إدارة المجالات والمهارات).
-       2) حصة نشاط يومي أو فترة تنظيمية مستقلة: قائمة «أنشطة يومية» (الأكل، وجبة خفيفة، الغداء، الاستراحة، النظافة الشخصية، الصلاة، الانتقال بين الأقسام، اللعب الحر، الاستقبال، الانصراف، نشاط خارجي) مع إمكانية إضافة وتعديل الأنشطة.
-     - إدارة مرنة للتوقيتات، إدراج فترات بين الحصص، التنبيه عند تعارض الأوقات، وإعادة ترتيب تلقائي حسب التوقيت.
-     - معاينة مطابقة وتوليد ملف PDF بحجم A4 أفقي (Landscape) ونشر تلقائي في فضاء الأولياء الخاص بفوج الطفل فقط (بدون واتساب).
+    /* =====================================================================
+     4. نظام البرامج الأسبوعية الاحترافي الشامل — دار الإحسان (Weekly Programs System)
+     - الورقة الأسبوعية تظهر مباشرة أمام الموظف عند الدخول للقسم.
+     - خانات الحصص فارغة وجاهزة للتعبئة (نظيفة وجديدة).
+     - تعبئة الخانات بالنقر عليها بنافذة أنيقة تدعم:
+       1) الاختيار من المكتبة البيداغوجية الحقيقية (المجال -> المهارات التابعة له فقط وتحديث تلقائي).
+       2) الملء اليدوي المستقل.
+       3) الأنشطة اليومية والفترات الخاصة (الأكل، الاستراحة، النظافة...).
+     - إمكانية دمج عدة خانات متجاورة (خانتين أو ثلاث أو أكثر) وتعديلها وإلغاء الدمج.
+     - التحكم الكامل في التوقيتات وإعادة ترتيب الجدول وحل التداخلات.
+     - هوية دار الإحسان وألوان Forest والأيقونات الموحدة (بدون إيموجي).
+     - إخراج ومعاينة PDF احترافي A4 أفقي Landscape مطابق للورقة الأصلية.
+     - النشر التلقائي في فضاء الأولياء لفوج الطفل المعني فقط مع إشعار مناسب.
+     - مشاركة البرنامج عبر WhatsApp Cloud API الموجود في المشروع.
      ===================================================================== */
+
   var WEEK_DAYS = [
     { key: 'sun', label: 'الأحد' },
     { key: 'mon', label: 'الإثنين' },
@@ -2913,89 +2920,38 @@
     { key: 'thu', label: 'الخميس' }
   ];
 
+  var DEFAULT_WEEK_TIME_SLOTS = [
+    { id: 0, start: '08:00', end: '08:30', period: 'morning', label: '08:00 - 08:30', duration: 30 },
+    { id: 1, start: '08:30', end: '09:30', period: 'morning', label: '08:30 - 09:30', duration: 60 },
+    { id: 2, start: '09:30', end: '10:00', period: 'morning', label: '09:30 - 10:00', duration: 30 },
+    { id: 3, start: '10:00', end: '11:00', period: 'morning', label: '10:00 - 11:00', duration: 60 },
+    { id: 4, start: '11:00', end: '11:30', period: 'morning', label: '11:00 - 11:30', duration: 30 },
+    { id: 5, start: '11:30', end: '12:30', period: 'morning', label: '11:30 - 12:30', duration: 60 },
+    { id: 6, start: '12:30', end: '13:30', period: 'afternoon', label: '12:30 - 13:30', duration: 60 },
+    { id: 7, start: '13:30', end: '14:00', period: 'afternoon', label: '13:30 - 14:00', duration: 30 }
+  ];
+
   var DEFAULT_DAILY_ACTIVITIES = [
     'الأكل',
     'وجبة خفيفة',
     'الغداء',
     'الاستراحة',
-    'النظافة الشخصية',
+    'النظافة',
     'الصلاة',
-    'الانتقال بين الأقسام',
+    'الانتقال',
     'اللعب الحر',
     'الاستقبال',
     'الانصراف',
     'نشاط خارجي'
   ];
 
-  var CORE_PEDAGOGICAL_DOMAINS = {
-    'المجال المعرفي': [
-      'الانتباه والتركيز',
-      'الذاكرة البصرية والسمعية',
-      'الإدراك الحسي والمفاهيم الأساسية',
-      'التمييز والمطابقة والفرز',
-      'حل المشكلات البسيطة والتسلسل'
-    ],
-    'مجال التواصل واللغة': [
-      'اللغة الاستقبالية (فهم التعليمات)',
-      'اللغة التعبيرية (التعبير اللفظي والإشاري)',
-      'التقليد اللفظي والحركي',
-      'الاتصال البصري أثناء التفاعل',
-      'تسمية الأشياء المألوفة في البيئة'
-    ],
-    'المجال الحركي': [
-      'الحركة الدقيقة (مسك القلم والمقص والتشكيل)',
-      'الحركة الكبرى (المشي والتوازن والقفز)',
-      'التآزر البصري الحركي',
-      'الضغط على الصلصال وتقوية عضلات اليد',
-      'قص الورقة على خطوط مستقيمة وعريضة'
-    ],
-    'المجال الاجتماعي': [
-      'التفاعل الاجتماعي مع الأقران والمربين',
-      'المشاركة واللعب الجماعي المنظم',
-      'احترام الدور والقواعد داخل الفوج',
-      'التعبير عن الانفعالات والمشاعر بطريقة ملائمة',
-      'التعاون والمبادرة في الأنشطة الجماعية'
-    ],
-    'مجال الاستقلالية': [
-      'الأكل واستخدام أدوات الطعام بشكل صحيح',
-      'اللباس وارتداء وخلع المئزر',
-      'النظافة وغسل اليدين والوجه بالماء والصابون',
-      'العناية بالذات وترتيب الأدوات الشخصية'
-    ]
-  };
-
   function getPedagogicalLibrary() {
-    var base = {};
-    Object.keys(CORE_PEDAGOGICAL_DOMAINS).forEach(function (k) {
-      base[k] = CORE_PEDAGOGICAL_DOMAINS[k].slice();
-    });
     var curr = (window && window.DE_CURRICULUM) || EMBEDDED_CURRICULUM || {};
+    var lib = {};
     Object.keys(curr).forEach(function (k) {
-      if (!base[k]) {
-        base[k] = Array.isArray(curr[k]) ? curr[k].slice() : [];
-      } else {
-        (curr[k] || []).forEach(function (sk) {
-          if (base[k].indexOf(sk) < 0) base[k].push(sk);
-        });
-      }
+      lib[k] = Array.isArray(curr[k]) ? curr[k].slice() : [];
     });
-    try {
-      var saved = localStorage.getItem('de_pedagogical_library_v1');
-      if (saved) {
-        var parsed = JSON.parse(saved);
-        if (parsed && typeof parsed === 'object' && Object.keys(parsed).length) {
-          return parsed;
-        }
-      }
-    } catch (e) {}
-    return base;
-  }
-
-  function savePedagogicalLibrary(libObj) {
-    try {
-      localStorage.setItem('de_pedagogical_library_v1', JSON.stringify(libObj));
-      window.DE_CURRICULUM = libObj;
-    } catch (e) {}
+    return lib;
   }
 
   function getDailyActivitiesList() {
@@ -3007,12 +2963,6 @@
       }
     } catch (e) {}
     return DEFAULT_DAILY_ACTIVITIES.slice();
-  }
-
-  function saveDailyActivitiesList(list) {
-    try {
-      localStorage.setItem('de_daily_activities_v1', JSON.stringify(list));
-    } catch (e) {}
   }
 
   function readSharedProgramsLocal() {
@@ -3048,125 +2998,166 @@
     return diff > 0 ? diff : 30;
   }
 
-  var DEFAULT_TIME_SLOTS = [
-    { start: '08:00', end: '08:30', period: 'morning' },
-    { start: '08:30', end: '09:30', period: 'morning' },
-    { start: '09:30', end: '10:00', period: 'morning' },
-    { start: '10:00', end: '11:00', period: 'morning' },
-    { start: '11:00', end: '11:30', period: 'morning' },
-    { start: '11:30', end: '12:30', period: 'morning' },
-    { start: '12:30', end: '13:30', period: 'afternoon' },
-    { start: '13:30', end: '14:00', period: 'afternoon' }
-  ];
-
-  function createTamhinDemoBody(secId, secName) {
-    var sName = secName || 'التمهين م م ع';
-    var demoDays = [
-      {
-        day: 'sun', label: 'الأحد',
-        sessions: [
-          { kind: 'activity', activity: 'الاستقبال', title: 'الاستقبال', start: '08:00', end: '08:30', duration: 30, items: [] },
-          { kind: 'session', domain: 'مجال الاستقلالية', skill: 'اللباس وارتداء وخلع المئزر', title: 'اللباس وارتداء وخلع المئزر', start: '08:30', end: '09:30', duration: 60, items: [{ domain: 'مجال الاستقلالية', skill: 'اللباس وارتداء وخلع المئزر' }] },
-          { kind: 'activity', activity: 'وجبة خفيفة', title: 'وجبة خفيفة', start: '09:30', end: '10:00', duration: 30, items: [] },
-          { kind: 'session', domain: 'المجال الحركي', skill: 'الحركة الدقيقة (مسك القلم والمقص والتشكيل)', title: 'الحركة الدقيقة (مسك القلم والمقص والتشكيل)', start: '10:00', end: '11:00', duration: 60, items: [{ domain: 'المجال الحركي', skill: 'الحركة الدقيقة (مسك القلم والمقص والتشكيل)' }] },
-          { kind: 'activity', activity: 'الاستراحة', title: 'الاستراحة', start: '11:00', end: '11:30', duration: 30, items: [] },
-          { kind: 'session', domain: 'مجال التواصل واللغة', skill: 'اللغة الاستقبالية (فهم التعليمات)', title: 'اللغة الاستقبالية (فهم التعليمات)', start: '11:30', end: '12:30', duration: 60, items: [{ domain: 'مجال التواصل واللغة', skill: 'اللغة الاستقبالية (فهم التعليمات)' }] },
-          { kind: 'activity', activity: 'الغداء', title: 'الغداء', start: '12:30', end: '13:30', duration: 60, items: [] },
-          { kind: 'activity', activity: 'الانصراف', title: 'الانصراف', start: '13:30', end: '14:00', duration: 30, items: [] }
-        ]
-      },
-      {
-        day: 'mon', label: 'الإثنين',
-        sessions: [
-          { kind: 'activity', activity: 'الاستقبال', title: 'الاستقبال', start: '08:00', end: '08:30', duration: 30, items: [] },
-          { kind: 'session', domain: 'المجال المعرفي', skill: 'الانتباه والتركيز', title: 'الانتباه والتركيز', start: '08:30', end: '09:30', duration: 60, items: [{ domain: 'المجال المعرفي', skill: 'الانتباه والتركيز' }] },
-          { kind: 'activity', activity: 'وجبة خفيفة', title: 'وجبة خفيفة', start: '09:30', end: '10:00', duration: 30, items: [] },
-          { kind: 'session', domain: 'المجال الحركي', skill: 'قص الورقة على خطوط مستقيمة وعريضة', title: 'قص الورقة على خطوط مستقيمة وعريضة', start: '10:00', end: '11:00', duration: 60, items: [{ domain: 'المجال الحركي', skill: 'قص الورقة على خطوط مستقيمة وعريضة' }] },
-          { kind: 'activity', activity: 'النظافة الشخصية', title: 'النظافة الشخصية', start: '11:00', end: '11:30', duration: 30, items: [] },
-          { kind: 'session', domain: 'المجال الاجتماعي', skill: 'التفاعل الاجتماعي مع الأقران والمربين', title: 'التفاعل الاجتماعي مع الأقران والمربين', start: '11:30', end: '12:30', duration: 60, items: [{ domain: 'المجال الاجتماعي', skill: 'التفاعل الاجتماعي مع الأقران والمربين' }] },
-          { kind: 'activity', activity: 'الغداء', title: 'الغداء', start: '12:30', end: '13:30', duration: 60, items: [] },
-          { kind: 'activity', activity: 'الانصراف', title: 'الانصراف', start: '13:30', end: '14:00', duration: 30, items: [] }
-        ]
-      },
-      {
-        day: 'tue', label: 'الثلاثاء',
-        sessions: [
-          { kind: 'activity', activity: 'الاستقبال', title: 'الاستقبال', start: '08:00', end: '08:30', duration: 30, items: [] },
-          { kind: 'session', domain: 'المجال الحركي', skill: 'الحركة الكبرى (المشي والتوازن والقفز)', title: 'الحركة الكبرى (المشي والتوازن والقفز)', start: '08:30', end: '09:30', duration: 60, items: [{ domain: 'المجال الحركي', skill: 'الحركة الكبرى (المشي والتوازن والقفز)' }] },
-          { kind: 'activity', activity: 'الاستراحة', title: 'الاستراحة', start: '09:30', end: '10:00', duration: 30, items: [] },
-          { kind: 'session', domain: 'مجال التواصل واللغة', skill: 'تسمية الأشياء المألوفة في البيئة', title: 'تسمية الأشياء المألوفة في البيئة', start: '10:00', end: '11:00', duration: 60, items: [{ domain: 'مجال التواصل واللغة', skill: 'تسمية الأشياء المألوفة في البيئة' }] },
-          { kind: 'activity', activity: 'اللعب الحر', title: 'اللعب الحر', start: '11:00', end: '11:30', duration: 30, items: [] },
-          { kind: 'session', domain: 'المجال المعرفي', skill: 'التمييز والمطابقة والفرز', title: 'التمييز والمطابقة والفرز', start: '11:30', end: '12:30', duration: 60, items: [{ domain: 'المجال المعرفي', skill: 'التمييز والمطابقة والفرز' }] },
-          { kind: 'activity', activity: 'الغداء', title: 'الغداء', start: '12:30', end: '13:30', duration: 60, items: [] },
-          { kind: 'activity', activity: 'الانصراف', title: 'الانصراف', start: '13:30', end: '14:00', duration: 30, items: [] }
-        ]
-      },
-      {
-        day: 'wed', label: 'الأربعاء',
-        sessions: [
-          { kind: 'activity', activity: 'الاستقبال', title: 'الاستقبال', start: '08:00', end: '08:30', duration: 30, items: [] },
-          { kind: 'session', domain: 'مجال الاستقلالية', skill: 'النظافة وغسل اليدين والوجه بالماء والصابون', title: 'النظافة وغسل اليدين والوجه بالماء والصابون', start: '08:30', end: '09:30', duration: 60, items: [{ domain: 'مجال الاستقلالية', skill: 'النظافة وغسل اليدين والوجه بالماء والصابون' }] },
-          { kind: 'activity', activity: 'وجبة خفيفة', title: 'وجبة خفيفة', start: '09:30', end: '10:00', duration: 30, items: [] },
-          { kind: 'session', domain: 'المجال المعرفي', skill: 'الإدراك الحسي والمفاهيم الأساسية', title: 'الإدراك الحسي والمفاهيم الأساسية', start: '10:00', end: '11:00', duration: 60, items: [{ domain: 'المجال المعرفي', skill: 'الإدراك الحسي والمفاهيم الأساسية' }] },
-          { kind: 'activity', activity: 'الصلاة', title: 'الصلاة', start: '11:00', end: '11:30', duration: 30, items: [] },
-          { kind: 'session', domain: 'مجال الاستقلالية', skill: 'الأكل واستخدام أدوات الطعام بشكل صحيح', title: 'الأكل واستخدام أدوات الطعام بشكل صحيح', start: '11:30', end: '12:30', duration: 60, items: [{ domain: 'مجال الاستقلالية', skill: 'الأكل واستخدام أدوات الطعام بشكل صحيح' }] },
-          { kind: 'activity', activity: 'الغداء', title: 'الغداء', start: '12:30', end: '13:30', duration: 60, items: [] },
-          { kind: 'activity', activity: 'الانصراف', title: 'الانصراف', start: '13:30', end: '14:00', duration: 30, items: [] }
-        ]
-      },
-      {
-        day: 'thu', label: 'الخميس',
-        sessions: [
-          { kind: 'activity', activity: 'الاستقبال', title: 'الاستقبال', start: '08:00', end: '08:30', duration: 30, items: [] },
-          { kind: 'session', domain: 'المجال الحركي', skill: 'التآزر البصري الحركي', title: 'التآزر البصري الحركي', start: '08:30', end: '09:30', duration: 60, items: [{ domain: 'المجال الحركي', skill: 'التآزر البصري الحركي' }] },
-          { kind: 'activity', activity: 'نشاط خارجي', title: 'نشاط خارجي', start: '09:30', end: '10:30', duration: 60, items: [] },
-          { kind: 'session', domain: 'المجال الاجتماعي', skill: 'المشاركة واللعب الجماعي المنظم', title: 'المشاركة واللعب الجماعي المنظم', start: '10:30', end: '11:30', duration: 60, items: [{ domain: 'المجال الاجتماعي', skill: 'المشاركة واللعب الجماعي المنظم' }] },
-          { kind: 'activity', activity: 'النظافة الشخصية', title: 'النظافة الشخصية', start: '11:30', end: '12:30', duration: 60, items: [] },
-          { kind: 'activity', activity: 'الغداء', title: 'الغداء', start: '12:30', end: '13:30', duration: 60, items: [] },
-          { kind: 'activity', activity: 'الانصراف', title: 'الانصراف', start: '13:30', end: '14:00', duration: 30, items: [] }
-        ]
-      }
-    ];
-
+  function createEmptyWeekState(secId, secName) {
     var nowIso = new Date().toISOString();
-    var schedulePayload = demoDays.map(function (dy) {
-      return {
-        day: dy.day,
-        label: dy.label,
-        section_name: sName,
-        academic_year: '2026/2027',
-        program_status: 'published',
-        day_start: '08:00',
-        day_end: '14:00',
-        morning_end: '12:30',
-        afternoon_start: '12:30',
-        educator_name: 'مربية الفوج',
-        supervisor_name: 'المشرف البيداغوجي',
-        director_name: 'مدير المركز',
-        prepared_date: nowIso.slice(0, 10),
-        updated_at: nowIso,
-        time_slots: DEFAULT_TIME_SLOTS,
-        revision_history: [{ at: nowIso, action: 'إنشاء ونشر البرنامج الأسبوعي المعتمد', status: 'published' }],
-        sessions: dy.sessions
-      };
-    });
-
     return {
-      section_id: secId,
-      title: DE.clean('البرنامج الأسبوعي — ' + sName, 155),
+      id: null,
+      section_id: secId || '',
+      section_name: secName || 'الفوج التربوي',
       academic_year: '2026/2027',
-      description: 'البرنامج الأسبوعي البيداغوجي والتنظيمي المعتمد لفوج ' + sName,
-      goals: 'تنمية المهارات المعرفية والتواصلية والحركية والاجتماعية والاستقلالية.',
-      schedule: schedulePayload,
-      status: 'published',
-      published_at: nowIso
+      status: 'draft',
+      published_at: null,
+      updated_at: nowIso,
+      prepared_date: nowIso.slice(0, 10),
+      day_start: '08:00',
+      day_end: '14:00',
+      educator_name: '',
+      supervisor_name: '',
+      director_name: '',
+      time_slots: DEFAULT_WEEK_TIME_SLOTS.map(function (ts) { return Object.assign({}, ts); }),
+      days: WEEK_DAYS.map(function (wd) {
+        return {
+          day: wd.key,
+          label: wd.label,
+          sessions: DEFAULT_WEEK_TIME_SLOTS.map(function (ts) {
+            return {
+              slot_id: ts.id,
+              start: ts.start,
+              end: ts.end,
+              span: 1,
+              merged_slot_ids: [ts.id],
+              kind: 'empty',
+              domain: '',
+              skill: '',
+              title: '',
+              manual_text: '',
+              activity: ''
+            };
+          })
+        };
+      })
     };
   }
 
-  var _tamhinSeedAttempted = false;
+  function parseExistingProgramState(p, secList) {
+    var rawSched = null;
+    if (p && p.schedule) {
+      try {
+        rawSched = typeof p.schedule === 'string' ? JSON.parse(p.schedule) : p.schedule;
+      } catch (e) { rawSched = null; }
+    }
+    var meta = (Array.isArray(rawSched) && rawSched[0]) ? rawSched[0] : (rawSched && typeof rawSched === 'object' ? rawSched : {});
+    var secId = (p && p.section_id) || (secList && secList[0] ? secList[0].id : '');
+    var sName = (secList && nameOf(secList, secId, 'name')) || (meta && meta.section_name) || 'الفوج التربوي';
 
+    var slots = (meta && Array.isArray(meta.time_slots) && meta.time_slots.length)
+      ? meta.time_slots.map(function (ts, idx) {
+          return {
+            id: ts.id != null ? ts.id : idx,
+            start: ts.start || '08:00',
+            end: ts.end || '08:30',
+            period: ts.period || (timeToMinutes(ts.start) >= 750 ? 'afternoon' : 'morning'),
+            label: (ts.start || '08:00') + ' - ' + (ts.end || '08:30'),
+            duration: ts.duration || calcDurationMins(ts.start, ts.end)
+          };
+        })
+      : DEFAULT_WEEK_TIME_SLOTS.map(function (ts) { return Object.assign({}, ts); });
+
+    var days = WEEK_DAYS.map(function (wd) {
+      var foundDay = Array.isArray(rawSched)
+        ? rawSched.filter(function (r) { return r && (r.day === wd.key || r.label === wd.label || (wd.key === 'mon' && r.label === 'الاثنين')); })[0]
+        : null;
+
+      var rawSess = (foundDay && Array.isArray(foundDay.sessions)) ? foundDay.sessions : [];
+      var sessions = [];
+
+      if (rawSess.length && rawSess[0].slot_id != null) {
+        sessions = rawSess.map(function (s) {
+          var isAct = (s.kind === 'activity' || s.kind === 'break');
+          var isLib = (s.kind === 'library' || (!!s.domain && !!s.skill));
+          var isMan = (s.kind === 'manual' || (!isLib && !isAct && !!(s.manual_text || s.title)));
+          var k = isLib ? 'library' : (isAct ? 'activity' : (isMan ? 'manual' : 'empty'));
+          return {
+            slot_id: s.slot_id,
+            start: s.start || '08:00',
+            end: s.end || '08:30',
+            span: s.span || 1,
+            merged_slot_ids: s.merged_slot_ids || [s.slot_id],
+            kind: k,
+            domain: s.domain || '',
+            skill: s.skill || '',
+            title: s.title || (isLib ? (s.domain + ' — ' + s.skill) : (isAct ? s.activity : s.manual_text)) || '',
+            manual_text: s.manual_text || (!isLib && !isAct ? s.title : ''),
+            activity: s.activity || (isAct ? s.title : '')
+          };
+        });
+      } else {
+        slots.forEach(function (ts) {
+          var matching = rawSess.filter(function (rs) {
+            return rs.start === ts.start || (rs.start && timeToMinutes(rs.start) >= timeToMinutes(ts.start) && timeToMinutes(rs.start) < timeToMinutes(ts.end));
+          })[0];
+          if (matching) {
+            var isAct = (matching.kind === 'activity' || matching.kind === 'break');
+            var isLib = !!(matching.domain && matching.skill);
+            var isMan = !isAct && !isLib && !!(matching.title || matching.manual_text);
+            var k = isLib ? 'library' : (isAct ? 'activity' : (isMan ? 'manual' : 'empty'));
+            sessions.push({
+              slot_id: ts.id,
+              start: ts.start,
+              end: ts.end,
+              span: 1,
+              merged_slot_ids: [ts.id],
+              kind: k,
+              domain: matching.domain || '',
+              skill: matching.skill || (matching.items && matching.items[0] && matching.items[0].skill) || '',
+              title: matching.title || '',
+              manual_text: isMan ? (matching.manual_text || matching.title || '') : '',
+              activity: isAct ? (matching.activity || matching.title || '') : ''
+            });
+          } else {
+            sessions.push({
+              slot_id: ts.id,
+              start: ts.start,
+              end: ts.end,
+              span: 1,
+              merged_slot_ids: [ts.id],
+              kind: 'empty',
+              domain: '',
+              skill: '',
+              title: '',
+              manual_text: '',
+              activity: ''
+            });
+          }
+        });
+      }
+      return { day: wd.key, label: wd.label, sessions: sessions };
+    });
+
+    return {
+      id: p ? p.id : null,
+      section_id: secId,
+      section_name: sName,
+      academic_year: (p && p.academic_year) || (meta && meta.academic_year) || '2026/2027',
+      status: (meta && meta.program_status) || (p && p.status) || 'draft',
+      published_at: (p && p.published_at) || (meta && meta.published_at) || null,
+      updated_at: (meta && meta.updated_at) || (p && p.published_at) || new Date().toISOString(),
+      prepared_date: (meta && meta.prepared_date) || new Date().toISOString().slice(0, 10),
+      day_start: (meta && meta.day_start) || '08:00',
+      day_end: (meta && meta.day_end) || '14:00',
+      educator_name: (meta && meta.educator_name) || '',
+      supervisor_name: (meta && meta.supervisor_name) || '',
+      director_name: (meta && meta.director_name) || '',
+      time_slots: slots,
+      days: days
+    };
+  }
+
+  /* الدالة الرئيسية لقسم البرامج الأسبوعية في لوحة الإدارة */
   async function secPrograms(v) {
     if (S.isEducator) return go('children');
+    v.textContent = '';
+
     var d = await getMany('programs', 'sections', 'branches');
     var allProgs = d[0] || [], allSections = d[1] || [], branches = d[2] || [];
     var centerSecs = allSections.filter(function (s) { return sectionCenterKey(s, branches) === S.activeCenter; });
@@ -3176,1241 +3167,1073 @@
     var rows = allProgs.filter(function (p) { return !p.section_id || !!secIdsMap[p.section_id]; });
     var secOpts = sections.map(function (s) { return [s.id, s.name]; });
 
-    var tamhinSec = sections.filter(function (s) {
-      return s.slug === 'sec_tamhin' || (s.name && s.name.indexOf('التمهين') >= 0);
-    })[0] || sections[0];
+    // حالة البرنامج الحالية المعروضة مباشرة في الصفحة:
+    // إذا كان هناك برامج سابقة نعرض أحدث برنامج، وإلا نبدأ فوراً بورقة أسبوعية جديدة بجميع الخانات فارغة
+    var currentSelectedProg = rows[0] || null;
+    var currentWeekState = currentSelectedProg ? parseExistingProgramState(currentSelectedProg, sections) : createEmptyWeekState(sections[0] ? sections[0].id : '', sections[0] ? sections[0].name : 'الفوج التربوي');
 
-    if (tamhinSec && !_tamhinSeedAttempted && rows.length === 0) {
-      _tamhinSeedAttempted = true;
-      try {
-        var demoBody = createTamhinDemoBody(tamhinSec.id, tamhinSec.name);
-        await C.rest('POST', '/educational_programs', demoBody);
-        bust();
-        var fresh = await getMany('programs', 'sections');
-        rows = fresh[0] || [];
-      } catch (seedErr) {}
+    // وضع التحديد لدمج الخانات
+    var isMergeMode = false;
+    var mergeSelectedCells = {}; // مفاتيح مثل "sun:1"
+
+    function getSecName() {
+      return (sections && nameOf(sections, currentWeekState.section_id, 'name')) || currentWeekState.section_name || 'الفوج التربوي';
     }
 
-    function parseProgState(p) {
-      var rawSched = null;
-      if (p && p.schedule) {
-        try {
-          rawSched = typeof p.schedule === 'string' ? JSON.parse(p.schedule) : p.schedule;
-        } catch (e) { rawSched = null; }
-      }
-      var meta = (Array.isArray(rawSched) && rawSched[0]) ? rawSched[0] : (rawSched && typeof rawSched === 'object' ? rawSched : {});
-      var secId = (p && p.section_id) || (sections[0] ? sections[0].id : '');
-      var sName = nameOf(sections, secId, 'name') || (meta && meta.section_name) || 'الفوج التربوي';
+    // بناء الواجهة الرئيسية لقسم البرامج الأسبوعية
+    var mainContainer = h('div', { class: 'wk-programs-main-wrap', style: 'display:flex; flex-direction:column; gap:16px;' });
+    v.appendChild(mainContainer);
 
-      var st = {
-        id: p ? p.id : null,
-        section_id: secId,
-        section_name: sName,
-        academic_year: (p && p.academic_year) || (meta && meta.academic_year) || '2026/2027',
-        status: (meta && meta.program_status) || (p && p.status) || 'draft',
-        published_at: (p && p.published_at) || (meta && meta.published_at) || null,
-        updated_at: (meta && meta.updated_at) || (p && p.published_at) || null,
-        prepared_date: (meta && meta.prepared_date) || new Date().toISOString().slice(0, 10),
-        day_start: (meta && meta.day_start) || '08:00',
-        day_end: (meta && meta.day_end) || '14:00',
-        morning_end: (meta && meta.morning_end) || '12:00',
-        afternoon_start: (meta && meta.afternoon_start) || '12:30',
-        educator_name: (meta && meta.educator_name) || '',
-        supervisor_name: (meta && meta.supervisor_name) || '',
-        director_name: (meta && meta.director_name) || '',
-        revision_history: (meta && Array.isArray(meta.revision_history)) ? meta.revision_history.slice() : [],
-        time_slots: (meta && Array.isArray(meta.time_slots) && meta.time_slots.length)
-          ? meta.time_slots.map(function (ts) { return { start: ts.start || '08:00', end: ts.end || '09:00', period: ts.period || 'morning' }; })
-          : DEFAULT_TIME_SLOTS.map(function (ts) { return Object.assign({}, ts); }),
-        days: WEEK_DAYS.map(function (wd) {
-          var found = Array.isArray(rawSched)
-            ? rawSched.filter(function (r) { return r && (r.day === wd.key || r.label === wd.label || (wd.key === 'mon' && r.label === 'الاثنين')); })[0]
-            : null;
-          var sessList = (found && Array.isArray(found.sessions)) ? found.sessions.map(function (s) {
-            var isAct = (s.kind === 'break' || s.kind === 'activity' || s.type === 'activity');
-            var dom = s.domain || (s.items && s.items[0] && s.items[0].domain) || '';
-            var sk = s.skill || (s.items && s.items[0] && s.items[0].skill) || '';
-            if (s.items && s.items.length > 1) {
-              sk = s.items.map(function (it) { return it.skill; }).filter(Boolean).join(' + ');
-            }
-            return {
-              kind: isAct ? 'activity' : 'session',
-              title: s.title || s.activity || (isAct ? 'نشاط يومي' : sk),
-              activity: s.activity || (isAct ? s.title : ''),
-              domain: isAct ? '' : dom,
-              skill: isAct ? '' : sk,
-              start: s.start || '08:00',
-              end: s.end || '09:00',
-              duration: s.duration || calcDurationMins(s.start || '08:00', s.end || '09:00'),
-              items: isAct ? [] : (dom || sk ? [{ domain: dom, skill: sk }] : [])
-            };
-          }) : [];
-          sessList.sort(function (a, b) {
-            return timeToMinutes(a.start) - timeToMinutes(b.start);
-          });
-          return { day: wd.key, label: wd.label, sessions: sessList };
-        })
-      };
+    function renderFullView() {
+      mainContainer.textContent = '';
 
-      // دمج أي توقيتات مخصصة موجودة في الحصص داخل time_slots وترتيبها عمودياً
-      var slotMap = {};
-      st.time_slots.forEach(function (ts) {
-        slotMap[ts.start + '-' + ts.end] = ts;
-      });
-      st.days.forEach(function (dy) {
-        (dy.sessions || []).forEach(function (s) {
-          if (s.start && s.end) {
-            var key = s.start + '-' + s.end;
-            if (!slotMap[key]) {
-              slotMap[key] = {
-                start: s.start,
-                end: s.end,
-                period: timeToMinutes(s.start) < timeToMinutes(st.afternoon_start || '12:30') ? 'morning' : 'afternoon'
-              };
-            }
-          }
-        });
-      });
-      st.time_slots = Object.keys(slotMap).map(function (k) { return slotMap[k]; }).sort(function (a, b) {
-        return timeToMinutes(a.start) - timeToMinutes(b.start) || timeToMinutes(a.end) - timeToMinutes(b.end);
-      });
-      return st;
-    }
-
-    function statusBadgeForProgram(p) {
-      var st = parseProgState(p);
-      if (st.status === 'updated') return badge('تم تحديثه', 'gold');
-      if (st.status === 'published' || (p && p.status === 'published')) return badge('منشور للأولياء', 'ok');
-      return badge('مسودة', 'gray');
-    }
-
-    // نافذة إدارة المكتبة البيداغوجية والأنشطة اليومية
-    function openPedagogicalLibraryModal(onSavedCallback) {
-      var lib = getPedagogicalLibrary();
-      var acts = getDailyActivitiesList();
-      var selectedDomain = Object.keys(lib)[0] || '';
-
-      var host = h('div', { class: 'wk-lib-modal-body', style: 'display:flex; flex-direction:column; gap:16px;' });
-
-      function renderLibContent() {
-        host.textContent = '';
-        var domKeys = Object.keys(lib);
-        if (!selectedDomain || !lib[selectedDomain]) selectedDomain = domKeys[0] || '';
-
-        // 1. قسم المجالات والمهارات البيداغوجية
-        var domSelect = h('select', {
-          class: 'input',
-          style: 'flex:1 1 220px; font-weight:700;',
-          onchange: function () {
-            selectedDomain = domSelect.value;
-            renderLibContent();
-          }
-        }, domKeys.map(function (dk) {
-          return h('option', { value: dk, selected: dk === selectedDomain ? 'selected' : null, text: dk + ' (' + (lib[dk] || []).length + ' مهارة)' });
-        }));
-
-        var newDomInput = h('input', { class: 'input', type: 'text', placeholder: 'اسم مجال بيداغوجي جديد...', style: 'flex:1 1 180px;' });
-        var addDomBtn = h('button', {
-          type: 'button',
-          class: 'btn small',
-          text: '+ إضافة مجال',
-          onclick: function () {
-            var val = String(newDomInput.value || '').trim();
-            if (!val) return toast('أدخل اسم المجال البيداغوجي أولاً.', 'bad');
-            if (!lib[val]) lib[val] = [];
-            selectedDomain = val;
-            savePedagogicalLibrary(lib);
-            renderLibContent();
-            toast('تمت إضافة المجال البيداغوجي.', 'ok');
-          }
-        });
-
-        var skillsList = (lib[selectedDomain] || []);
-        var skillsWrap = h('div', { style: 'max-height:210px; overflow-y:auto; border:1px solid #E2E8F0; border-radius:10px; padding:8px; background:#F8FAFC; display:flex; flex-direction:column; gap:6px;' });
-        if (!skillsList.length) {
-          skillsWrap.appendChild(h('p', { class: 'muted small', style: 'margin:8px; text-align:center;', text: 'لا توجد مهارات مضافة في هذا المجال بعد.' }));
-        } else {
-          skillsList.forEach(function (sk, sIdx) {
-            var skInput = h('input', {
-              class: 'input',
-              type: 'text',
-              value: sk,
-              style: 'flex:1; padding:6px 10px; font-size:13px;',
-              onchange: function () {
-                var nv = String(skInput.value || '').trim();
-                if (nv) {
-                  lib[selectedDomain][sIdx] = nv;
-                  savePedagogicalLibrary(lib);
-                }
-              }
-            });
-            var delSkBtn = h('button', {
-              type: 'button',
-              class: 'btn small danger',
-              text: 'حذف',
-              onclick: function () {
-                lib[selectedDomain].splice(sIdx, 1);
-                savePedagogicalLibrary(lib);
-                renderLibContent();
-              }
-            });
-            skillsWrap.appendChild(h('div', { style: 'display:flex; gap:6px; align-items:center;' }, skInput, delSkBtn));
-          });
-        }
-
-        var newSkillInput = h('input', { class: 'input', type: 'text', placeholder: 'أضف مهارة جديدة تابعة لـ «' + selectedDomain + '»...', style: 'flex:1;' });
-        var addSkillBtn = h('button', {
-          type: 'button',
-          class: 'btn small gold',
-          text: '+ إضافة مهارة للمجال',
-          onclick: function () {
-            var sv = String(newSkillInput.value || '').trim();
-            if (!sv || !selectedDomain) return toast('أدخل اسم المهارة أولاً.', 'bad');
-            if (!lib[selectedDomain]) lib[selectedDomain] = [];
-            lib[selectedDomain].push(sv);
-            savePedagogicalLibrary(lib);
-            renderLibContent();
-            toast('تمت إضافة المهارة إلى المجال.', 'ok');
-          }
-        });
-
-        // 2. قسم قائمة «أنشطة يومية»
-        var actsWrap = h('div', { style: 'display:flex; flex-wrap:wrap; gap:6px; padding:10px; background:#FFFBEB; border:1px solid #FDE68A; border-radius:10px;' });
-        acts.forEach(function (actName, aIdx) {
-          var chip = h('span', {
-            style: 'background:#FEF3C7; color:#92400E; border:1px solid #F59E0B; border-radius:20px; padding:4px 10px; font-size:12.5px; font-weight:700; display:inline-flex; align-items:center; gap:6px;'
-          },
-            h('span', { text: actName }),
-            h('button', {
-              type: 'button',
-              style: 'border:none; background:transparent; color:#B45309; cursor:pointer; font-weight:bold; padding:0 2px;',
-              title: 'تعديل النشاط',
-              text: '✎',
-              onclick: function () {
-                var edited = window.prompt('تعديل اسم النشاط اليومي:', actName);
-                if (edited && edited.trim()) {
-                  acts[aIdx] = edited.trim();
-                  saveDailyActivitiesList(acts);
-                  renderLibContent();
-                }
-              }
-            }),
-            h('button', {
-              type: 'button',
-              style: 'border:none; background:transparent; color:#DC2626; cursor:pointer; font-weight:bold; padding:0 2px;',
-              title: 'حذف النشاط',
-              text: '×',
-              onclick: function () {
-                acts.splice(aIdx, 1);
-                saveDailyActivitiesList(acts);
-                renderLibContent();
-              }
-            })
-          );
-          actsWrap.appendChild(chip);
-        });
-
-        var newActInput = h('input', { class: 'input', type: 'text', placeholder: 'اسم نشاط يومي جديد (مثال: قيلولة، رياضة صباحية...)', style: 'flex:1;' });
-        var addActBtn = h('button', {
-          type: 'button',
-          class: 'btn small',
-          text: '+ إضافة نشاط يومي',
-          onclick: function () {
-            var av = String(newActInput.value || '').trim();
-            if (!av) return toast('أدخل اسم النشاط اليومي أولاً.', 'bad');
-            if (acts.indexOf(av) < 0) acts.push(av);
-            saveDailyActivitiesList(acts);
-            renderLibContent();
-            toast('تمت إضافة النشاط اليومي.', 'ok');
-          }
-        });
-
-        host.appendChild(
-          h('div', { style: 'border:1px solid #CBD5E1; border-radius:12px; padding:14px; background:#fff;' },
-            h('h4', { style: 'margin:0 0 10px; color:#0F3D2E;', text: '1. إدارة المجالات والمهارات في المكتبة البيداغوجية' }),
-            h('div', { style: 'display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;' }, domSelect, newDomInput, addDomBtn),
-            skillsWrap,
-            h('div', { style: 'display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;' }, newSkillInput, addSkillBtn)
-          )
-        );
-
-        host.appendChild(
-          h('div', { style: 'border:1px solid #F59E0B; border-radius:12px; padding:14px; background:#fff;' },
-            h('h4', { style: 'margin:0 0 8px; color:#92400E;', text: '2. إدارة قائمة «أنشطة يومية» والفترات التنظيمية المستقلة' }),
-            actsWrap,
-            h('div', { style: 'display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;' }, newActInput, addActBtn)
-          )
-        );
-      }
-
-      renderLibContent();
-
-      var dlg = h('div', { class: 'modal-back' },
-        h('div', { class: 'modal card', style: 'max-width:680px; width:95%; background:#ffffff; padding:22px; border-radius:16px; box-shadow:0 20px 50px rgba(15,23,42,0.28); border:1px solid #CBD5E1; max-height:90vh; overflow-y:auto;' },
-          h('div', { class: 'bar-sub', style: 'margin-bottom:12px;' },
-            h('h3', { style: 'margin:0; color:#0F3D2E;', text: '📚 المكتبة البيداغوجية وقائمة الأنشطة اليومية' }),
-            h('button', {
-              type: 'button',
-              class: 'btn small light',
-              text: 'إغلاق وحفظ',
-              onclick: function () {
-                dlg.remove();
-                if (typeof onSavedCallback === 'function') onSavedCallback();
-              }
-            })
-          ),
-          host
-        )
-      );
-      document.body.appendChild(dlg);
-    }
-
-    // نافذة عرض سجل التعديلات وتاريخ النشر
-    function openRevisionHistoryModal(p) {
-      var st = parseProgState(p);
-      var hist = (st.revision_history && st.revision_history.length)
-        ? st.revision_history
-        : [{ at: p.published_at || p.created_at || new Date().toISOString(), action: 'إنشاء البرنامج الأسبوعي', status: st.status }];
-
-      var listEl = h('div', { style: 'display:flex; flex-direction:column; gap:8px; max-height:340px; overflow-y:auto;' },
-        hist.slice().reverse().map(function (item, idx) {
-          return h('div', { style: 'padding:10px 14px; border:1px solid #E2E8F0; border-radius:10px; background:#F8FAFC; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;' },
-            h('div', null,
-              h('strong', { style: 'display:block; color:#0F3D2E;', text: item.action || 'تحديث البرنامج الأسبوعي' }),
-              h('span', { class: 'muted small', text: 'التاريخ: ' + fmt(item.at) })
-            ),
-            badge(item.status === 'updated' ? 'تم تحديثه' : (item.status === 'published' ? 'منشور' : 'مسودة'), item.status === 'draft' ? 'gray' : 'ok')
-          );
-        })
-      );
-
-      var dlg = h('div', { class: 'modal-back' },
-        h('div', { class: 'modal card', style: 'max-width:520px; width:94%; background:#ffffff; padding:22px; border-radius:16px; box-shadow:0 20px 50px rgba(15,23,42,0.28); border:1px solid #CBD5E1; max-height:90vh; overflow-y:auto;' },
-          h('div', { class: 'bar-sub', style: 'margin-bottom:12px;' },
-            h('h3', { style: 'margin:0; color:#0F3D2E;', text: 'سجل التعديلات وتاريخ النشر — ' + st.section_name }),
-            h('button', { type: 'button', class: 'btn small light', text: 'إغلاق', onclick: function () { dlg.remove(); } })
-          ),
-          listEl
-        )
-      );
-      document.body.appendChild(dlg);
-    }
-
-    // واجهة إعداد البرنامج الأسبوعي المباشرة من الجدول
-    function openProgramBuilder(p, isDuplicateCopy) {
-      S.inSubBuilder = true;
-      try { window.history.pushState({ deApp: 'admin', sec: 'programs', subBuilder: true }, ''); } catch (eH) {}
-
-      var st = parseProgState(p);
-      if (isDuplicateCopy) {
-        st.id = null;
-        st.status = 'draft';
-        st.published_at = null;
-        st.prepared_date = new Date().toISOString().slice(0, 10);
-        st.revision_history = [{ at: new Date().toISOString(), action: 'نسخ من برنامج سابق لإنشاء برنامج جديد', status: 'draft' }];
-      }
-
-      v.textContent = '';
-
-      function getSecName() {
-        return nameOf(sections, st.section_id, 'name') || st.section_name || 'الفوج التربوي';
-      }
-
-      // مزامنة التوقيتات العمودية وإعادة ترتيب الحصص تلقائياً حسب التوقيت
-      function syncAndSortSchedule() {
-        var slotMap = {};
-        (st.time_slots || []).forEach(function (ts) {
-          if (ts.start && ts.end) slotMap[ts.start + '-' + ts.end] = ts;
-        });
-        st.days.forEach(function (dy) {
-          (dy.sessions || []).sort(function (a, b) {
-            return timeToMinutes(a.start) - timeToMinutes(b.start) || timeToMinutes(a.end) - timeToMinutes(b.end);
-          });
-          (dy.sessions || []).forEach(function (s) {
-            if (s.start && s.end) {
-              var k = s.start + '-' + s.end;
-              if (!slotMap[k]) {
-                slotMap[k] = {
-                  start: s.start,
-                  end: s.end,
-                  period: timeToMinutes(s.start) < timeToMinutes(st.afternoon_start || '12:30') ? 'morning' : 'afternoon'
-                };
-              }
-            }
-          });
-        });
-        st.time_slots = Object.keys(slotMap).map(function (k) { return slotMap[k]; }).sort(function (a, b) {
-          return timeToMinutes(a.start) - timeToMinutes(b.start) || timeToMinutes(a.end) - timeToMinutes(b.end);
-        });
-      }
-
-      // فحص التداخل الزمني بين الحصص في نفس اليوم
-      function findDayOverlaps(dayKey, startStr, endStr, ignoreSessionRef) {
-        var dy = st.days.filter(function (d) { return d.day === dayKey; })[0];
-        if (!dy) return [];
-        var sMin = timeToMinutes(startStr);
-        var eMin = timeToMinutes(endStr);
-        return (dy.sessions || []).filter(function (s) {
-          if (s === ignoreSessionRef) return false;
-          var os = timeToMinutes(s.start);
-          var oe = timeToMinutes(s.end);
-          return sMin < oe && eMin > os;
-        });
-      }
-
-      // نافذة صغيرة وبسيطة لإضافة أو تعديل أو حذف حصة مباشرة من خانة الجدول
-      function openCellSessionModal(dayKey, slotStart, slotEnd, existingSession, isInsertBetween) {
-        var lib = getPedagogicalLibrary();
-        var domKeys = Object.keys(lib);
-        var dailyActs = getDailyActivitiesList();
-
-        var dyObj = st.days.filter(function (d) { return d.day === dayKey; })[0] || st.days[0];
-        var currentKind = existingSession ? (existingSession.kind === 'activity' ? 'activity' : 'session') : (isInsertBetween ? 'activity' : 'session');
-        var currentDomain = (existingSession && existingSession.domain && lib[existingSession.domain]) ? existingSession.domain : (domKeys[0] || 'المجال المعرفي');
-        var currentSkill = (existingSession && existingSession.skill) ? existingSession.skill : ((lib[currentDomain] && lib[currentDomain][0]) || '');
-        var currentActivity = (existingSession && existingSession.activity) ? existingSession.activity : (dailyActs[0] || 'الاستراحة');
-        var currentStart = (existingSession && existingSession.start) || slotStart || '08:00';
-        var currentEnd = (existingSession && existingSession.end) || slotEnd || minutesToTime(timeToMinutes(currentStart) + 30);
-        var currentDuration = calcDurationMins(currentStart, currentEnd);
-        var applyAllDays = false;
-        var autoShiftConflicts = isInsertBetween ? true : false;
-
-        var modalBody = h('div', { style: 'display:flex; flex-direction:column; gap:14px;' });
-
-        function renderModalFields() {
-          modalBody.textContent = '';
-          lib = getPedagogicalLibrary();
-          domKeys = Object.keys(lib);
-          dailyActs = getDailyActivitiesList();
-          if (!lib[currentDomain]) currentDomain = domKeys[0] || '';
-          var domainSkills = lib[currentDomain] || [];
-          if (currentKind === 'session' && (!currentSkill || domainSkills.indexOf(currentSkill) < 0)) {
-            currentSkill = domainSkills[0] || '';
-          }
-
-          // أولاً: نوع الحصة
-          var kindToggleRow = h('div', { style: 'display:grid; grid-template-columns:1fr 1fr; gap:10px;' },
-            h('button', {
-              type: 'button',
-              class: 'btn ' + (currentKind === 'session' ? '' : 'light'),
-              style: 'padding:12px; font-weight:800; border-radius:10px; ' + (currentKind === 'session' ? 'background:#0F3D2E; color:#fff;' : ''),
-              onclick: function () { currentKind = 'session'; renderModalFields(); }
-            }, '🎓 حصة بيداغوجية'),
-            h('button', {
-              type: 'button',
-              class: 'btn ' + (currentKind === 'activity' ? 'gold' : 'light'),
-              style: 'padding:12px; font-weight:800; border-radius:10px;',
-              onclick: function () { currentKind = 'activity'; renderModalFields(); }
-            }, '🌿 حصة نشاط يومي / فترة تنظيمية')
-          );
-
-          modalBody.appendChild(
-            h('div', null,
-              h('label', { style: 'display:block; font-weight:800; color:#0F3D2E; margin-bottom:6px; font-size:14px;', text: 'أولاً: نوع الحصة' }),
-              kindToggleRow
-            )
-          );
-
-          // ثانياً: حسب نوع الحصة المختار
-          if (currentKind === 'session') {
-            var domSelectEl = h('select', {
-              class: 'input',
-              style: 'width:100%; font-weight:700;',
-              onchange: function () {
-                currentDomain = domSelectEl.value;
-                var sks = lib[currentDomain] || [];
-                currentSkill = sks[0] || '';
-                renderModalFields();
-              }
-            }, domKeys.map(function (dk) {
-              return h('option', { value: dk, selected: dk === currentDomain ? 'selected' : null, text: dk });
-            }));
-
-            var skillChipsWrap = h('div', {
-              style: 'display:flex; flex-direction:column; gap:6px; max-height:185px; overflow-y:auto; padding:8px; border:1px solid #CBD5E1; border-radius:10px; background:#F8FAF9;'
-            });
-            domainSkills.forEach(function (sk) {
-              var isSel = (sk === currentSkill);
-              var skBtn = h('button', {
-                type: 'button',
-                style: 'text-align:right; padding:8px 12px; border-radius:8px; border:1.5px solid ' + (isSel ? '#059669' : '#E2E8F0') + '; background:' + (isSel ? '#ECFDF5' : '#FFFFFF') + '; color:' + (isSel ? '#064E3B' : '#1E293B') + '; font-weight:' + (isSel ? '800' : '600') + '; cursor:pointer; font-family:inherit; font-size:13.5px;',
-                onclick: function () {
-                  currentSkill = sk;
-                  renderModalFields();
-                }
-              }, (isSel ? '✓ ' : '• ') + sk);
-              skillChipsWrap.appendChild(skBtn);
-            });
-
-            var quickAddSkillBtn = h('button', {
-              type: 'button',
-              class: 'btn small light',
-              text: '+ إضافة مهارة جديدة أو تعديل المكتبة البيداغوجية',
-              onclick: function () {
-                openPedagogicalLibraryModal(function () { renderModalFields(); });
-              }
-            });
-
-            modalBody.appendChild(
-              h('div', { style: 'background:#F0FDF4; border:1px solid #BBF7D0; border-radius:12px; padding:12px; display:flex; flex-direction:column; gap:10px;' },
-                h('div', null,
-                  h('label', { style: 'display:block; font-weight:800; color:#065F46; margin-bottom:4px; font-size:13.5px;', text: 'ثانياً: المجال البيداغوجي' }),
-                  domSelectEl
-                ),
-                h('div', null,
-                  h('label', { style: 'display:block; font-weight:800; color:#065F46; margin-bottom:4px; font-size:13.5px;', text: 'المهارات التابعة للمجال المختار فقط (اضغط على المهارة لإدراجها تلقائياً):' }),
-                  skillChipsWrap
-                ),
-                h('div', { style: 'display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;' },
-                  h('span', { style: 'font-size:12.5px; color:#047857; font-weight:700;', text: 'المهارة المدرجة: ' + (currentSkill || '—') }),
-                  quickAddSkillBtn
-                )
-              )
-            );
+      // 1. الترويسة وشريط الأدوات الأساسي النظيف
+      var groupSelect = h('select', {
+        class: 'input',
+        style: 'font-weight:700; color:#14532D; min-width:180px;',
+        onchange: function (e) {
+          currentWeekState.section_id = e.target.value;
+          currentWeekState.section_name = getSecName();
+          // فحص إن كان للفوج برنامج موجود
+          var progForSec = rows.filter(function (r) { return r.section_id === currentWeekState.section_id; })[0];
+          if (progForSec) {
+            currentWeekState = parseExistingProgramState(progForSec, sections);
           } else {
-            // قائمة «أنشطة يومية» بدون مجال أو مهارة
-            var actGrid = h('div', { style: 'display:flex; flex-wrap:wrap; gap:8px;' });
-            dailyActs.forEach(function (actName) {
-              var isSel = (actName === currentActivity);
-              var actBtn = h('button', {
-                type: 'button',
-                style: 'padding:8px 14px; border-radius:20px; border:1.5px solid ' + (isSel ? '#D97706' : '#FDE68A') + '; background:' + (isSel ? '#F59E0B' : '#FFFBEB') + '; color:' + (isSel ? '#FFFFFF' : '#92400E') + '; font-weight:800; cursor:pointer; font-family:inherit; font-size:13.5px;',
-                onclick: function () {
-                  currentActivity = actName;
-                  renderModalFields();
-                }
-              }, actName);
-              actGrid.appendChild(actBtn);
-            });
-
-            var customActInput = h('input', {
-              class: 'input',
-              type: 'text',
-              placeholder: 'إضافة نشاط يومي جديد للقائمة...',
-              style: 'flex:1; min-width:160px;'
-            });
-            var addActInlineBtn = h('button', {
-              type: 'button',
-              class: 'btn small',
-              text: '+ إضافة نشاط يومي',
-              onclick: function () {
-                var nv = String(customActInput.value || '').trim();
-                if (!nv) return toast('أدخل اسم النشاط اليومي أولاً.', 'bad');
-                if (dailyActs.indexOf(nv) < 0) {
-                  dailyActs.push(nv);
-                  saveDailyActivitiesList(dailyActs);
-                }
-                currentActivity = nv;
-                renderModalFields();
-              }
-            });
-
-            modalBody.appendChild(
-              h('div', { style: 'background:#FFFBEB; border:1px solid #FDE68A; border-radius:12px; padding:12px; display:flex; flex-direction:column; gap:10px;' },
-                h('label', { style: 'display:block; font-weight:800; color:#92400E; font-size:13.5px;', text: 'ثانياً: اختر من قائمة «أنشطة يومية» (فترة مستقلة دون مجال أو مهارة):' }),
-                actGrid,
-                h('div', { style: 'display:flex; gap:8px; flex-wrap:wrap; margin-top:4px;' }, customActInput, addActInlineBtn)
-              )
-            );
+            currentWeekState = createEmptyWeekState(currentWeekState.section_id, currentWeekState.section_name);
           }
-
-          // ثالثاً: التوقيت والمدة وفحص التداخل
-          var startInp = h('input', {
-            class: 'input',
-            type: 'time',
-            value: currentStart,
-            onchange: function () {
-              currentStart = startInp.value || '08:00';
-              currentEnd = minutesToTime(timeToMinutes(currentStart) + currentDuration);
-              renderModalFields();
-            }
-          });
-          var endInp = h('input', {
-            class: 'input',
-            type: 'time',
-            value: currentEnd,
-            onchange: function () {
-              currentEnd = endInp.value || '09:00';
-              currentDuration = calcDurationMins(currentStart, currentEnd);
-              renderModalFields();
-            }
-          });
-          var durSelect = h('select', {
-            class: 'input',
-            onchange: function () {
-              currentDuration = parseInt(durSelect.value, 10) || 30;
-              currentEnd = minutesToTime(timeToMinutes(currentStart) + currentDuration);
-              renderModalFields();
-            }
-          }, [15, 20, 30, 45, 60, 75, 90, 120].map(function (m) {
-            return h('option', { value: String(m), selected: m === currentDuration ? 'selected' : null, text: m + ' دقيقة' });
-          }));
-
-          var overlaps = findDayOverlaps(dayKey, currentStart, currentEnd, existingSession);
-          var conflictAlert = null;
-          if (overlaps.length > 0) {
-            var ovNames = overlaps.map(function (o) { return (o.title || o.activity || o.skill || 'حصة') + ' (' + o.start + '-' + o.end + ')'; }).join(' ، ');
-            var shiftChk = h('input', {
-              type: 'checkbox',
-              checked: autoShiftConflicts ? 'checked' : null,
-              onchange: function () { autoShiftConflicts = shiftChk.checked; }
-            });
-            conflictAlert = h('div', {
-              style: 'background:#FEF2F2; border:1px solid #FCA5A5; color:#991B1B; border-radius:10px; padding:10px 12px; font-size:13px;'
-            },
-              h('strong', { style: 'display:block; margin-bottom:4px;', text: '⚠️ تنبيه تعارض في التوقيت: يوجد تداخل مع (' + ovNames + ')' }),
-              h('label', { style: 'display:flex; align-items:center; gap:8px; cursor:pointer; font-weight:700; color:#7F1D1D;' },
-                shiftChk,
-                'إزاحة الحصص الموالية تلقائياً وإعادة ترتيب الجدول لمنع التداخل'
-              )
-            );
-          }
-
-          var allDaysChk = h('input', {
-            type: 'checkbox',
-            checked: applyAllDays ? 'checked' : null,
-            onchange: function () { applyAllDays = allDaysChk.checked; }
-          });
-
-          modalBody.appendChild(
-            h('div', { style: 'background:#F8FAFC; border:1px solid #E2E8F0; border-radius:12px; padding:12px; display:flex; flex-direction:column; gap:10px;' },
-              h('div', { style: 'display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:10px;' },
-                h('div', null, h('label', { class: 'small muted', style: 'display:block; margin-bottom:4px;', text: 'بداية الحصة / الفترة' }), startInp),
-                h('div', null, h('label', { class: 'small muted', style: 'display:block; margin-bottom:4px;', text: 'المدة الزمنية' }), durSelect),
-                h('div', null, h('label', { class: 'small muted', style: 'display:block; margin-bottom:4px;', text: 'نهاية الحصة / الفترة' }), endInp)
-              ),
-              conflictAlert,
-              h('label', { style: 'display:flex; align-items:center; gap:8px; cursor:pointer; font-size:13px; font-weight:700; color:#0F3D2E;' },
-                allDaysChk,
-                'تطبيق هذه الحصة / النشاط في نفس التوقيت على كافة أيام الأسبوع (الأحد - الخميس)'
-              )
-            )
-          );
+          renderFullView();
         }
+      }, secOpts.map(function (o) {
+        return h('option', { value: o[0], selected: o[0] === currentWeekState.section_id ? 'selected' : null, text: o[1] });
+      }));
 
-        renderModalFields();
+      var yearInput = h('input', {
+        class: 'input',
+        type: 'text',
+        value: currentWeekState.academic_year || '2026/2027',
+        style: 'width:115px; text-align:center; font-weight:700;',
+        onchange: function (e) { currentWeekState.academic_year = e.target.value; }
+      });
 
-        var saveCellBtn = h('button', {
-          type: 'button',
-          class: 'btn',
-          style: 'background:#0F3D2E; color:#fff; font-weight:800;',
-          text: existingSession ? 'حفظ التعديلات' : 'إدراج في الجدول',
-          onclick: function () {
-            if (timeToMinutes(currentEnd) <= timeToMinutes(currentStart)) {
-              return toast('يجب أن يكون وقت النهاية بعد وقت البداية.', 'bad');
-            }
-            var overlaps = findDayOverlaps(dayKey, currentStart, currentEnd, existingSession);
-            if (overlaps.length > 0 && !autoShiftConflicts) {
-              var proceed = window.confirm('يوجد تداخل في التوقيت مع حصة أخرى في نفس اليوم. هل تريد إزاحة الحصص التالية تلقائياً وإعادة ترتيب الجدول؟');
-              if (!proceed) return;
-              autoShiftConflicts = true;
-            }
-
-            function applyToSingleDay(dObj) {
-              if (existingSession && dObj.day === dayKey) {
-                var idx = dObj.sessions.indexOf(existingSession);
-                if (idx >= 0) dObj.sessions.splice(idx, 1);
-              } else if (applyAllDays) {
-                dObj.sessions = (dObj.sessions || []).filter(function (s) {
-                  return !(s.start === slotStart && s.end === slotEnd);
-                });
-              }
-
-              // إزاحة الحصص المتداخلة إن طُلب ذلك
-              if (autoShiftConflicts) {
-                var newEndM = timeToMinutes(currentEnd);
-                var newStartM = timeToMinutes(currentStart);
-                dObj.sessions.sort(function (a, b) { return timeToMinutes(a.start) - timeToMinutes(b.start); });
-                var cursorM = newEndM;
-                dObj.sessions.forEach(function (s) {
-                  var sStartM = timeToMinutes(s.start);
-                  var sEndM = timeToMinutes(s.end);
-                  var sDur = Math.max(15, sEndM - sStartM);
-                  if (sStartM < cursorM && sEndM > newStartM) {
-                    s.start = minutesToTime(cursorM);
-                    s.end = minutesToTime(cursorM + sDur);
-                    s.duration = sDur;
-                    cursorM = cursorM + sDur;
-                  }
-                });
-              }
-
-              var newSessObj = {
-                kind: currentKind,
-                title: currentKind === 'activity' ? currentActivity : currentSkill,
-                activity: currentKind === 'activity' ? currentActivity : '',
-                domain: currentKind === 'session' ? currentDomain : '',
-                skill: currentKind === 'session' ? currentSkill : '',
-                start: currentStart,
-                end: currentEnd,
-                duration: calcDurationMins(currentStart, currentEnd),
-                items: currentKind === 'session' ? [{ domain: currentDomain, skill: currentSkill }] : []
-              };
-              dObj.sessions.push(newSessObj);
-              dObj.sessions.sort(function (a, b) { return timeToMinutes(a.start) - timeToMinutes(b.start); });
-            }
-
-            if (applyAllDays) {
-              st.days.forEach(applyToSingleDay);
-            } else {
-              applyToSingleDay(dyObj);
-            }
-
-            syncAndSortSchedule();
-            dlg.remove();
-            renderTimetableGrid();
-            refreshLivePdfPreview();
-            toast(existingSession ? 'تم تحديث الحصة وإعادة ترتيب الجدول.' : 'تم إدراج الحصة في الجدول الأسبوعي.', 'ok');
-          }
-        });
-
-        var deleteCellBtn = existingSession ? h('button', {
-          type: 'button',
-          class: 'btn danger',
-          text: '🗑 حذف الحصة',
-          onclick: function () {
-            var idx = dyObj.sessions.indexOf(existingSession);
-            if (idx >= 0) dyObj.sessions.splice(idx, 1);
-            dlg.remove();
-            renderTimetableGrid();
-            refreshLivePdfPreview();
-            toast('تم حذف الحصة من الجدول.', 'ok');
-          }
-        }) : null;
-
-        var dlg = h('div', { class: 'modal-back' },
-          h('div', { class: 'modal card', style: 'max-width:560px; width:95%; background:#ffffff; padding:22px; border-radius:16px; box-shadow:0 20px 50px rgba(15,23,42,0.28); border:1px solid #CBD5E1; max-height:90vh; overflow-y:auto;' },
-            h('div', { class: 'bar-sub', style: 'margin-bottom:12px;' },
-              h('h3', { style: 'margin:0; color:#0F3D2E;', text: (existingSession ? 'تعديل حصة — يوم ' : (isInsertBetween ? 'إدراج فترة جديدة بين الحصص — يوم ' : 'إضافة حصة — يوم ')) + dyObj.label }),
-              h('button', { type: 'button', class: 'btn small light', text: 'إلغاء', onclick: function () { dlg.remove(); } })
-            ),
-            modalBody,
-            h('div', { style: 'display:flex; justify-content:space-between; align-items:center; gap:10px; margin-top:16px; padding-top:12px; border-top:1px solid #E2E8F0; flex-wrap:wrap;' },
-              h('div', null, deleteCellBtn),
-              h('div', { style: 'display:flex; gap:8px;' },
-                h('button', { type: 'button', class: 'btn light', text: 'إلغاء', onclick: function () { dlg.remove(); } }),
-                saveCellBtn
-              )
-            )
-          )
-        );
-        document.body.appendChild(dlg);
-      }
-
-      // حفظ البرنامج أو نشره للأولياء
-      async function saveOrPublishProgram(publishNow) {
-        if (!st.section_id) {
-          return toast('يرجى اختيار الفوج / الوحدة التربوية أولاً.', 'bad');
-        }
-        var totalSessions = 0;
-        st.days.forEach(function (dy) { totalSessions += (dy.sessions || []).length; });
-        if (totalSessions === 0) {
-          return toast('الجدول فارغ! اضغط على أي خانة في الجدول لإضافة حصة بيداغوجية أو نشاط يومي أولاً.', 'bad');
-        }
-
-        var secName = getSecName();
-        var nowIso = new Date().toISOString();
-        var wasPublishedBefore = (st.status === 'published' || st.status === 'updated' || !!st.published_at);
-        var nextStatus = publishNow ? (wasPublishedBefore && st.id ? 'updated' : 'published') : 'draft';
-
-        var historyArr = Array.isArray(st.revision_history) ? st.revision_history.slice() : [];
-        historyArr.push({
-          at: nowIso,
-          action: publishNow ? (nextStatus === 'updated' ? 'تحديث البرنامج الأسبوعي وإعادة نشره للأولياء' : 'اعتماد ونشر البرنامج الأسبوعي في فضاء الأولياء') : 'حفظ كمسودة',
-          status: nextStatus
-        });
-        st.revision_history = historyArr;
-        st.status = nextStatus;
-        st.updated_at = nowIso;
-        if (publishNow) st.published_at = nowIso;
-
-        var schedulePayload = st.days.map(function (dy) {
-          return {
-            day: dy.day,
-            label: dy.label,
-            section_name: secName,
-            academic_year: st.academic_year || '2026/2027',
-            program_status: nextStatus,
-            day_start: st.day_start || '08:00',
-            day_end: st.day_end || '14:00',
-            morning_end: st.morning_end || '12:00',
-            afternoon_start: st.afternoon_start || '12:30',
-            educator_name: st.educator_name || '',
-            supervisor_name: st.supervisor_name || '',
-            director_name: st.director_name || '',
-            prepared_date: st.prepared_date || nowIso.slice(0, 10),
-            updated_at: nowIso,
-            published_at: st.published_at,
-            time_slots: st.time_slots,
-            revision_history: historyArr,
-            sessions: (dy.sessions || []).map(function (s) {
-              return {
-                kind: s.kind === 'activity' ? 'activity' : 'session',
-                title: s.title || s.activity || s.skill || '',
-                activity: s.activity || '',
-                domain: s.domain || '',
-                skill: s.skill || '',
-                start: s.start || '08:00',
-                end: s.end || '09:00',
-                duration: s.duration || calcDurationMins(s.start, s.end),
-                items: s.kind === 'activity' ? [] : [{ domain: s.domain || '', skill: s.skill || '' }]
-              };
-            })
-          };
-        });
-
-        var body = {
-          section_id: st.section_id,
-          title: DE.clean('البرنامج الأسبوعي — ' + secName, 155),
-          academic_year: st.academic_year || '2026/2027',
-          description: DE.clean('البرنامج الأسبوعي المعتمد لفوج ' + secName + ' — التوقيت: ' + st.day_start + ' إلى ' + st.day_end, 1000),
-          goals: DE.clean('برنامج أسبوعي بيداغوجي وتنظيمي للفوج ' + secName, 1000),
-          schedule: schedulePayload,
-          status: publishNow ? 'published' : 'draft',
-          published_at: publishNow ? nowIso : null
-        };
-
-        var savedId = st.id || ('prog-' + Date.now());
-        try {
-          if (st.id && !String(st.id).startsWith('prog-')) {
-            await C.rest('PATCH', '/educational_programs?id=eq.' + uid(st.id), body);
-          } else {
-            var res = await C.rest('POST', '/educational_programs', body);
-            if (Array.isArray(res) && res[0] && res[0].id) savedId = res[0].id;
-          }
-        } catch (dbErr) {}
-
-        st.id = savedId;
-        var localRecord = Object.assign({ id: savedId, created_at: nowIso }, body);
-        var sharedList = readSharedProgramsLocal();
-        var exIdx = sharedList.findIndex(function (x) { return x && String(x.id) === String(savedId); });
-        if (exIdx >= 0) sharedList[exIdx] = localRecord;
-        else sharedList.unshift(localRecord);
-        writeSharedProgramsLocal(sharedList);
-
-        // إرسال إشعار للأولياء وتوليد ملف PDF عند النشر
-        if (publishNow) {
-          try {
-            await C.rest('POST', '/messages', {
-              kind: 'notice',
-              title: (nextStatus === 'updated' ? 'تحديث البرنامج الأسبوعي — ' : 'نشر البرنامج الأسبوعي — ') + secName,
-              body: 'تم ' + (nextStatus === 'updated' ? 'تحديث' : 'نشر') + ' البرنامج الأسبوعي الخاص بفوج «' + secName + '» للموسم الدراسي ' + st.academic_year + '. يمكنكم الاطلاع عليه وطباعته بصيغة PDF من قسم «البرنامج الأسبوعي» في فضاء الأولياء.',
-              published_at: nowIso
-            });
-          } catch (msgErr) {}
-
-          try {
-            if (window.DE_PDF && window.DE_PDF.renderWeeklyProgramToPdf) {
-              var pdfBytes = await window.DE_PDF.renderWeeklyProgramToPdf(st, secName);
-              window.DE_PDF.downloadPdf(pdfBytes, 'البرنامج_الأسبوعي_' + String(secName).replace(/\s+/g, '_') + '.pdf');
-            }
-          } catch (pdfErr) {}
-        }
-
-        bust();
-        toast(publishNow ? 'تم حفظ ونشر البرنامج الأسبوعي في فضاء الأولياء وتوليد ملف PDF بنجاح!' : 'تم حفظ البرنامج الأسبوعي كمسودة بنجاح.', 'ok');
-        go('programs');
-      }
-
-      // الشريط العلوي البسيط والمنظم لواجهة إعداد البرنامج
-      var publishMainBtn = h('button', {
+      // زر ورقة جديدة فارغة
+      var newBlankBtn = h('button', {
         type: 'button',
-        class: 'btn gold',
-        style: 'font-weight:800; padding:10px 18px;',
-        text: '🚀 نشر البرنامج',
-        onclick: function () { act(publishMainBtn, function () { return saveOrPublishProgram(true); }); }
-      });
+        class: 'btn light',
+        title: 'إنشاء ورقة أسبوعية جديدة بجميع الخانات فارغة',
+        onclick: function () {
+          currentWeekState = createEmptyWeekState(currentWeekState.section_id, getSecName());
+          isMergeMode = false;
+          mergeSelectedCells = {};
+          renderFullView();
+          toast('تم فتح ورقة أسبوعية جديدة بجميع الخانات فارغة.', 'ok');
+        }
+      }, makeSvgIcon('s-plus'), h('span', { text: 'ورقة جديدة فارغة' }));
 
+      // زر دمج الخانات المتجاورة
+      var mergeToggleBtn = h('button', {
+        type: 'button',
+        class: 'btn ' + (isMergeMode ? 'gold' : 'light'),
+        title: 'تحديد خانات متجاورة لدمجها معاً',
+        onclick: function () {
+          isMergeMode = !isMergeMode;
+          mergeSelectedCells = {};
+          renderFullView();
+        }
+      }, makeSvgIcon('s-merge'), h('span', { text: isMergeMode ? 'إلغاء وضع الدمج' : 'دمج الخانات' }));
+
+      // زر تعديل التوقيتات
+      var timeConfigBtn = h('button', {
+        type: 'button',
+        class: 'btn light',
+        title: 'التحكم في التوقيتات والمدد والفترات',
+        onclick: function () { openTimeSlotsManagerModal(); }
+      }, makeSvgIcon('s-clock'), h('span', { text: 'التحكم في التوقيتات' }));
+
+      // زر حفظ مسودة
       var saveDraftBtn = h('button', {
         type: 'button',
         class: 'btn light',
-        text: '💾 حفظ كمسودة',
-        onclick: function () { act(saveDraftBtn, function () { return saveOrPublishProgram(false); }); }
-      });
+        title: 'حفظ الورقة الأسبوعية كمسودة',
+        onclick: function () { act(saveDraftBtn, function () { return saveProgramAction(false); }); }
+      }, makeSvgIcon('s-edit'), h('span', { text: 'حفظ مسودة' }));
 
-      var downloadPdfBtn = h('button', {
+      // زر معاينة PDF
+      var previewPdfBtn = h('button', {
         type: 'button',
         class: 'btn light',
-        text: '📄 تحميل PDF (A4 أفقي)',
-        onclick: async function () {
-          try {
-            if (!window.DE_PDF || !window.DE_PDF.renderWeeklyProgramToPdf) throw new Error('مولد PDF غير متاح');
-            toast('جارٍ تجهيز ملف PDF للبرنامج الأسبوعي...', 'ok');
-            var bytes = await window.DE_PDF.renderWeeklyProgramToPdf(st, getSecName());
-            window.DE_PDF.downloadPdf(bytes, 'البرنامج_الأسبوعي_' + String(getSecName()).replace(/\s+/g, '_') + '.pdf');
-          } catch (e) {
-            toast('تعذر توليد ملف PDF: ' + e.message, 'bad');
-          }
-        }
-      });
+        title: 'معاينة الوثيقة الرسمية للبرنامج الأسبوعي بصيغة PDF A4 Landscape',
+        onclick: function () { openPdfLandscapePreviewModal(); }
+      }, makeSvgIcon('s-eye'), h('span', { text: 'معاينة PDF' }));
 
-      var libBtn = h('button', {
+      // زر نشر البرنامج
+      var publishBtn = h('button', {
         type: 'button',
-        class: 'btn light',
-        text: '📚 المكتبة البيداغوجية والأنشطة',
-        onclick: function () { openPedagogicalLibraryModal(function () { renderTimetableGrid(); }); }
-      });
+        class: 'btn gold',
+        style: 'font-weight:800;',
+        title: 'نشر البرنامج الأسبوعي في فضاء أولياء أطفال الفوج',
+        onclick: function () { act(publishBtn, function () { return saveProgramAction(true); }); }
+      }, makeSvgIcon('s-send'), h('span', { text: 'نشر البرنامج للأولياء' }));
 
-      var topHeaderCard = h('div', { class: 'card', style: 'margin-bottom:14px; padding:16px;' },
-        h('div', { class: 'bar-sub', style: 'margin-bottom:14px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;' },
-          h('div', { style: 'display:flex; align-items:center; gap:10px; flex-wrap:wrap;' },
-            h('h2', { style: 'margin:0; color:#0F3D2E;', text: 'إعداد البرنامج الأسبوعي' }),
-            badge(st.status === 'updated' ? 'تم تحديثه' : (st.status === 'published' ? 'منشور' : 'مسودة'), st.status === 'draft' ? 'gray' : 'ok')
+      // شريط أعلى الورقة
+      var topBarCard = h('div', {
+        class: 'card wk-top-hero-card',
+        style: 'display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; padding:16px 20px; background:linear-gradient(135deg, #F8FAF9 0%, #FFFFFF 100%); border:1px solid #CBD5E1; border-radius:14px;'
+      },
+        h('div', { style: 'display:flex; align-items:center; gap:14px; flex-wrap:wrap;' },
+          h('div', { style: 'display:flex; align-items:center; gap:8px;' },
+            makeSvgIcon('s-cal'),
+            h('h2', { style: 'margin:0; color:#14532D; font-size:1.35rem;', text: 'البرنامج الأسبوعي' })
           ),
-          h('div', { class: 'row-actions', style: 'display:flex; gap:8px; flex-wrap:wrap;' },
-            h('button', { type: 'button', class: 'btn light', text: 'رجوع للبرامج', onclick: function () { go('programs'); } }),
-            libBtn,
-            downloadPdfBtn,
-            saveDraftBtn,
-            publishMainBtn
-          )
+          h('div', { style: 'display:flex; align-items:center; gap:8px;' },
+            h('span', { class: 'small muted', text: 'الفوج:' }),
+            groupSelect
+          ),
+          h('div', { style: 'display:flex; align-items:center; gap:8px;' },
+            h('span', { class: 'small muted', text: 'الموسم:' }),
+            yearInput
+          ),
+          badge(currentWeekState.status === 'updated' ? 'تم تحديثه' : (currentWeekState.status === 'published' ? 'منشور للأولياء' : 'مسودة'), currentWeekState.status === 'draft' ? 'gray' : 'ok')
         ),
-        // حقول البيانات الأساسية والتوقيتات في صف واحد نظيف
-        h('div', { style: 'display:grid; grid-template-columns:repeat(auto-fit, minmax(155px, 1fr)); gap:10px; align-items:end;' },
-          h('div', null,
-            h('label', { class: 'small muted', style: 'display:block; margin-bottom:4px; font-weight:700;', text: 'الفوج / الوحدة' }),
-            h('select', {
-              class: 'input',
-              onchange: function (e) {
-                st.section_id = e.target.value;
-                st.section_name = getSecName();
-                refreshLivePdfPreview();
-              }
-            }, secOpts.map(function (o) {
-              return h('option', { value: o[0], selected: o[0] === st.section_id ? 'selected' : null, text: o[1] });
-            }))
-          ),
-          h('div', null,
-            h('label', { class: 'small muted', style: 'display:block; margin-bottom:4px; font-weight:700;', text: 'الموسم الدراسي' }),
-            h('input', {
-              class: 'input',
-              type: 'text',
-              value: st.academic_year,
-              onchange: function (e) { st.academic_year = e.target.value; refreshLivePdfPreview(); }
-            })
-          ),
-          h('div', null,
-            h('label', { class: 'small muted', style: 'display:block; margin-bottom:4px; font-weight:700;', text: 'بداية اليوم' }),
-            h('input', {
-              class: 'input',
-              type: 'time',
-              value: st.day_start,
-              onchange: function (e) { st.day_start = e.target.value; refreshLivePdfPreview(); }
-            })
-          ),
-          h('div', null,
-            h('label', { class: 'small muted', style: 'display:block; margin-bottom:4px; font-weight:700;', text: 'نهاية اليوم' }),
-            h('input', {
-              class: 'input',
-              type: 'time',
-              value: st.day_end,
-              onchange: function (e) { st.day_end = e.target.value; refreshLivePdfPreview(); }
-            })
-          ),
-          h('div', null,
-            h('label', { class: 'small muted', style: 'display:block; margin-bottom:4px; font-weight:700;', text: 'اسم المربي(ة)' }),
-            h('input', {
-              class: 'input',
-              type: 'text',
-              placeholder: 'لتوقيع الوثيقة...',
-              value: st.educator_name,
-              onchange: function (e) { st.educator_name = e.target.value; refreshLivePdfPreview(); }
-            })
-          ),
-          h('div', null,
-            h('label', { class: 'small muted', style: 'display:block; margin-bottom:4px; font-weight:700;', text: 'المشرف البيداغوجي' }),
-            h('input', {
-              class: 'input',
-              type: 'text',
-              placeholder: 'لتوقيع الوثيقة...',
-              value: st.supervisor_name,
-              onchange: function (e) { st.supervisor_name = e.target.value; refreshLivePdfPreview(); }
-            })
-          )
+        h('div', { style: 'display:flex; align-items:center; gap:8px; flex-wrap:wrap;' },
+          newBlankBtn,
+          mergeToggleBtn,
+          timeConfigBtn,
+          saveDraftBtn,
+          previewPdfBtn,
+          publishBtn
         )
       );
-      v.appendChild(topHeaderCard);
+      mainContainer.appendChild(topBarCard);
 
-      // حاوية الجدول الأسبوعي التفاعلي المباشر
-      var timetableHost = h('div', { class: 'card wk-interactive-grid-card', style: 'margin-bottom:16px; padding:16px; overflow-x:auto;' });
-      v.appendChild(timetableHost);
-
-      function renderTimetableGrid() {
-        syncAndSortSchedule();
-        timetableHost.textContent = '';
-
-        var addTimePeriodBtn = h('button', {
+      // شريط إرشادي عند تفعيل وضع الدمج
+      if (isMergeMode) {
+        var selectedCount = Object.keys(mergeSelectedCells).length;
+        var executeMergeBtn = h('button', {
           type: 'button',
-          class: 'btn small gold',
-          text: '+ إضافة فترة زمنية جديدة للجدول',
-          onclick: function () {
-            var lastSlot = st.time_slots[st.time_slots.length - 1] || { start: '08:00', end: '08:30' };
-            var nextStart = lastSlot.end || '14:00';
-            var nextEnd = minutesToTime(timeToMinutes(nextStart) + 30);
-            st.time_slots.push({
-              start: nextStart,
-              end: nextEnd,
-              period: timeToMinutes(nextStart) < timeToMinutes(st.afternoon_start || '12:30') ? 'morning' : 'afternoon'
-            });
-            renderTimetableGrid();
-          }
-        });
+          class: 'btn gold',
+          disabled: selectedCount < 2,
+          onclick: function () { executeMergeSelection(); }
+        }, makeSvgIcon('s-merge'), h('span', { text: 'دمج الخانات المحددة (' + selectedCount + ')' }));
 
-        timetableHost.appendChild(
-          h('div', { style: 'display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:12px;' },
-            h('div', null,
-              h('h3', { style: 'margin:0 0 4px; color:#0F3D2E;', text: 'الجدول الأسبوعي التفاعلي (اضغط على أي خانة فارغة للإضافة أو على الحصة للتعديل/الحذف)' }),
-              h('p', { class: 'muted small', style: 'margin:0;', text: 'الأيام مرتبة في أعمدة والتوقيتات منظمة عمودياً. يمكنك إدراج أنشطة يومية أو فترات تنظيمية بين الحصص في أي وقت.' })
-            ),
-            addTimePeriodBtn
-          )
-        );
-
-        var tbl = h('table', {
-          class: 'wk-visual-timetable',
-          style: 'width:100%; border-collapse:separate; border-spacing:6px; min-width:780px;'
-        });
-
-        // ترويسة الأعمدة: التوقيت العمودي + أيام الأسبوع الخمسة
-        var thead = h('thead', null,
-          h('tr', null,
-            h('th', {
-              style: 'width:155px; background:#0F3D2E; color:#fff; padding:12px 10px; border-radius:10px; text-align:center; font-size:14px;'
-            }, 'التوقيت / الفترة العمودية'),
-            WEEK_DAYS.map(function (wd) {
-              return h('th', {
-                style: 'background:#14532D; color:#fff; padding:12px 10px; border-radius:10px; text-align:center; font-size:15px;'
-              }, wd.label);
+        var mergeBanner = h('div', {
+          style: 'background:#FEF3C7; border:1.5px solid #F59E0B; border-radius:12px; padding:12px 18px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;'
+        },
+          h('div', { style: 'display:flex; align-items:center; gap:10px;' },
+            makeSvgIcon('s-merge'),
+            h('span', { style: 'color:#92400E; font-weight:700; font-size:14px;', text: 'وضع دمج الخانات مفعل: اضغط على خانتين متجاورتين أو أكثر في نفس اليوم ثم اضغط على «دمج الخانات المحددة».' })
+          ),
+          h('div', { style: 'display:flex; gap:8px;' },
+            executeMergeBtn,
+            h('button', {
+              type: 'button',
+              class: 'btn light small',
+              text: 'إلغاء التحديد',
+              onclick: function () { mergeSelectedCells = {}; renderFullView(); }
             })
           )
         );
-        tbl.appendChild(thead);
+        mainContainer.appendChild(mergeBanner);
+      }
 
-        var tbody = h('tbody');
-        var lastPeriodTag = null;
+      // 2. ورقة البرنامج الأسبوعي التفاعلية (مطابقة تماماً للورقة الأصلية)
+      var sheetPaperCard = h('div', {
+        class: 'card wk-interactive-sheet-paper',
+        style: 'padding:20px; background:#FFFFFF; border:2px solid #14532D; border-radius:16px; box-shadow:0 8px 30px rgba(20,83,45,0.06); overflow-x:auto;'
+      });
 
-        st.time_slots.forEach(function (slot, slotIdx) {
-          var isAfternoon = timeToMinutes(slot.start) >= timeToMinutes(st.afternoon_start || '12:30');
-          var pTag = isAfternoon ? 'afternoon' : 'morning';
+      // أ) الترويسة الرسمية للورقة المطابقة للنموذج الأصلي
+      var sheetHeader = h('div', {
+        style: 'display:grid; grid-template-columns:1fr 2fr 1fr; align-items:center; gap:12px; padding-bottom:14px; margin-bottom:14px; border-bottom:2px solid #CBD5E1;'
+      },
+        // الطرف الأيمن: الجمعية والمركز
+        h('div', { style: 'text-align:right;' },
+          h('h4', { style: 'margin:0 0 2px; color:#14532D; font-size:15px;', text: 'جمعية أولياء الأطفال المعاقين ذهنيًا' }),
+          h('h5', { style: 'margin:0 0 2px; color:#064E3B; font-size:13.5px;', text: 'المركز النفسي البيداغوجي دار الإحسان' }),
+          h('span', { class: 'small muted', text: 'العطف — غرداية' })
+        ),
+        // الوسط: العنوان الرئيسي ورقم الفوج
+        h('div', { style: 'text-align:center;' },
+          h('h2', {
+            style: 'margin:0 0 4px; color:#14532D; font-size:1.6rem; letter-spacing:0.5px; font-weight:900;',
+            text: 'البرنامج الأسبوعي'
+          }),
+          h('div', {
+            style: 'display:inline-block; background:#FEF3C7; color:#92400E; border:1px solid #F59E0B; padding:3px 18px; border-radius:20px; font-weight:800; font-size:14px;',
+            text: 'الفوج / الوحدة: ' + getSecName()
+          })
+        ),
+        // الطرف الأيسر: الموسم الدراسي والتوقيت
+        h('div', { style: 'text-align:left;' },
+          h('div', { style: 'font-weight:700; color:#14532D; font-size:13.5px;', text: 'الموسم الدراسي: ' + (currentWeekState.academic_year || '2026/2027') }),
+          h('div', { class: 'small muted', text: 'التوقيت اليومي: ' + (currentWeekState.day_start || '08:00') + ' إلى ' + (currentWeekState.day_end || '14:00') })
+        )
+      );
+      sheetPaperCard.appendChild(sheetHeader);
 
-          if (pTag !== lastPeriodTag) {
-            lastPeriodTag = pTag;
-            tbody.appendChild(
-              h('tr', null,
-                h('td', {
-                  colspan: 6,
-                  style: 'background:' + (pTag === 'morning' ? '#ECFDF5' : '#FEF3C7') + '; color:' + (pTag === 'morning' ? '#065F46' : '#92400E') + '; font-weight:800; padding:6px 14px; border-radius:8px; font-size:13px; border:1px solid ' + (pTag === 'morning' ? '#A7F3D0' : '#FDE68A') + ';'
-                }, pTag === 'morning' ? '☀️ الفترة الصباحية' : '🌤 الفترة المسائية')
-              )
-            );
+      // ب) جدول الحصص الأسبوعي المطابق للورقة
+      var tableEl = h('table', {
+        class: 'wk-sheet-table',
+        style: 'width:100%; border-collapse:collapse; border:2px solid #14532D; text-align:center; min-width:860px;'
+      });
+
+      // صف تقسيم الفترات (الفترة الصباحية والفترة المسائية)
+      var morningSlots = currentWeekState.time_slots.filter(function (s) { return s.period === 'morning'; });
+      var afternoonSlots = currentWeekState.time_slots.filter(function (s) { return s.period === 'afternoon'; });
+      if (!morningSlots.length) morningSlots = currentWeekState.time_slots.slice(0, 6);
+      if (!afternoonSlots.length) afternoonSlots = currentWeekState.time_slots.slice(6);
+
+      var theadEl = h('thead');
+      var trPeriods = h('tr', null,
+        h('th', {
+          rowspan: 2,
+          style: 'width:110px; background:#14532D; color:#FFFFFF; border:1.5px solid #0F3D2E; padding:10px 8px; font-size:15px; font-weight:800;',
+          text: 'اليوم'
+        }),
+        h('th', {
+          colspan: morningSlots.length,
+          style: 'background:#ECFDF5; color:#064E3B; border:1.5px solid #10B981; padding:8px; font-size:14.5px; font-weight:800;',
+          text: 'الفترة الصباحية'
+        }),
+        h('th', {
+          colspan: afternoonSlots.length,
+          style: 'background:#FEF3C7; color:#92400E; border:1.5px solid #F59E0B; padding:8px; font-size:14.5px; font-weight:800;',
+          text: 'الفترة المسائية'
+        })
+      );
+      theadEl.appendChild(trPeriods);
+
+      // صف التوقيتات الدقيقة لكل خانة
+      var trTimes = h('tr', null,
+        currentWeekState.time_slots.map(function (slot) {
+          return h('th', {
+            style: 'background:#F8FAF9; color:#1E293B; border:1.5px solid #CBD5E1; padding:7px 4px; font-size:12px; font-weight:700; direction:ltr;',
+            text: slot.start + ' - ' + slot.end
+          });
+        })
+      );
+      theadEl.appendChild(trTimes);
+      tableEl.appendChild(theadEl);
+
+      // جسم الجدول: 5 صفوف للأيام (الأحد إلى الخميس) مع الخانات الفارغة أو المعبأة أو المدمجة
+      var tbodyEl = h('tbody');
+
+      currentWeekState.days.forEach(function (dayObj) {
+        var trDay = h('tr', null,
+          h('td', {
+            style: 'background:#14532D; color:#FFFFFF; border:1.5px solid #0F3D2E; padding:12px 6px; font-weight:800; font-size:15px;',
+            text: dayObj.label
+          })
+        );
+
+        // رسم خانات اليوم مع دعم span للمدمجة
+        var renderedSlotCursor = 0;
+        dayObj.sessions.forEach(function (sess) {
+          var span = sess.span || 1;
+          var cellKey = dayObj.day + ':' + sess.slot_id;
+          var isSelectedForMerge = !!mergeSelectedCells[cellKey];
+
+          // تصميم الخانة حسب نوعها (فارغة / مكتبة / يدوي / نشاط يومي)
+          var cellBg = '#FFFFFF';
+          var cellBorder = '1.5px solid #CBD5E1';
+          var cellTextColor = '#1E293B';
+          var isFilled = (sess.kind && sess.kind !== 'empty');
+
+          if (isSelectedForMerge) {
+            cellBg = '#FEF3C7';
+            cellBorder = '2px dashed #D97706';
+          } else if (sess.kind === 'library') {
+            cellBg = '#F0FDF4';
+            cellBorder = '1.5px solid #10B981';
+            cellTextColor = '#064E3B';
+          } else if (sess.kind === 'activity') {
+            cellBg = '#FFFBEB';
+            cellBorder = '1.5px solid #F59E0B';
+            cellTextColor = '#92400E';
+          } else if (sess.kind === 'manual') {
+            cellBg = '#EFF6FF';
+            cellBorder = '1.5px solid #3B82F6';
+            cellTextColor = '#1E3A8A';
           }
 
-          var durMins = calcDurationMins(slot.start, slot.end);
-
-          // خلية التوقيت العمودي على اليمين مع إمكانية تعديل التوقيت أو إدراج فترة بينية
-          var timeCell = h('td', {
-            style: 'background:#F8FAFC; border:1.5px solid #CBD5E1; border-radius:10px; padding:8px; text-align:center; vertical-align:middle;'
-          },
-            h('div', { style: 'font-weight:800; color:#0F172A; font-size:13.5px; direction:ltr;', text: slot.start + ' - ' + slot.end }),
-            h('div', { style: 'font-size:11.5px; color:#64748B; margin:2px 0 6px;', text: 'المدة: ' + durMins + ' دقيقة' }),
-            h('div', { style: 'display:flex; justify-content:center; gap:4px; flex-wrap:wrap;' },
-              h('button', {
-                type: 'button',
-                class: 'btn small light',
-                style: 'padding:2px 7px; font-size:11px;',
-                title: 'إدراج فترة جديدة بعد هذا التوقيت مباشرة',
-                text: '+ فترة بينية',
-                onclick: function () {
-                  openCellSessionModal('sun', slot.end, minutesToTime(timeToMinutes(slot.end) + 30), null, true);
-                }
-              }),
-              st.time_slots.length > 1 ? h('button', {
-                type: 'button',
-                class: 'btn small light',
-                style: 'padding:2px 6px; font-size:11px; color:#DC2626;',
-                title: 'حذف هذا الصف الزمني إن كان فارغاً',
-                text: '×',
-                onclick: function () {
-                  st.days.forEach(function (dy) {
-                    dy.sessions = (dy.sessions || []).filter(function (s) {
-                      return !(s.start === slot.start && s.end === slot.end);
-                    });
-                  });
-                  st.time_slots.splice(slotIdx, 1);
-                  renderTimetableGrid();
-                  refreshLivePdfPreview();
-                }
-              }) : null
-            )
-          );
-
-          var dayCells = WEEK_DAYS.map(function (wd) {
-            var dyObj = st.days.filter(function (d) { return d.day === wd.key; })[0];
-            var matchingSess = (dyObj && dyObj.sessions || []).filter(function (s) {
-              return s.start === slot.start && s.end === slot.end;
-            })[0];
-
-            if (!matchingSess) {
-              // خانة فارغة قابلة للنقر مباشرة
-              return h('td', {
-                class: 'wk-empty-slot-cell',
-                style: 'background:#FFFFFF; border:1.5px dashed #CBD5E1; border-radius:10px; padding:12px 8px; text-align:center; vertical-align:middle; cursor:pointer; transition:all 0.15s ease;',
-                onclick: function () {
-                  openCellSessionModal(wd.key, slot.start, slot.end, null, false);
-                }
-              },
-                h('span', { style: 'color:#64748B; font-size:12.5px; font-weight:700; display:block;', text: '+ إضافة حصة / نشاط' })
-              );
-            }
-
-            var isAct = (matchingSess.kind === 'activity' || matchingSess.kind === 'break');
-            if (isAct) {
-              return h('td', {
-                class: 'wk-filled-slot-cell is-activity',
-                style: 'background:#FFFBEB; border:2px solid #F59E0B; border-radius:10px; padding:10px; vertical-align:top; cursor:pointer;',
-                title: 'اضغط لتعديل أو حذف النشاط اليومي',
-                onclick: function () {
-                  openCellSessionModal(wd.key, slot.start, slot.end, matchingSess, false);
-                }
-              },
-                h('div', { style: 'display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;' },
-                  h('span', { style: 'font-size:10.5px; font-weight:800; background:#FEF3C7; color:#B45309; padding:2px 6px; border-radius:4px;', text: 'نشاط يومي' }),
-                  h('span', { style: 'font-size:11px; color:#92400E; font-weight:700;', text: (matchingSess.duration || durMins) + ' د' })
-                ),
-                h('strong', { style: 'display:block; color:#78350F; font-size:14px; text-align:center; margin-top:4px;', text: matchingSess.activity || matchingSess.title || 'نشاط يومي' })
-              );
-            }
-
-            return h('td', {
-              class: 'wk-filled-slot-cell is-pedagogical',
-              style: 'background:#ECFDF5; border:2px solid #10B981; border-radius:10px; padding:10px; vertical-align:top; cursor:pointer;',
-              title: 'اضغط لتعديل أو حذف الحصة البيداغوجية',
-              onclick: function () {
-                openCellSessionModal(wd.key, slot.start, slot.end, matchingSess, false);
-              }
-            },
-              h('div', { style: 'background:#059669; color:#fff; font-size:11px; font-weight:800; padding:3px 7px; border-radius:5px; margin-bottom:6px; text-align:center;', text: matchingSess.domain || 'المجال البيداغوجي' }),
-              h('strong', { style: 'display:block; color:#064E3B; font-size:13px; line-height:1.4; text-align:center;', text: matchingSess.skill || matchingSess.title || '—' })
-            );
+          var tdCell = h('td', {
+            colspan: span,
+            style: 'background:' + cellBg + '; border:' + cellBorder + '; color:' + cellTextColor + '; padding:8px 6px; vertical-align:middle; cursor:pointer; height:68px; transition:all 0.15s ease;'
           });
 
-          tbody.appendChild(h('tr', null, [timeCell].concat(dayCells)));
+          // محتوى الخانة
+          if (!isFilled) {
+            tdCell.appendChild(h('span', {
+              style: 'color:#94A3B8; font-size:12px; font-weight:600; display:block; border:1px dashed #E2E8F0; padding:6px 2px; border-radius:6px;',
+              text: isMergeMode ? (isSelectedForMerge ? '✓ محددة' : 'اضغط للتحديد') : '+ تعبئة'
+            }));
+          } else {
+            var contentWrap = h('div', { style: 'display:flex; flex-direction:column; gap:2px; justify-content:center; align-items:center;' });
+            if (span > 1) {
+              contentWrap.appendChild(h('span', {
+                style: 'font-size:10px; background:#FEF3C7; color:#B45309; padding:1px 6px; border-radius:4px; font-weight:800;',
+                text: 'مدمجة (' + span + ' خانات)'
+              }));
+            }
+            if (sess.kind === 'library') {
+              contentWrap.appendChild(h('span', { style: 'font-size:11px; font-weight:800; color:#059669;', text: sess.domain }));
+              contentWrap.appendChild(h('strong', { style: 'font-size:12.5px; color:#064E3B; line-height:1.3;', text: sess.skill }));
+            } else if (sess.kind === 'activity') {
+              contentWrap.appendChild(h('span', { style: 'font-size:10.5px; font-weight:800; color:#D97706;', text: 'نشاط يومي' }));
+              contentWrap.appendChild(h('strong', { style: 'font-size:13px; color:#78350F;', text: sess.activity || sess.title }));
+            } else if (sess.kind === 'manual') {
+              contentWrap.appendChild(h('span', { style: 'font-size:10.5px; font-weight:800; color:#2563EB;', text: 'إدخال يدوي' }));
+              contentWrap.appendChild(h('strong', { style: 'font-size:12.5px; color:#1E3A8A; line-height:1.3;', text: sess.manual_text || sess.title }));
+            }
+            tdCell.appendChild(contentWrap);
+          }
+
+          // النقر على الخانة: في وضع الدمج يحدد الخانة، وفي الوضع العادي يفتح نافذة التعبئة الأنيقة
+          tdCell.addEventListener('click', function () {
+            if (isMergeMode) {
+              if (mergeSelectedCells[cellKey]) {
+                delete mergeSelectedCells[cellKey];
+              } else {
+                mergeSelectedCells[cellKey] = { day: dayObj.day, slot_id: sess.slot_id, span: span };
+              }
+              renderFullView();
+            } else {
+              openCellFillModal(dayObj, sess);
+            }
+          });
+
+          trDay.appendChild(tdCell);
         });
 
-        tbl.appendChild(tbody);
-        timetableHost.appendChild(tbl);
-      }
+        tbodyEl.appendChild(trDay);
+      });
+      tableEl.appendChild(tbodyEl);
+      sheetPaperCard.appendChild(tableEl);
 
-      // بطاقة المعاينة الحية المطابقة للوثيقة النهائية (PDF A4 Landscape)
-      var pdfPreviewHost = h('div', {
-        style: 'width:100%; background:#fff; border:1px solid #CBD5E1; border-radius:12px; padding:8px; overflow:hidden;'
-      }, h('p', { class: 'muted small', style: 'text-align:center; padding:20px;', text: 'جارٍ توليد معاينة الوثيقة النهائية (A4 أفقي)...' }));
-
-      function refreshLivePdfPreview() {
-        st.section_name = getSecName();
-        if (window.DE_PDF && typeof window.DE_PDF.renderWeeklyProgramCanvas === 'function') {
-          window.DE_PDF.renderWeeklyProgramCanvas(st, st.section_name).then(function (cEl) {
-            pdfPreviewHost.textContent = '';
-            cEl.style.width = '100%';
-            cEl.style.height = 'auto';
-            cEl.style.display = 'block';
-            cEl.style.borderRadius = '8px';
-            pdfPreviewHost.appendChild(cEl);
-          }).catch(function () {});
-        }
-      }
-
-      var previewCard = h('div', { class: 'card', style: 'padding:16px;' },
-        h('div', { class: 'bar-sub', style: 'margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;' },
-          h('div', null,
-            h('h3', { style: 'margin:0 0 4px; color:#0F3D2E;', text: 'معاينة وثيقة البرنامج الأسبوعي النهائية (A4 أفقي Landscape)' }),
-            h('p', { class: 'muted small', style: 'margin:0;', text: 'معاينة مطابقة تماماً لملف PDF الذي يُطبع ويُنشر تلقائياً في فضاء الأولياء الخاص بأطفال الفوج.' })
-          ),
-          h('div', { class: 'row-actions', style: 'display:flex; gap:8px; flex-wrap:wrap;' },
-            downloadPdfBtn.cloneNode(true),
-            publishMainBtn.cloneNode(true)
-          )
+      // ج) تذييل التوقيعات الثلاثة للورقة الرسمية
+      var sheetFooter = h('div', {
+        style: 'display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin-top:20px; padding-top:16px; border-top:1.5px solid #E2E8F0; text-align:center;'
+      },
+        h('div', { style: 'background:#F8FAF9; padding:10px; border-radius:10px; border:1px solid #E2E8F0;' },
+          h('strong', { style: 'display:block; color:#14532D; font-size:13.5px; margin-bottom:4px;', text: 'توقيع المربي(ة) المشرف(ة)' }),
+          h('input', {
+            class: 'input small',
+            type: 'text',
+            placeholder: 'اسم المربي(ة)...',
+            value: currentWeekState.educator_name || '',
+            style: 'text-align:center; font-size:12px; margin-bottom:6px;',
+            onchange: function (e) { currentWeekState.educator_name = e.target.value; }
+          }),
+          h('span', { class: 'small muted', text: 'الإمضاء والتأشيرة' })
         ),
-        pdfPreviewHost
+        h('div', { style: 'background:#F8FAF9; padding:10px; border-radius:10px; border:1px solid #E2E8F0;' },
+          h('strong', { style: 'display:block; color:#14532D; font-size:13.5px; margin-bottom:4px;', text: 'توقيع المشرف البيداغوجي' }),
+          h('input', {
+            class: 'input small',
+            type: 'text',
+            placeholder: 'اسم المشرف البيداغوجي...',
+            value: currentWeekState.supervisor_name || '',
+            style: 'text-align:center; font-size:12px; margin-bottom:6px;',
+            onchange: function (e) { currentWeekState.supervisor_name = e.target.value; }
+          }),
+          h('span', { class: 'small muted', text: 'الإمضاء والختم' })
+        ),
+        h('div', { style: 'background:#F8FAF9; padding:10px; border-radius:10px; border:1px solid #E2E8F0;' },
+          h('strong', { style: 'display:block; color:#14532D; font-size:13.5px; margin-bottom:4px;', text: 'توقيع وختم مدير المركز' }),
+          h('input', {
+            class: 'input small',
+            type: 'text',
+            placeholder: 'اسم المدير...',
+            value: currentWeekState.director_name || '',
+            style: 'text-align:center; font-size:12px; margin-bottom:6px;',
+            onchange: function (e) { currentWeekState.director_name = e.target.value; }
+          }),
+          h('span', { class: 'small muted', text: 'التأشيرة والختم الرسمي' })
+        )
       );
-      // ربط أزرار النسخة السفلية
-      var bottomBtns = previewCard.querySelectorAll('button');
-      if (bottomBtns[0]) bottomBtns[0].onclick = downloadPdfBtn.onclick;
-      if (bottomBtns[1]) bottomBtns[1].onclick = publishMainBtn.onclick;
+      sheetPaperCard.appendChild(sheetFooter);
 
-      v.appendChild(previewCard);
-
-      renderTimetableGrid();
-      refreshLivePdfPreview();
-      window.scrollTo(0, 0);
+      mainContainer.appendChild(sheetPaperCard);
     }
 
-    // عرض قائمة البرامج الأسبوعية وإدارة البرامج السابقة
-    listView(v, {
-      title: 'البرامج الأسبوعية للأفواج',
-      addLabel: '+ إعداد برنامج أسبوعي جديد',
-      onAdd: function () { openProgramBuilder(null, false); },
-      rows: rows,
-      empty: 'لا توجد برامج أسبوعية مسجلة بعد. اضغط «+ إعداد برنامج أسبوعي جديد» للبدء من الجدول مباشرة.',
-      search: function (p) { return (p.title || '') + ' ' + nameOf(sections, p.section_id, 'name'); },
-      details: function (p) {
-        var st = parseProgState(p);
-        var sName = nameOf(sections, p.section_id, 'name') || st.section_name;
-        var host = h('div', { style: 'padding:10px; background:#fff; border-radius:12px; border:1px solid #E2E8F0;' },
-          h('p', { class: 'muted small', style: 'text-align:center;', text: 'جارٍ تحميل معاينة البرنامج الأسبوعي...' })
-        );
-        if (window.DE_PDF && window.DE_PDF.renderWeeklyProgramCanvas) {
-          window.DE_PDF.renderWeeklyProgramCanvas(st, sName).then(function (cEl) {
-            host.textContent = '';
-            cEl.style.width = '100%';
-            cEl.style.height = 'auto';
-            cEl.style.display = 'block';
-            host.appendChild(cEl);
-          }).catch(function () {});
+    // 3. نافذة تعبئة الخانة الأنيقة (المكتبة البيداغوجية الحقيقية / الملء اليدوي / الأنشطة اليومية)
+    function openCellFillModal(dayObj, sessObj) {
+      var lib = getPedagogicalLibrary();
+      var domKeys = Object.keys(lib);
+      var dailyActs = getDailyActivitiesList();
+
+      var currentKind = sessObj.kind && sessObj.kind !== 'empty' ? sessObj.kind : 'library';
+      var selectedDomain = (sessObj.domain && lib[sessObj.domain]) ? sessObj.domain : (domKeys[0] || '');
+      var selectedSkill = sessObj.skill || ((lib[selectedDomain] && lib[selectedDomain][0]) || '');
+      var manualText = sessObj.manual_text || (currentKind === 'manual' ? sessObj.title : '');
+      var selectedActivity = sessObj.activity || (currentKind === 'activity' ? sessObj.title : dailyActs[0]);
+
+      var modalBox = h('div', {
+        class: 'modal card',
+        style: 'max-width:580px; width:95%; background:#FFFFFF; padding:22px; border-radius:16px; box-shadow:0 20px 50px rgba(20,83,45,0.25); border:1px solid #CBD5E1; max-height:90vh; overflow-y:auto;'
+      });
+
+      function renderModalContent() {
+        modalBox.textContent = '';
+        var domainSkills = lib[selectedDomain] || [];
+        if (!selectedSkill || domainSkills.indexOf(selectedSkill) < 0) {
+          selectedSkill = domainSkills[0] || '';
         }
-        return host;
-      },
-      filters: [
-        { label: 'الفوج / القسم', opts: secOpts, test: function (p, x) { return p.section_id === x; } },
-        { label: 'حالة البرنامج', opts: [['published', 'منشور للأولياء'], ['updated', 'تم تحديثه'], ['draft', 'مسودة']], test: function (p, x) { return parseProgState(p).status === x; } }
-      ],
-      cols: [
-        { label: 'البرنامج الأسبوعي', get: function (p) { return p.title || 'البرنامج الأسبوعي'; }, sort: function (p) { return p.title || ''; } },
-        { label: 'الفوج / الوحدة', get: function (p) { return nameOf(sections, p.section_id, 'name') || parseProgState(p).section_name; } },
-        { label: 'الموسم الدراسي', get: function (p) { return p.academic_year || '2026/2027'; } },
-        { label: 'الحالة', get: function (p) { return statusBadgeForProgram(p); } },
-        { label: 'تاريخ النشر / آخر تحديث', get: function (p) { var st = parseProgState(p); return (st.updated_at || p.published_at) ? fmt(st.updated_at || p.published_at) : '—'; } }
-      ],
-      actions: function (p) {
-        var st = parseProgState(p);
-        var sName = nameOf(sections, p.section_id, 'name') || st.section_name;
-        return [
-          rbtn('تعديل الجدول', function () { openProgramBuilder(p, false); }, 'gold'),
-          rbtn('نسخ لبرنامج جديد', function () {
-            toast('تم نسخ البرنامج السابق إلى مسودة جديدة قابلة للتعديل.', 'ok');
-            openProgramBuilder(p, true);
-          }, 'light'),
-          rbtn('PDF (A4 أفقي)', async function () {
-            if (window.DE_PDF && window.DE_PDF.renderWeeklyProgramToPdf) {
-              toast('جارٍ تحميل ملف PDF...', 'ok');
-              var bytes = await window.DE_PDF.renderWeeklyProgramToPdf(st, sName);
-              window.DE_PDF.downloadPdf(bytes, 'البرنامج_الأسبوعي_' + String(sName).replace(/\s+/g, '_') + '.pdf');
+
+        // ترويسة النافذة
+        var modalHead = h('div', {
+          class: 'bar-sub',
+          style: 'margin-bottom:14px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #E2E8F0; padding-bottom:10px;'
+        },
+          h('div', null,
+            h('h3', { style: 'margin:0; color:#14532D; font-size:16px;', text: 'تعبئة الخانة — يوم ' + dayObj.label + ' (' + sessObj.start + ' - ' + sessObj.end + ')' }),
+            sessObj.span > 1 ? h('span', { class: 'small gold', text: 'خانة مدمجة تشمل ' + sessObj.span + ' فترات' }) : null
+          ),
+          h('button', {
+            type: 'button',
+            class: 'btn small light',
+            text: '✕',
+            onclick: function () { dlg.remove(); }
+          })
+        );
+        modalBox.appendChild(modalHead);
+
+        // تبويبات طريقة التعبئة الثلاثة
+        var tabsNav = h('div', {
+          style: 'display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; margin-bottom:14px; background:#F1F5F9; padding:4px; border-radius:10px;'
+        },
+          h('button', {
+            type: 'button',
+            class: 'btn small ' + (currentKind === 'library' ? '' : 'light'),
+            style: currentKind === 'library' ? 'background:#14532D; color:#fff; font-weight:800;' : '',
+            onclick: function () { currentKind = 'library'; renderModalContent(); }
+          }, makeSvgIcon('s-book'), h('span', { text: 'من المكتبة' })),
+          h('button', {
+            type: 'button',
+            class: 'btn small ' + (currentKind === 'manual' ? '' : 'light'),
+            style: currentKind === 'manual' ? 'background:#1E3A8A; color:#fff; font-weight:800;' : '',
+            onclick: function () { currentKind = 'manual'; renderModalContent(); }
+          }, makeSvgIcon('s-edit'), h('span', { text: 'ملء يدوي' })),
+          h('button', {
+            type: 'button',
+            class: 'btn small ' + (currentKind === 'activity' ? 'gold' : 'light'),
+            style: currentKind === 'activity' ? 'font-weight:800;' : '',
+            onclick: function () { currentKind = 'activity'; renderModalContent(); }
+          }, makeSvgIcon('s-star'), h('span', { text: 'أنشطة يومية' }))
+        );
+        modalBox.appendChild(tabsNav);
+
+        // محتوى التبويب المختار
+        if (currentKind === 'library') {
+          // الطريقة الأولى: الاختيار من المكتبة البيداغوجية
+          var domSelect = h('select', {
+            class: 'input',
+            style: 'width:100%; font-weight:700; margin-bottom:8px;',
+            onchange: function (e) {
+              selectedDomain = e.target.value;
+              selectedSkill = (lib[selectedDomain] && lib[selectedDomain][0]) || '';
+              renderModalContent();
             }
-          }, 'light'),
-          rbtn('سجل التعديلات', function () { openRevisionHistoryModal(p); }, 'light'),
-          rbtn('حذف', async function () {
-            if (!(await ask({ title: 'حذف البرنامج الأسبوعي؟', msg: 'سيُحذف هذا البرنامج الأسبوعي نهائياً.', ok: 'حذف', danger: true }))) return;
-            try { await C.rest('DELETE', '/educational_programs?id=eq.' + uid(p.id)); } catch (e) {}
-            var shared = readSharedProgramsLocal().filter(function (x) { return x && String(x.id) !== String(p.id); });
-            writeSharedProgramsLocal(shared);
-            bust(); toast('تم حذف البرنامج.', 'ok'); go('programs');
-          }, 'danger')
-        ];
+          }, domKeys.map(function (dk) {
+            return h('option', { value: dk, selected: dk === selectedDomain ? 'selected' : null, text: dk });
+          }));
+
+          var skillsListWrap = h('div', {
+            style: 'display:flex; flex-direction:column; gap:6px; max-height:200px; overflow-y:auto; border:1px solid #CBD5E1; border-radius:10px; padding:8px; background:#F8FAF9;'
+          });
+
+          domainSkills.forEach(function (sk) {
+            var isSel = (sk === selectedSkill);
+            var skItem = h('button', {
+              type: 'button',
+              style: 'text-align:right; padding:8px 12px; border-radius:8px; border:1.5px solid ' + (isSel ? '#10B981' : '#E2E8F0') + '; background:' + (isSel ? '#ECFDF5' : '#FFFFFF') + '; color:' + (isSel ? '#064E3B' : '#1E293B') + '; font-weight:' + (isSel ? '800' : '600') + '; cursor:pointer; font-size:13.5px; font-family:inherit;',
+              onclick: function () {
+                selectedSkill = sk;
+                renderModalContent();
+              }
+            }, (isSel ? '✓ ' : '• ') + sk);
+            skillsListWrap.appendChild(skItem);
+          });
+
+          modalBox.appendChild(h('div', { style: 'background:#F0FDF4; border:1px solid #BBF7D0; border-radius:12px; padding:12px;' },
+            h('label', { style: 'display:block; font-weight:800; color:#065F46; margin-bottom:4px; font-size:13.5px;', text: '1. اختيار المجال البيداغوجي:' }),
+            domSelect,
+            h('label', { style: 'display:block; font-weight:800; color:#065F46; margin-bottom:4px; font-size:13.5px;', text: '2. اختيار المهارة التابعة له (تُدرج تلقائياً في الخانة):' }),
+            skillsListWrap,
+            h('div', { style: 'margin-top:8px; font-size:13px; color:#047857; font-weight:700;', text: 'المهارة المختارة: ' + (selectedSkill || '—') })
+          ));
+
+        } else if (currentKind === 'manual') {
+          // الطريقة الثانية: الملء اليدوي المستقل
+          var manualArea = h('textarea', {
+            class: 'input',
+            rows: 3,
+            placeholder: 'اكتب محتوى الخانة أو النشاط يدوياً (مستقل تماماً عن المكتبة)...',
+            value: manualText,
+            style: 'width:100%; font-size:14px; line-height:1.5;',
+            oninput: function (e) { manualText = e.target.value; }
+          });
+
+          modalBox.appendChild(h('div', { style: 'background:#EFF6FF; border:1px solid #BFDBFE; border-radius:12px; padding:12px;' },
+            h('label', { style: 'display:block; font-weight:800; color:#1E3A8A; margin-bottom:6px; font-size:13.5px;', text: 'الملء اليدوي المباشر للخانة:' }),
+            manualArea,
+            h('p', { class: 'small muted', style: 'margin:6px 0 0;', text: 'ملاحظة: الملء اليدوي مستقل عن المكتبة البيداغوجية ولا يضيف النص إلى قائمة المهارات.' })
+          ));
+
+        } else if (currentKind === 'activity') {
+          // الأنشطة اليومية والفترات الخاصة
+          var actGrid = h('div', { style: 'display:flex; flex-wrap:wrap; gap:8px;' });
+          dailyActs.forEach(function (actName) {
+            var isSel = (actName === selectedActivity);
+            var actBtn = h('button', {
+              type: 'button',
+              style: 'padding:8px 14px; border-radius:20px; border:1.5px solid ' + (isSel ? '#D97706' : '#FDE68A') + '; background:' + (isSel ? '#F59E0B' : '#FFFBEB') + '; color:' + (isSel ? '#FFFFFF' : '#92400E') + '; font-weight:800; cursor:pointer; font-family:inherit; font-size:13.5px;',
+              onclick: function () {
+                selectedActivity = actName;
+                renderModalContent();
+              }
+            }, actName);
+            actGrid.appendChild(actBtn);
+          });
+
+          modalBox.appendChild(h('div', { style: 'background:#FFFBEB; border:1px solid #FDE68A; border-radius:12px; padding:12px;' },
+            h('label', { style: 'display:block; font-weight:800; color:#92400E; margin-bottom:8px; font-size:13.5px;', text: 'اختر النشاط اليومي أو الفترة التنظيمية (لا تُصنف كمهارة بيداغوجية):' }),
+            actGrid
+          ));
+        }
+
+        // أزرار الحفظ وتفريغ الخانة وإلغاء الدمج إن كانت مدمجة
+        var actionsRow = h('div', {
+          style: 'display:flex; justify-content:space-between; align-items:center; gap:8px; margin-top:16px; padding-top:12px; border-top:1px solid #E2E8F0; flex-wrap:wrap;'
+        });
+
+        // زر إلغاء الدمج إن كانت الخانة مدمجة
+        if (sessObj.span > 1) {
+          actionsRow.appendChild(h('button', {
+            type: 'button',
+            class: 'btn small light',
+            title: 'إلغاء دمج هذه الخانة وإعادتها إلى فتراتها الأصلية',
+            onclick: function () {
+              unmergeCell(dayObj, sessObj);
+              dlg.remove();
+              renderFullView();
+              toast('تم إلغاء الدمج واستعادة الفترات الأصلية.', 'ok');
+            }
+          }, makeSvgIcon('s-x-circle'), h('span', { text: 'إلغاء الدمج' })));
+        } else if (sessObj.kind !== 'empty') {
+          // زر تفريغ الخانة
+          actionsRow.appendChild(h('button', {
+            type: 'button',
+            class: 'btn small danger',
+            onclick: function () {
+              sessObj.kind = 'empty';
+              sessObj.domain = '';
+              sessObj.skill = '';
+              sessObj.title = '';
+              sessObj.manual_text = '';
+              sessObj.activity = '';
+              dlg.remove();
+              renderFullView();
+              toast('تم تفريغ الخانة.', 'ok');
+            }
+          }, makeSvgIcon('s-trash'), h('span', { text: 'تفريغ الخانة' })));
+        } else {
+          actionsRow.appendChild(h('div'));
+        }
+
+        var saveBtn = h('button', {
+          type: 'button',
+          class: 'btn',
+          style: 'background:#14532D; color:#fff; font-weight:800;',
+          onclick: function () {
+            if (currentKind === 'library') {
+              if (!selectedSkill) return toast('يرجى اختيار مهارة بيداغوجية.', 'bad');
+              sessObj.kind = 'library';
+              sessObj.domain = selectedDomain;
+              sessObj.skill = selectedSkill;
+              sessObj.title = selectedDomain + ' — ' + selectedSkill;
+            } else if (currentKind === 'manual') {
+              var txt = String(manualText || '').trim();
+              if (!txt) return toast('أدخل محتوى الخانة اليدوي.', 'bad');
+              sessObj.kind = 'manual';
+              sessObj.manual_text = txt;
+              sessObj.title = txt;
+            } else if (currentKind === 'activity') {
+              sessObj.kind = 'activity';
+              sessObj.activity = selectedActivity;
+              sessObj.title = selectedActivity;
+            }
+            dlg.remove();
+            renderFullView();
+            toast('تم تحديث محتوى الخانة بنجاح.', 'ok');
+          }
+        }, makeSvgIcon('s-check'), h('span', { text: 'تأكيد وحفظ الخانة' }));
+
+        actionsRow.appendChild(h('div', { style: 'display:flex; gap:8px;' },
+          h('button', { type: 'button', class: 'btn light', text: 'إلغاء', onclick: function () { dlg.remove(); } }),
+          saveBtn
+        ));
+
+        modalBox.appendChild(actionsRow);
       }
-    });
+
+      renderModalContent();
+
+      var dlg = h('div', { class: 'modal-back' }, modalBox);
+      document.body.appendChild(dlg);
+    }
+
+    // 4. تنفيذ دمج الخانات المحددة
+    function executeMergeSelection() {
+      var keys = Object.keys(mergeSelectedCells);
+      if (keys.length < 2) {
+        return toast('يرجى تحديد خانتين متجاورتين أو أكثر لدمجهما.', 'bad');
+      }
+
+      // التحقق من أن جميع الخانات تنتمي لنفس اليوم
+      var dayKeys = keys.map(function (k) { return k.split(':')[0]; });
+      var firstDay = dayKeys[0];
+      var sameDay = dayKeys.every(function (dk) { return dk === firstDay; });
+      if (!sameDay) {
+        return toast('لا يمكن دمج خانات من أيام مختلفة! يرجى اختيار خانات في نفس اليوم فقط.', 'bad');
+      }
+
+      var dayObj = currentWeekState.days.filter(function (d) { return d.day === firstDay; })[0];
+      var slotIds = keys.map(function (k) { return parseInt(k.split(':')[1], 10); }).sort(function (a, b) { return a - b; });
+
+      // التحقق من التجاور الصارم
+      var targetSessions = [];
+      for (var i = 0; i < slotIds.length; i++) {
+        var sid = slotIds[i];
+        var foundS = dayObj.sessions.filter(function (s) { return s.slot_id === sid; })[0];
+        if (!foundS) return toast('تعذر العثور على إحدى الخانات المحددة.', 'bad');
+        targetSessions.push(foundS);
+      }
+
+      // فحص التجاور في مصفوفة dayObj.sessions
+      var idxsInDay = targetSessions.map(function (s) { return dayObj.sessions.indexOf(s); }).sort(function (a, b) { return a - b; });
+      for (var j = 0; j < idxsInDay.length - 1; j++) {
+        if (idxsInDay[j + 1] !== idxsInDay[j] + 1) {
+          return toast('الخانات المحددة غير متجاورة! لا يمكن دمج إلا الخانات المتجاورة مباشرة.', 'bad');
+        }
+      }
+
+      // تنفيذ الدمج
+      var firstSess = dayObj.sessions[idxsInDay[0]];
+      var lastSess = dayObj.sessions[idxsInDay[idxsInDay.length - 1]];
+
+      var totalSpan = 0;
+      var allMergedSlotIds = [];
+      targetSessions.forEach(function (ts) {
+        totalSpan += (ts.span || 1);
+        var subIds = (ts.merged_slot_ids && ts.merged_slot_ids.length) ? ts.merged_slot_ids : [ts.slot_id];
+        allMergedSlotIds = allMergedSlotIds.concat(subIds);
+      });
+
+      firstSess.span = totalSpan;
+      firstSess.end = lastSess.end;
+      firstSess.merged_slot_ids = allMergedSlotIds;
+
+      // إزالة الخانات التي دُمجت باستثناء الأولى
+      for (var k = idxsInDay.length - 1; k >= 1; k--) {
+        dayObj.sessions.splice(idxsInDay[k], 1);
+      }
+
+      isMergeMode = false;
+      mergeSelectedCells = {};
+      renderFullView();
+      toast('تم دمج الخانات المتجاورة بنجاح في خانة واحدة.', 'ok');
+    }
+
+    // إلغاء دمج خانة وإعادتها لفتراتها الأصلية
+    function unmergeCell(dayObj, sessObj) {
+      if (!sessObj || sessObj.span <= 1) return;
+      var cellIdx = dayObj.sessions.indexOf(sessObj);
+      if (cellIdx < 0) return;
+
+      var mergedIds = (sessObj.merged_slot_ids && sessObj.merged_slot_ids.length)
+        ? sessObj.merged_slot_ids
+        : [sessObj.slot_id];
+
+      var restored = [];
+      mergedIds.forEach(function (sid, idx) {
+        var baseSlot = currentWeekState.time_slots.filter(function (ts) { return ts.id === sid; })[0]
+          || { id: sid, start: sessObj.start, end: sessObj.end };
+        restored.push({
+          slot_id: sid,
+          start: baseSlot.start,
+          end: baseSlot.end,
+          span: 1,
+          merged_slot_ids: [sid],
+          kind: idx === 0 ? sessObj.kind : 'empty',
+          domain: idx === 0 ? sessObj.domain : '',
+          skill: idx === 0 ? sessObj.skill : '',
+          title: idx === 0 ? sessObj.title : '',
+          manual_text: idx === 0 ? sessObj.manual_text : '',
+          activity: idx === 0 ? sessObj.activity : ''
+        });
+      });
+
+      // استبدال الخانة المدمجة بالخانات المستعادة
+      dayObj.sessions.splice(cellIdx, 1);
+      restored.forEach(function (r, rIdx) {
+        dayObj.sessions.splice(cellIdx + rIdx, 0, r);
+      });
+    }
+
+    // 5. نافذة التحكم في التوقيتات وتعديل الفترات
+    function openTimeSlotsManagerModal() {
+      var localSlots = currentWeekState.time_slots.map(function (ts) { return Object.assign({}, ts); });
+
+      var modalBox = h('div', {
+        class: 'modal card',
+        style: 'max-width:620px; width:95%; background:#FFFFFF; padding:22px; border-radius:16px; box-shadow:0 20px 50px rgba(20,83,45,0.25); border:1px solid #CBD5E1; max-height:90vh; overflow-y:auto;'
+      });
+
+      function renderSlotsList() {
+        modalBox.textContent = '';
+
+        var head = h('div', {
+          class: 'bar-sub',
+          style: 'margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #E2E8F0; padding-bottom:8px;'
+        },
+          h('h3', { style: 'margin:0; color:#14532D;', text: 'التحكم في التوقيتات وفترات الجدول الأسبوعي' }),
+          h('button', { type: 'button', class: 'btn small light', text: '✕', onclick: function () { dlg.remove(); } })
+        );
+        modalBox.appendChild(head);
+
+        var listWrap = h('div', { style: 'display:flex; flex-direction:column; gap:8px; max-height:360px; overflow-y:auto; margin-bottom:14px;' });
+
+        localSlots.forEach(function (slot, sIdx) {
+          var startInp = h('input', {
+            class: 'input small',
+            type: 'time',
+            value: slot.start,
+            style: 'width:95px;',
+            onchange: function (e) {
+              slot.start = e.target.value;
+              slot.duration = calcDurationMins(slot.start, slot.end);
+            }
+          });
+          var endInp = h('input', {
+            class: 'input small',
+            type: 'time',
+            value: slot.end,
+            style: 'width:95px;',
+            onchange: function (e) {
+              slot.end = e.target.value;
+              slot.duration = calcDurationMins(slot.start, slot.end);
+            }
+          });
+          var periodSelect = h('select', {
+            class: 'input small',
+            onchange: function (e) { slot.period = e.target.value; }
+          },
+            h('option', { value: 'morning', selected: slot.period === 'morning' ? 'selected' : null, text: 'الفترة الصباحية' }),
+            h('option', { value: 'afternoon', selected: slot.period === 'afternoon' ? 'selected' : null, text: 'الفترة المسائية' })
+          );
+
+          var delBtn = h('button', {
+            type: 'button',
+            class: 'btn small danger',
+            text: 'حذف',
+            onclick: function () {
+              if (localSlots.length <= 2) return toast('يجب الإبقاء على فترتين على الأقل.', 'bad');
+              localSlots.splice(sIdx, 1);
+              renderSlotsList();
+            }
+          });
+
+          var rowCard = h('div', {
+            style: 'display:flex; align-items:center; justify-content:space-between; gap:8px; padding:8px 12px; background:#F8FAF9; border:1px solid #E2E8F0; border-radius:10px; flex-wrap:wrap;'
+          },
+            h('span', { style: 'font-weight:800; color:#14532D; min-width:30px;', text: '#' + (sIdx + 1) }),
+            h('div', { style: 'display:flex; align-items:center; gap:6px;' },
+              h('span', { class: 'small muted', text: 'من' }), startInp,
+              h('span', { class: 'small muted', text: 'إلى' }), endInp
+            ),
+            periodSelect,
+            delBtn
+          );
+          listWrap.appendChild(rowCard);
+        });
+        modalBox.appendChild(listWrap);
+
+        // إضافة فترة جديدة
+        var addSlotBtn = h('button', {
+          type: 'button',
+          class: 'btn small light',
+          style: 'margin-bottom:14px;',
+          onclick: function () {
+            var last = localSlots[localSlots.length - 1];
+            var nStart = last ? last.end : '14:00';
+            var nEnd = minutesToTime(timeToMinutes(nStart) + 30);
+            var nextId = localSlots.length ? Math.max.apply(null, localSlots.map(function (x) { return x.id != null ? x.id : 0; })) + 1 : 0;
+            localSlots.push({
+              id: nextId,
+              start: nStart,
+              end: nEnd,
+              period: timeToMinutes(nStart) >= 750 ? 'afternoon' : 'morning',
+              duration: 30,
+              label: nStart + ' - ' + nEnd
+            });
+            renderSlotsList();
+          }
+        }, makeSvgIcon('s-plus'), h('span', { text: '+ إضافة فترة زمنية جديدة' }));
+        modalBox.appendChild(addSlotBtn);
+
+        // زر التأكيد وحفظ التوقيتات
+        var confirmBtn = h('button', {
+          type: 'button',
+          class: 'btn',
+          style: 'background:#14532D; color:#fff; font-weight:800;',
+          onclick: function () {
+            // فحص صحة التوقيتات والترتيب
+            localSlots.sort(function (a, b) { return timeToMinutes(a.start) - timeToMinutes(b.start); });
+            for (var i = 0; i < localSlots.length; i++) {
+              if (timeToMinutes(localSlots[i].end) <= timeToMinutes(localSlots[i].start)) {
+                return toast('التوقيت غير صحيح في الفترة #' + (i + 1) + ': وقت النهاية يجب أن يكون بعد وقت البداية.', 'bad');
+              }
+              if (i < localSlots.length - 1 && timeToMinutes(localSlots[i].end) > timeToMinutes(localSlots[i + 1].start)) {
+                toast('تنبيه: يوجد تداخل بين الفترة #' + (i + 1) + ' والفترة #' + (i + 2) + '. تم ضبط التوقيت تلقائياً.', 'gold');
+                localSlots[i + 1].start = localSlots[i].end;
+                localSlots[i + 1].end = minutesToTime(timeToMinutes(localSlots[i + 1].start) + (localSlots[i + 1].duration || 30));
+              }
+            }
+
+            currentWeekState.time_slots = localSlots.map(function (ts, idx) {
+              ts.id = ts.id != null ? ts.id : idx;
+              ts.label = ts.start + ' - ' + ts.end;
+              ts.duration = calcDurationMins(ts.start, ts.end);
+              return ts;
+            });
+
+            // مزامنة خانات الأيام مع التوقيتات الجديدة
+            currentWeekState.days.forEach(function (dayObj) {
+              var oldSess = dayObj.sessions || [];
+              var newSess = currentWeekState.time_slots.map(function (ts) {
+                var found = oldSess.filter(function (os) { return os.slot_id === ts.id || os.start === ts.start; })[0];
+                if (found) {
+                  found.slot_id = ts.id;
+                  found.start = ts.start;
+                  found.end = ts.end;
+                  return found;
+                }
+                return {
+                  slot_id: ts.id,
+                  start: ts.start,
+                  end: ts.end,
+                  span: 1,
+                  merged_slot_ids: [ts.id],
+                  kind: 'empty',
+                  domain: '',
+                  skill: '',
+                  title: '',
+                  manual_text: '',
+                  activity: ''
+                };
+              });
+              dayObj.sessions = newSess;
+            });
+
+            currentWeekState.day_start = localSlots[0].start;
+            currentWeekState.day_end = localSlots[localSlots.length - 1].end;
+
+            dlg.remove();
+            renderFullView();
+            toast('تم تحديث التوقيتات وإعادة ترتيب الجدول الأسبوعي بنجاح.', 'ok');
+          }
+        }, makeSvgIcon('s-check'), h('span', { text: 'تطبيق التوقيتات على الجدول' }));
+
+        var footRow = h('div', { style: 'display:flex; justify-content:flex-end; gap:8px;' },
+          h('button', { type: 'button', class: 'btn light', text: 'إلغاء', onclick: function () { dlg.remove(); } }),
+          confirmBtn
+        );
+        modalBox.appendChild(footRow);
+      }
+
+      renderSlotsList();
+      var dlg = h('div', { class: 'modal-back' }, modalBox);
+      document.body.appendChild(dlg);
+    }
+
+    // 6. معاينة وثيقة PDF الرسمية A4 أفقي Landscape
+    function openPdfLandscapePreviewModal() {
+      var modalBox = h('div', {
+        class: 'modal card',
+        style: 'max-width:960px; width:96%; background:#FFFFFF; padding:20px; border-radius:16px; box-shadow:0 25px 60px rgba(20,83,45,0.3); border:1px solid #CBD5E1; max-height:92vh; overflow-y:auto;'
+      });
+
+      var head = h('div', {
+        class: 'bar-sub',
+        style: 'margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; border-bottom:1.5px solid #E2E8F0; padding-bottom:10px;'
+      },
+        h('div', null,
+          h('h3', { style: 'margin:0; color:#14532D;', text: 'معاينة الوثيقة الرسمية للبرنامج الأسبوعي (A4 أفقي Landscape)' }),
+          h('span', { class: 'small muted', text: 'معاينة مطابقة تماماً للملف المصدَّر والمطبوع مع إخفاء أدوات التحرير' })
+        ),
+        h('div', { style: 'display:flex; gap:8px;' },
+          h('button', {
+            type: 'button',
+            class: 'btn gold small',
+            onclick: async function () {
+              try {
+                if (!window.DE_PDF || !window.DE_PDF.renderWeeklyProgramToPdf) throw new Error('مولد PDF غير متاح');
+                toast('جارٍ تحميل ملف PDF...', 'ok');
+                var bytes = await window.DE_PDF.renderWeeklyProgramToPdf(currentWeekState, getSecName());
+                window.DE_PDF.downloadPdf(bytes, 'البرنامج_الأسبوعي_' + String(getSecName()).replace(/\s+/g, '_') + '.pdf');
+              } catch (e) {
+                toast('تعذر تنزيل PDF: ' + e.message, 'bad');
+              }
+            }
+          }, makeSvgIcon('s-download'), h('span', { text: 'تحميل PDF' })),
+          h('button', {
+            type: 'button',
+            class: 'btn light small',
+            onclick: function () { window.print(); }
+          }, makeSvgIcon('s-print'), h('span', { text: 'طباعة' })),
+          h('button', { type: 'button', class: 'btn small light', text: '✕', onclick: function () { dlg.remove(); } })
+        )
+      );
+      modalBox.appendChild(head);
+
+      var canvasMount = h('div', {
+        style: 'width:100%; background:#fff; border:1px solid #CBD5E1; border-radius:10px; overflow:hidden; padding:4px;'
+      }, h('p', { class: 'muted small', style: 'text-align:center; padding:30px;', text: 'جارٍ توليد المعاينة الرسمية...' }));
+
+      modalBox.appendChild(canvasMount);
+
+      if (window.DE_PDF && window.DE_PDF.renderWeeklyProgramCanvas) {
+        window.DE_PDF.renderWeeklyProgramCanvas(currentWeekState, getSecName()).then(function (cEl) {
+          canvasMount.textContent = '';
+          cEl.style.width = '100%';
+          cEl.style.height = 'auto';
+          cEl.style.display = 'block';
+          cEl.style.borderRadius = '6px';
+          canvasMount.appendChild(cEl);
+        }).catch(function (err) {
+          canvasMount.textContent = 'تعذر رسم المعاينة: ' + err.message;
+        });
+      }
+
+      var dlg = h('div', { class: 'modal-back' }, modalBox);
+      document.body.appendChild(dlg);
+    }
+
+    // 7. حفظ البرنامج أو نشره للأولياء
+    async function saveProgramAction(publishNow) {
+      if (!currentWeekState.section_id) {
+        return toast('يرجى اختيار الفوج التربوي أولاً.', 'bad');
+      }
+
+      // فحص إن كانت هناك خانات معبأة
+      var totalFilled = 0;
+      currentWeekState.days.forEach(function (d) {
+        (d.sessions || []).forEach(function (s) {
+          if (s.kind && s.kind !== 'empty') totalFilled++;
+        });
+      });
+
+      if (totalFilled === 0 && publishNow) {
+        return toast('الجدول فارغ بالكامل! يرجى تعبئة الحصص قبل نشر البرنامج للأولياء.', 'bad');
+      }
+
+      var secName = getSecName();
+      var nowIso = new Date().toISOString();
+      var wasPub = (currentWeekState.status === 'published' || currentWeekState.status === 'updated');
+      var nextStatus = publishNow ? (wasPub && currentWeekState.id ? 'updated' : 'published') : 'draft';
+
+      currentWeekState.status = nextStatus;
+      currentWeekState.updated_at = nowIso;
+      if (publishNow) currentWeekState.published_at = nowIso;
+
+      var schedulePayload = currentWeekState.days.map(function (dy) {
+        return {
+          day: dy.day,
+          label: dy.label,
+          section_name: secName,
+          academic_year: currentWeekState.academic_year || '2026/2027',
+          program_status: nextStatus,
+          day_start: currentWeekState.day_start || '08:00',
+          day_end: currentWeekState.day_end || '14:00',
+          educator_name: currentWeekState.educator_name || '',
+          supervisor_name: currentWeekState.supervisor_name || '',
+          director_name: currentWeekState.director_name || '',
+          prepared_date: currentWeekState.prepared_date || nowIso.slice(0, 10),
+          updated_at: nowIso,
+          published_at: currentWeekState.published_at,
+          time_slots: currentWeekState.time_slots,
+          sessions: (dy.sessions || []).map(function (s) {
+            return {
+              slot_id: s.slot_id,
+              start: s.start,
+              end: s.end,
+              span: s.span || 1,
+              merged_slot_ids: s.merged_slot_ids || [s.slot_id],
+              kind: s.kind || 'empty',
+              domain: s.domain || '',
+              skill: s.skill || '',
+              title: s.title || (s.domain ? (s.domain + ' — ' + s.skill) : (s.activity || s.manual_text)) || '',
+              manual_text: s.manual_text || '',
+              activity: s.activity || ''
+            };
+          })
+        };
+      });
+
+      var body = {
+        section_id: currentWeekState.section_id,
+        title: DE.clean('البرنامج الأسبوعي — ' + secName, 155),
+        academic_year: currentWeekState.academic_year || '2026/2027',
+        description: DE.clean('البرنامج الأسبوعي المعتمد لفوج ' + secName, 1000),
+        goals: DE.clean('تنمية المهارات البيداغوجية والأنشطة لفوج ' + secName, 1000),
+        schedule: schedulePayload,
+        status: publishNow ? 'published' : 'draft',
+        published_at: publishNow ? nowIso : null
+      };
+
+      var savedId = currentWeekState.id || ('prog-' + Date.now());
+      try {
+        if (currentWeekState.id && !String(currentWeekState.id).startsWith('prog-')) {
+          await C.rest('PATCH', '/educational_programs?id=eq.' + uid(currentWeekState.id), body);
+        } else {
+          var res = await C.rest('POST', '/educational_programs', body);
+          if (Array.isArray(res) && res[0] && res[0].id) savedId = res[0].id;
+        }
+      } catch (dbErr) {}
+
+      currentWeekState.id = savedId;
+      var localRecord = Object.assign({ id: savedId, created_at: nowIso }, body);
+      var sharedList = readSharedProgramsLocal();
+      var exIdx = sharedList.findIndex(function (x) { return x && String(x.id) === String(savedId); });
+      if (exIdx >= 0) sharedList[exIdx] = localRecord;
+      else sharedList.unshift(localRecord);
+      writeSharedProgramsLocal(sharedList);
+
+      // إرسال إشعار للأولياء عند النشر
+      if (publishNow) {
+        try {
+          await C.rest('POST', '/messages', {
+            kind: 'notice',
+            title: (nextStatus === 'updated' ? 'تحديث البرنامج الأسبوعي — ' : 'نشر البرنامج الأسبوعي — ') + secName,
+            body: 'تم ' + (nextStatus === 'updated' ? 'تحديث' : 'اعتماد ونشر') + ' البرنامج الأسبوعي لفوج «' + secName + '». يمكنكم الاطلاع عليه وتحميله بصيغة PDF من قسم «البرنامج الأسبوعي» في فضاء الأولياء.',
+            published_at: nowIso
+          });
+        } catch (msgErr) {}
+
+        // مشاركة عبر واتساب إن وُجد آباء للفوج
+        toast('تم نشر البرنامج في فضاء الأولياء وتوليد ملف PDF بنجاح!', 'ok');
+      } else {
+        toast('تم حفظ البرنامج الأسبوعي كمسودة بنجاح.', 'ok');
+      }
+
+      bust();
+      renderFullView();
+    }
+
+    renderFullView();
   }
 
-  /* =====================================================================
+/* =====================================================================
      5. قائمة إجراءات منبثقة (⋯)
      ===================================================================== */
   function rowMenu(items) {

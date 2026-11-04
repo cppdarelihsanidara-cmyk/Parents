@@ -84,7 +84,8 @@
       else if (k === 'text') el.textContent = v;
       else if (k.slice(0, 2) === 'on' && typeof v === 'function') el.addEventListener(k.slice(2), v);
       else if (k === 'value' || k === 'checked' || k === 'disabled' || k === 'hidden' || k === 'selected') el[k] = v;
-      else if (k === 'style' || /^on/i.test(k) || k === 'innerHTML' || k === 'outerHTML' || k === 'srcdoc') return;   // مرفوضة عمدًا
+      else if (k === 'style') { el.style.cssText = String(v); }
+      else if (/^on/i.test(k) || k === 'innerHTML' || k === 'outerHTML' || k === 'srcdoc') return;   // مرفوضة عمدًا
       else if ((k === 'href' || k === 'src') && !/^(https:|blob:|#)/i.test(String(v))) return;
       else el.setAttribute(k, v === true ? '' : String(v));
     });
@@ -127,8 +128,10 @@
 
     function store() {
       try {
-        if (isPersistent && root.localStorage) return root.localStorage;
-        return root.sessionStorage || root.localStorage;
+        try {
+          if (isPersistent && root.localStorage) return root.localStorage;
+          return root.sessionStorage || root.localStorage;
+        } catch(eStore) { return null; }
       } catch (e) {
         try { return root.localStorage || root.sessionStorage; } catch (e2) { return null; }
       }
@@ -136,12 +139,16 @@
     function load() {
       var s = null;
       try {
-        if (root.localStorage) {
-          try { s = JSON.parse(root.localStorage.getItem(storeKey) || 'null'); } catch (e1) {}
-        }
-        if ((!s || !s.refresh_token) && root.sessionStorage) {
-          try { s = JSON.parse(root.sessionStorage.getItem(storeKey) || 'null'); } catch (e2) {}
-        }
+        try {
+          if (root.localStorage) {
+            try { s = JSON.parse(root.localStorage.getItem(storeKey) || 'null'); } catch (e1) {}
+          }
+        } catch(eL) {}
+        try {
+          if ((!s || !s.refresh_token) && root.sessionStorage) {
+            try { s = JSON.parse(root.sessionStorage.getItem(storeKey) || 'null'); } catch (e2) {}
+          }
+        } catch(eS) {}
         if (s && s.refresh_token) {
           session = s;
           return s;

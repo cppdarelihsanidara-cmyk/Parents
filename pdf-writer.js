@@ -1996,9 +1996,9 @@
   }
 
 
-  /* =====================================================================
+    /* =====================================================================
      توليد وثيقة البرنامج الأسبوعي بصيغة A4 أفقي (Landscape 1754x1240)
-     محافظة على روح النموذج الورقي الرسمي لمركز دار الإحسان بتصميم عصري ومنظم
+     مطابقة تماماً للورقة الأصلية المعتمدة لمركز دار الإحسان بتصميم عصري منظم
      ===================================================================== */
   var DOMAIN_PALETTE = [
     { bg: '#ECFDF5', border: '#10B981', badgeBg: '#059669', text: '#064E3B' },
@@ -2019,7 +2019,6 @@
   }
 
   function drawWeeklyProgramLandscapePage(ctx, W, H, progState, secName, logoImg) {
-    // الخلفية البيضاء النقية للورقة A4 Landscape
     ctx.fillStyle = '#FFFFFF';
     ctx.fillRect(0, 0, W, H);
 
@@ -2032,7 +2031,7 @@
     ctx.lineWidth = 1.2;
     ctx.strokeRect(M + 6, M + 6, W - (M + 6) * 2, H - (M + 6) * 2);
 
-    // 1. رأس الصفحة (Header)
+    // 1. رأس الصفحة (Header) المطابق للورقة الأصلية
     var hdrX = M + 14;
     var hdrY = M + 14;
     var hdrW = W - (M + 14) * 2;
@@ -2068,7 +2067,7 @@
 
     // العنوان الرئيسي في الوسط: «البرنامج الأسبوعي»
     ctx.textAlign = 'center';
-    ctx.fillStyle = '#0F3D2E';
+    ctx.fillStyle = '#14532D';
     roundRect(ctx, W / 2 - 210, hdrY + 14, 420, 48, 24);
     ctx.fill();
     ctx.strokeStyle = '#D97706';
@@ -2109,9 +2108,7 @@
     ctx.font = 'bold 14.5px "Cairo", "Tajawal", "IBM Plex Sans Arabic", sans-serif';
     ctx.fillText('حالة البرنامج: ' + statusLabel, hdrX + 128, hdrY + 100);
 
-    // 2. جدول الأيام والتوقيتات والأنشطة
-    // نعرض الأيام في صفوف واضحة ومرتبة زمنياً من اليمين إلى اليسار أو التوقيتات في أعمدة/فترات منظمة
-    // حتى تتسع جميع الحصص البيداغوجية والأنشطة اليومية البينية بمختلف مددها دون أي اقتطاع
+    // 2. جدول الحصص الأسبوعي المطابق للورقة الأصلية
     var tblX = hdrX;
     var tblY = hdrY + hdrH + 14;
     var tblW = hdrW;
@@ -2126,167 +2123,199 @@
       { day: 'thu', label: 'الخميس', sessions: [] }
     ];
 
-    // شريط عنوان الجدول ووسيلة الإيضاح البصرية
-    var legendBarH = 38;
-    ctx.fillStyle = '#0F3D2E';
-    roundRect(ctx, tblX, tblY, tblW, legendBarH, 8);
-    ctx.fill();
+    var timeSlots = (progState && Array.isArray(progState.time_slots) && progState.time_slots.length)
+      ? progState.time_slots
+      : [
+          { id: 0, start: '08:00', end: '08:30', period: 'morning' },
+          { id: 1, start: '08:30', end: '09:30', period: 'morning' },
+          { id: 2, start: '09:30', end: '10:00', period: 'morning' },
+          { id: 3, start: '10:00', end: '11:00', period: 'morning' },
+          { id: 4, start: '11:00', end: '11:30', period: 'morning' },
+          { id: 5, start: '11:30', end: '12:30', period: 'morning' },
+          { id: 6, start: '12:30', end: '13:30', period: 'afternoon' },
+          { id: 7, start: '13:30', end: '14:00', period: 'afternoon' }
+        ];
 
-    ctx.textAlign = 'right';
+    // شريط الفترات الصباحية والمسائية
+    var morningSlots = timeSlots.filter(function (s) { return s.period === 'morning'; });
+    var afternoonSlots = timeSlots.filter(function (s) { return s.period === 'afternoon'; });
+    if (!morningSlots.length) morningSlots = timeSlots.slice(0, 6);
+    if (!afternoonSlots.length) afternoonSlots = timeSlots.slice(6);
+
+    var dayColW = 120; // عمود اسم اليوم على اليمين
+    var slotsAreaW = tblW - dayColW;
+    var totalSlotsCount = timeSlots.length;
+    var baseSlotW = slotsAreaW / totalSlotsCount;
+
+    var periodBarH = 34;
+    var timeBarH = 28;
+    var tableHeaderH = periodBarH + timeBarH;
+
+    // رسم خلية "اليوم"
+    ctx.fillStyle = '#14532D';
+    ctx.fillRect(tblX + tblW - dayColW, tblY, dayColW, tableHeaderH);
+    ctx.strokeStyle = '#0F3D2E';
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(tblX + tblW - dayColW, tblY, dayColW, tableHeaderH);
+
     ctx.fillStyle = '#FFFFFF';
+    ctx.textAlign = 'center';
+    ctx.font = 'bold 18px "Cairo", "Tajawal", "IBM Plex Sans Arabic", sans-serif';
+    ctx.fillText('اليوم', tblX + tblW - dayColW / 2, tblY + tableHeaderH / 2 + 6);
+
+    // رسم شريط الفترة الصباحية
+    var morningW = morningSlots.length * baseSlotW;
+    var morningX = tblX + tblW - dayColW - morningW;
+    ctx.fillStyle = '#ECFDF5';
+    ctx.fillRect(morningX, tblY, morningW, periodBarH);
+    ctx.strokeStyle = '#10B981';
+    ctx.strokeRect(morningX, tblY, morningW, periodBarH);
+
+    ctx.fillStyle = '#064E3B';
     ctx.font = 'bold 16px "Cairo", "Tajawal", "IBM Plex Sans Arabic", sans-serif';
-    ctx.fillText('اليوم / التوقيت والحصص المبرمجة (مرتبة زمنياً من الصباح إلى المساء)', tblX + tblW - 18, tblY + 25);
+    ctx.fillText('الفترة الصباحية', morningX + morningW / 2, tblY + 23);
 
-    // تمييز بصري في الترويسة: حصة بيداغوجية مقابل نشاط يومي (بدون أي تداخل)
-    ctx.textAlign = 'right';
-    ctx.fillStyle = '#10B981';
-    roundRect(ctx, tblX + 520, tblY + 9, 18, 20, 4);
-    ctx.fill();
-    ctx.fillStyle = '#FFFFFF';
-    ctx.font = 'bold 14px "Cairo", "Tajawal", "IBM Plex Sans Arabic", sans-serif';
-    ctx.fillText('حصة بيداغوجية (المجال + المهارة)', tblX + 512, tblY + 24);
-
-    ctx.fillStyle = '#F59E0B';
-    roundRect(ctx, tblX + 235, tblY + 9, 18, 20, 4);
-    ctx.fill();
+    // رسم شريط الفترة المسائية
+    var afternoonW = afternoonSlots.length * baseSlotW;
+    var afternoonX = tblX;
     ctx.fillStyle = '#FEF3C7';
-    ctx.fillText('نشاط يومي / فترة تنظيمية مستقلة', tblX + 227, tblY + 24);
+    ctx.fillRect(afternoonX, tblY, afternoonW, periodBarH);
+    ctx.strokeStyle = '#F59E0B';
+    ctx.strokeRect(afternoonX, tblY, afternoonW, periodBarH);
 
-    var gridTopY = tblY + legendBarH + 6;
-    var gridAvailH = tblH - legendBarH - 6;
-    var dayColW = 128; // عمود اسم اليوم على أقصى اليمين
-    var sessionsAreaW = tblW - dayColW;
-    var rowGap = 6;
+    ctx.fillStyle = '#92400E';
+    ctx.font = 'bold 16px "Cairo", "Tajawal", "IBM Plex Sans Arabic", sans-serif';
+    ctx.fillText('الفترة المسائية', afternoonX + afternoonW / 2, tblY + 23);
+
+    // رسم شريط التوقيتات الدقيقة لكل خانة
+    timeSlots.forEach(function (slot, sIdx) {
+      var sx = tblX + tblW - dayColW - (sIdx + 1) * baseSlotW;
+      ctx.fillStyle = '#F8FAF9';
+      ctx.fillRect(sx, tblY + periodBarH, baseSlotW, timeBarH);
+      ctx.strokeStyle = '#CBD5E1';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(sx, tblY + periodBarH, baseSlotW, timeBarH);
+
+      ctx.fillStyle = '#1E293B';
+      ctx.font = 'bold 12.5px "Cairo", "Tajawal", "Plus Jakarta Sans", sans-serif';
+      ctx.fillText(slot.start + ' - ' + slot.end, sx + baseSlotW / 2, tblY + periodBarH + 19);
+    });
+
+    // رسم صفوف الأيام الـ 5 مع الخانات العادية والمدمجة
+    var gridTopY = tblY + tableHeaderH;
+    var gridAvailH = tblH - tableHeaderH;
     var numDays = daysList.length;
-    var dayRowH = Math.floor((gridAvailH - (numDays - 1) * rowGap) / numDays);
+    var dayRowH = Math.floor(gridAvailH / numDays);
 
     daysList.forEach(function (dyObj, dIdx) {
-      var ry = gridTopY + dIdx * (dayRowH + rowGap);
+      var ry = gridTopY + dIdx * dayRowH;
       var dayRightX = tblX + tblW - dayColW;
 
-      // خلية اسم اليوم على اليمين
+      // خلية اسم اليوم
       ctx.fillStyle = (dIdx % 2 === 0) ? '#14532D' : '#0F3D2E';
-      roundRect(ctx, dayRightX, ry, dayColW, dayRowH, 8);
-      ctx.fill();
+      ctx.fillRect(dayRightX, ry, dayColW, dayRowH);
+      ctx.strokeStyle = '#0F3D2E';
+      ctx.lineWidth = 1.2;
+      ctx.strokeRect(dayRightX, ry, dayColW, dayRowH);
 
       ctx.fillStyle = '#FFFFFF';
       ctx.textAlign = 'center';
-      ctx.font = 'bold 21px "Cairo", "Tajawal", "IBM Plex Sans Arabic", sans-serif';
-      ctx.fillText(dyObj.label || '', dayRightX + dayColW / 2, ry + dayRowH / 2 + 8);
+      ctx.font = 'bold 20px "Cairo", "Tajawal", "IBM Plex Sans Arabic", sans-serif';
+      ctx.fillText(dyObj.label || '', dayRightX + dayColW / 2, ry + dayRowH / 2 + 7);
 
-      // ترتيب الحصص زمنياً حسب وقت البداية
-      var sessArr = (dyObj.sessions || []).filter(function (s) {
-        return s && (s.title || s.activity || s.domain || (s.items && s.items.length));
-      }).slice().sort(function (a, b) {
-        return String(a.start || '00:00').localeCompare(String(b.start || '00:00'));
-      });
+      // رسم الحصص في هذا اليوم مع دعم الدمج (span)
+      var slotOffsetCursor = 0;
+      var sessions = dyObj.sessions || [];
 
-      if (!sessArr.length) {
-        ctx.fillStyle = '#F8FAFC';
-        roundRect(ctx, tblX, ry, sessionsAreaW - 8, dayRowH, 8);
-        ctx.fill();
-        ctx.strokeStyle = '#E2E8F0';
-        ctx.lineWidth = 1;
-        ctx.stroke();
-        ctx.fillStyle = '#94A3B8';
-        ctx.font = '15px "Cairo", "Tajawal", "IBM Plex Sans Arabic", sans-serif';
-        ctx.fillText('لا توجد حصص مبرمجة في هذا اليوم', tblX + (sessionsAreaW - 8) / 2, ry + dayRowH / 2 + 6);
-        return;
-      }
+      sessions.forEach(function (sess) {
+        var span = sess.span || 1;
+        var cellW = span * baseSlotW;
+        var sx = dayRightX - (slotOffsetCursor + span) * baseSlotW;
 
-      var sCount = sessArr.length;
-      var sGap = 6;
-      var totalSGap = sGap * (sCount - 1);
-      var availSW = (sessionsAreaW - 8) - totalSGap;
-      var cellW = Math.floor(availSW / sCount);
+        var isAct = (sess.kind === 'activity' || sess.kind === 'break');
+        var isLib = (sess.kind === 'library' || (!isAct && sess.domain && sess.skill));
+        var isMan = (sess.kind === 'manual' || (!isAct && !isLib && (sess.manual_text || sess.title)));
+        var isFilled = (isAct || isLib || isMan);
 
-      sessArr.forEach(function (sess, sIdx) {
-        // من اليمين إلى اليسار
-        var sx = dayRightX - 8 - (sIdx + 1) * cellW - sIdx * sGap;
-        if (sIdx === sCount - 1) {
-          sx = tblX; // محاذاة آخر خلية في اليسار بدقة
-        }
-        var curW = (sIdx === sCount - 1) ? ((dayRightX - 8 - sIdx * (cellW + sGap)) - tblX) : cellW;
-
-        var isDailyActivity = (sess.kind === 'break' || sess.kind === 'activity' || sess.type === 'activity');
-        var domName = sess.domain || (sess.items && sess.items[0] && sess.items[0].domain) || '';
-        var skillName = sess.skill || (sess.items && sess.items[0] && sess.items[0].skill) || '';
-        if (sess.items && sess.items.length > 1) {
-          skillName = sess.items.map(function (it) { return it.skill; }).filter(Boolean).join(' + ');
-        }
-        var actTitle = sess.activity || sess.title || (isDailyActivity ? 'نشاط يومي' : skillName);
-        var timeRange = (sess.start && sess.end) ? (sess.start + ' - ' + sess.end) : (sess.start || '');
-
-        if (isDailyActivity) {
-          // تصميم مميز للأنشطة اليومية والفترات التنظيمية (كهرماني دافئ)
+        if (!isFilled) {
+          // خانة فارغة مطابقة للورقة
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fillRect(sx, ry, cellW, dayRowH);
+          ctx.strokeStyle = '#CBD5E1';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(sx, ry, cellW, dayRowH);
+        } else if (isAct) {
+          // نشاط يومي / فترة تنظيمية (كهرماني دافئ)
           ctx.fillStyle = '#FFFBEB';
-          roundRect(ctx, sx, ry, curW, dayRowH, 8);
-          ctx.fill();
+          ctx.fillRect(sx, ry, cellW, dayRowH);
           ctx.strokeStyle = '#F59E0B';
-          ctx.lineWidth = 1.6;
-          ctx.stroke();
+          ctx.lineWidth = 1.5;
+          ctx.strokeRect(sx, ry, cellW, dayRowH);
 
-          // شريط علوي للوقت ونوع النشاط
-          ctx.fillStyle = '#FEF3C7';
-          roundRect(ctx, sx + 2, ry + 2, curW - 4, 28, 6);
-          ctx.fill();
-
-          ctx.fillStyle = '#B45309';
-          ctx.textAlign = 'center';
-          ctx.font = 'bold 13px "Plus Jakarta Sans", "Cairo", sans-serif';
-          ctx.fillText(timeRange || 'فترة يومية', sx + curW / 2, ry + 21);
-
-          // شارة "نشاط يومي"
+          // شارة نشاط يومي
           ctx.fillStyle = '#D97706';
-          ctx.font = 'bold 12px "Cairo", "Tajawal", sans-serif';
-          ctx.fillText('نشاط يومي / فترة تنظيمية', sx + curW / 2, ry + 48);
+          ctx.font = 'bold 11px "Cairo", "Tajawal", sans-serif';
+          ctx.fillText('نشاط يومي', sx + cellW / 2, ry + 22);
 
-          // اسم النشاط اليومي بخط واضح وكبير
+          // اسم النشاط
           ctx.fillStyle = '#78350F';
-          ctx.font = 'bold 16px "Cairo", "Tajawal", sans-serif';
-          var actLines = wrapLines(ctx, actTitle, curW - 14, 2);
+          ctx.font = 'bold 15px "Cairo", "Tajawal", sans-serif';
+          var actText = sess.activity || sess.title || 'نشاط يومي';
+          var actLines = wrapLines(ctx, actText, cellW - 14, 2);
           actLines.forEach(function (aln, lIdx) {
-            ctx.fillText(aln, sx + curW / 2, ry + 74 + lIdx * 20);
+            ctx.fillText(aln, sx + cellW / 2, ry + 44 + lIdx * 19);
           });
-        } else {
-          // تصميم مميز للحصص البيداغوجية (لون المجال + اسم المجال + المهارة)
-          var pal = DOMAIN_PALETTE[hashDomainIdx(domName)];
+        } else if (isLib) {
+          // حصة بيداغوجية من المكتبة (لون المجال + اسم المجال + المهارة)
+          var pal = DOMAIN_PALETTE[hashDomainIdx(sess.domain)];
           ctx.fillStyle = pal.bg;
-          roundRect(ctx, sx, ry, curW, dayRowH, 8);
-          ctx.fill();
+          ctx.fillRect(sx, ry, cellW, dayRowH);
           ctx.strokeStyle = pal.border;
-          ctx.lineWidth = 1.6;
-          ctx.stroke();
+          ctx.lineWidth = 1.5;
+          ctx.strokeRect(sx, ry, cellW, dayRowH);
 
-          // شريط التوقيت العلوي
-          ctx.fillStyle = '#FFFFFF';
-          roundRect(ctx, sx + 2, ry + 2, curW - 4, 26, 6);
-          ctx.fill();
-          ctx.fillStyle = '#0F172A';
-          ctx.textAlign = 'center';
-          ctx.font = 'bold 12.5px "Plus Jakarta Sans", "Cairo", sans-serif';
-          ctx.fillText(timeRange || 'حصة بيداغوجية', sx + curW / 2, ry + 19);
-
-          // شارة المجال البيداغوجي
+          // شارة المجال
           ctx.fillStyle = pal.badgeBg;
-          roundRect(ctx, sx + 6, ry + 32, curW - 12, 24, 5);
+          roundRect(ctx, sx + 4, ry + 6, cellW - 8, 22, 4);
           ctx.fill();
           ctx.fillStyle = '#FFFFFF';
-          ctx.font = 'bold 12px "Cairo", "Tajawal", sans-serif';
-          var shortDom = String(domName || 'مجال بيداغوجي').replace(/\s*\(.*?\)\s*/g, '').trim();
-          var domWrap = wrapLines(ctx, shortDom, curW - 18, 1);
-          ctx.fillText(domWrap[0] || shortDom, sx + curW / 2, ry + 49);
+          ctx.font = 'bold 11.5px "Cairo", "Tajawal", sans-serif';
+          var shortDom = String(sess.domain || 'مجال بيداغوجي').replace(/\s*\(.*?\)\s*/g, '').trim();
+          var domWrap = wrapLines(ctx, shortDom, cellW - 12, 1);
+          ctx.fillText(domWrap[0] || shortDom, sx + cellW / 2, ry + 21);
 
-          // اسم المهارة البيداغوجية بوضوح تام
+          // اسم المهارة
           ctx.fillStyle = pal.text;
-          ctx.font = 'bold 13.5px "Cairo", "Tajawal", sans-serif';
-          var skText = skillName || actTitle || 'مهارة تربوية';
-          var skLines = wrapLines(ctx, skText, curW - 14, 3);
-          var startSkY = ry + 75;
+          ctx.font = 'bold 12.5px "Cairo", "Tajawal", sans-serif';
+          var skText = sess.skill || sess.title || 'مهارة تربوية';
+          var skLines = wrapLines(ctx, skText, cellW - 12, 3);
           skLines.forEach(function (sln, lIdx) {
-            ctx.fillText(sln, sx + curW / 2, startSkY + lIdx * 18);
+            ctx.fillText(sln, sx + cellW / 2, ry + 45 + lIdx * 16);
+          });
+        } else if (isMan) {
+          // ملء يدوي مستقل (أزرق هادئ)
+          ctx.fillStyle = '#EFF6FF';
+          ctx.fillRect(sx, ry, cellW, dayRowH);
+          ctx.strokeStyle = '#3B82F6';
+          ctx.lineWidth = 1.5;
+          ctx.strokeRect(sx, ry, cellW, dayRowH);
+
+          // شارة ملء يدوي
+          ctx.fillStyle = '#2563EB';
+          ctx.font = 'bold 11px "Cairo", "Tajawal", sans-serif';
+          ctx.fillText('إدخال مخصص', sx + cellW / 2, ry + 22);
+
+          // النص اليدوي
+          ctx.fillStyle = '#1E3A8A';
+          ctx.font = 'bold 13px "Cairo", "Tajawal", sans-serif';
+          var manText = sess.manual_text || sess.title || '';
+          var manLines = wrapLines(ctx, manText, cellW - 12, 3);
+          manLines.forEach(function (mln, lIdx) {
+            ctx.fillText(mln, sx + cellW / 2, ry + 44 + lIdx * 17);
           });
         }
+
+        slotOffsetCursor += span;
       });
     });
 

@@ -4,9 +4,36 @@
    كل النصوص تُدرج بـ textContent لحماية تامة من XSS. */
 (function () {
   'use strict';
+
+  var _memL = {}, _memS = {};
+  function safeGetItem(store, k) {
+    try {
+      if (store && typeof store.getItem === 'function') return store.getItem(k);
+    } catch (e) {}
+    return (store === 'session' ? _memS[k] : _memL[k]) || null;
+  }
+  function safeSetItem(store, k, v) {
+    try {
+      if (store && typeof store.setItem === 'function') store.setItem(k, v);
+    } catch (e) {}
+    if (store === 'session') _memS[k] = String(v); else _memL[k] = String(v);
+  }
+  function safeRemoveItem(store, k) {
+    try {
+      if (store && typeof store.removeItem === 'function') store.removeItem(k);
+    } catch (e) {}
+    if (store === 'session') delete _memS[k]; else delete _memL[k];
+  }
+  function safeClear(store) {
+    try {
+      if (store && typeof store.clear === 'function') store.clear();
+    } catch (e) {}
+    if (store === 'session') _memS = {}; else _memL = {};
+  }
+
   try {
-    if (typeof window !== 'undefined' && localStorage.getItem('de_app_ver') !== 'v98') {
-      localStorage.setItem('de_app_ver', 'v98');
+    if (typeof window !== 'undefined' && safeGetItem('local', 'de_app_ver') !== 'v98') {
+      safeSetItem('local', 'de_app_ver', 'v98');
       if (window.caches && caches.keys) {
         caches.keys().then(function (ks) { ks.forEach(function (k) { caches.delete(k); }); });
       }
@@ -32,7 +59,7 @@
   var $ = function (s) { return document.querySelector(s); };
   function badge(text, kind) { return h('span', { class: 'badge ' + (kind || ''), text: text }); }
   var C = DE.Client(CFG, 'de_parent_session', true);
-  var S = { tab: 'children', me: null, name: '', d: null, reads: {}, selectedChildId: null };
+  var S = window.S = { tab: 'children', me: null, name: '', d: null, reads: {}, selectedChildId: null };
   var stopIdle = null;
 
   var EMBEDDED_STUDENTS = [];
@@ -74,7 +101,7 @@
 
   function readLocalSharedEvaluationsParent() {
     try {
-      var raw = localStorage.getItem(SHARED_EVALS_STORAGE_KEY);
+      var raw = safeGetItem('local', SHARED_EVALS_STORAGE_KEY);
       var list = raw ? JSON.parse(raw) : [];
       return Array.isArray(list) ? list : [];
     } catch (e) {
@@ -100,7 +127,7 @@
 
   /* ---------- الترجمة واللغات (عربي / فرنسي) ---------- */
   var LANG = (function () {
-    try { return sessionStorage.getItem('de_parent_lang') || 'ar'; } catch (e) { return 'ar'; }
+    try { return safeGetItem('session', 'de_parent_lang') || 'ar'; } catch (e) { return 'ar'; }
   })();
 
   var I18N = {
@@ -330,12 +357,13 @@
 
   function toggleLang() {
     LANG = (LANG === 'ar') ? 'fr' : 'ar';
-    try { sessionStorage.setItem('de_parent_lang', LANG); } catch (e) {}
+    try { safeSetItem('session', 'de_parent_lang', LANG); } catch (e) {}
     applyLang();
     if (C.loggedIn() && S.d) render();
   }
 
   /* ---------- أدوات ---------- */
+  var fmt = function (d) { return fmtDate(d); };
   function fmtDate(v, withTime) {
     try {
       var locale = (LANG === 'fr') ? 'fr-DZ' : 'ar-DZ-u-nu-latn';
@@ -490,7 +518,7 @@
     try {
       var perm = await Notification.requestPermission();
       if (perm === 'granted') {
-        localStorage.setItem('de_phone_notif_enabled', '1');
+        safeSetItem('local', 'de_phone_notif_enabled', '1');
         
         // تسجيل اشتراك Web Push الرسمي مع خادم Supabase
         if ('serviceWorker' in navigator && 'PushManager' in window) {
@@ -561,7 +589,7 @@
           try {
             await C.signIn(em, pw);
             signedInOk = true;
-            try { localStorage.removeItem('de_parent_direct_session'); } catch (e0) {}
+            try { safeRemoveItem('local', 'de_parent_direct_session'); } catch (e0) {}
           } catch (eSign) {
             signErr = eSign;
           }
@@ -571,9 +599,9 @@
           }
 
           var canonicalUser = rawInput.toLowerCase();
-          try { localStorage.setItem('de_parent_user', canonicalUser); } catch (e2) {}
-          try { localStorage.setItem('de_parent_saved', '1'); } catch (e3) {}
-          try { sessionStorage.setItem('de_parent_user', canonicalUser); } catch (e4) {}
+          try { safeSetItem('local', 'de_parent_user', canonicalUser); } catch (e2) {}
+          try { safeSetItem('local', 'de_parent_saved', '1'); } catch (e3) {}
+          try { safeSetItem('session', 'de_parent_user', canonicalUser); } catch (e4) {}
           $('#password').value = '';
           await enter();
         } else if (mode === 'forgot') {
@@ -651,7 +679,7 @@
         // مطابقة الطفل المرتبط بحساب الولي المسجل حالياً (من البريد/اسم المستخدم أو رقم القيد)
         var rawLoginUser = '';
         try {
-          rawLoginUser = (sessionStorage.getItem('de_parent_user') || localStorage.getItem('de_parent_user') || (me && me.email) || '').trim().toLowerCase();
+          rawLoginUser = (safeGetItem('session', 'de_parent_user') || safeGetItem('local', 'de_parent_user') || (me && me.email) || '').trim().toLowerCase();
         } catch (eU) {}
         var cleanU = rawLoginUser.split('@')[0];
         if (cleanU) {
@@ -841,7 +869,7 @@
 
       stopIdle && stopIdle();
       // في فضاء الأولياء تبقى الجلسة مسجلة دائماً دون تسجيل خروج تلقائي عند الخمول
-      try { localStorage.setItem('de_parent_saved', '1'); } catch (eIdle) {}
+      try { safeSetItem('local', 'de_parent_saved', '1'); } catch (eIdle) {}
       render();
 
       var params = new URLSearchParams(window.location.search);
@@ -853,13 +881,13 @@
 
   async function logout(msg) {
     try {
-      localStorage.removeItem('de_parent_saved');
-      localStorage.removeItem('de_parent_direct_session');
-      localStorage.removeItem('de_parent_user');
-      localStorage.removeItem('de_parent_session');
-      sessionStorage.removeItem('de_parent_user');
-      sessionStorage.removeItem('de_parent_session');
-      sessionStorage.clear();
+      safeRemoveItem('local', 'de_parent_saved');
+      safeRemoveItem('local', 'de_parent_direct_session');
+      safeRemoveItem('local', 'de_parent_user');
+      safeRemoveItem('local', 'de_parent_session');
+      safeRemoveItem('session', 'de_parent_user');
+      safeRemoveItem('session', 'de_parent_session');
+      safeClear('session');
       if (window.caches && caches.keys) {
         caches.keys().then(function (ks) {
           ks.forEach(function (k) {
@@ -893,7 +921,7 @@
     if (!S.d || !S.d.reports) return 0;
     var stdReps = S.d.reports.filter(function (r) { return !isEvalReport(r); });
     return stdReps.filter(function (r) {
-      return localStorage.getItem('de_seen_rep_' + r.id) !== '1';
+      return safeGetItem('local', 'de_seen_rep_' + r.id) !== '1';
     }).length;
   }
 
@@ -901,7 +929,7 @@
     if (!S.d || !S.d.reports) return 0;
     var evReps = S.d.reports.filter(isEvalReport);
     return evReps.filter(function (e) {
-      return localStorage.getItem('de_seen_ev_' + e.id) !== '1';
+      return safeGetItem('local', 'de_seen_ev_' + e.id) !== '1';
     }).length;
   }
 
@@ -940,8 +968,8 @@
             }
             if (S.d && S.d.reports) {
               S.d.reports.forEach(function (r) {
-                if (isEvalReport(r)) localStorage.setItem('de_seen_ev_' + r.id, '1');
-                else localStorage.setItem('de_seen_rep_' + r.id, '1');
+                if (isEvalReport(r)) safeSetItem('local', 'de_seen_ev_' + r.id, '1');
+                else safeSetItem('local', 'de_seen_rep_' + r.id, '1');
               });
             }
             updateNotifBadge();
@@ -955,7 +983,7 @@
 
     // بطاقة تفعيل إشعارات الهاتف مع الرنة
     var notifPermState = (typeof Notification !== 'undefined') ? Notification.permission : 'unsupported';
-    var isPhoneActive = notifPermState === 'granted' && localStorage.getItem('de_phone_notif_enabled') === '1';
+    var isPhoneActive = notifPermState === 'granted' && safeGetItem('local', 'de_phone_notif_enabled') === '1';
 
     var phoneNotifBox = h('div', {
       class: 'pm-notif-phone-card',
@@ -1018,7 +1046,7 @@
 
     // استمارات التقييم الجديدة
     if (S.d && S.d.reports) {
-      var newEvals = S.d.reports.filter(function (r) { return isEvalReport(r) && localStorage.getItem('de_seen_ev_' + r.id) !== '1'; });
+      var newEvals = S.d.reports.filter(function (r) { return isEvalReport(r) && safeGetItem('local', 'de_seen_ev_' + r.id) !== '1'; });
       newEvals.forEach(function (e) {
         itemsCount++;
         var itemEl = h('div', { class: 'pm-list-item-card', style: 'padding:10px 14px; margin-bottom:8px;' },
@@ -1034,7 +1062,7 @@
             class: 'btn-pm-gold',
             text: 'عرض ورقة التقييم',
             onclick: function () {
-              localStorage.setItem('de_seen_ev_' + e.id, '1');
+              safeSetItem('local', 'de_seen_ev_' + e.id, '1');
               updateNotifBadge();
               closeModal();
               S.tab = 'evaluations';
@@ -1047,7 +1075,7 @@
       });
 
       // التقارير الجديدة
-      var newReps = S.d.reports.filter(function (r) { return !isEvalReport(r) && localStorage.getItem('de_seen_rep_' + r.id) !== '1'; });
+      var newReps = S.d.reports.filter(function (r) { return !isEvalReport(r) && safeGetItem('local', 'de_seen_rep_' + r.id) !== '1'; });
       newReps.forEach(function (r) {
         itemsCount++;
         var itemEl = h('div', { class: 'pm-list-item-card', style: 'padding:10px 14px; margin-bottom:8px;' },
@@ -1063,7 +1091,7 @@
             class: 'btn-pm-primary',
             text: 'عرض التقرير',
             onclick: function () {
-              localStorage.setItem('de_seen_rep_' + r.id, '1');
+              safeSetItem('local', 'de_seen_rep_' + r.id, '1');
               updateNotifBadge();
               closeModal();
               S.tab = 'reports';
@@ -1132,7 +1160,7 @@
       window.deferredPwaPrompt.prompt();
       window.deferredPwaPrompt.userChoice.then(function (choice) {
         if (choice.outcome === 'accepted') {
-          localStorage.setItem('de_pwa_installed', '1');
+          safeSetItem('local', 'de_pwa_installed', '1');
           checkAndHideInstallButtons();
           toast('تم تثبيت تطبيق فضاء الأولياء بنجاح على هاتفك!', 'ok');
         }
@@ -1224,7 +1252,7 @@
   function checkAndHideInstallButtons() {
     var isStandalone = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) ||
                        (window.navigator && window.navigator.standalone === true) ||
-                       localStorage.getItem('de_pwa_installed') === '1';
+                       safeGetItem('local', 'de_pwa_installed') === '1';
 
     if (isStandalone) {
       var headerBtn = document.getElementById('installHeaderBtn');
@@ -1237,7 +1265,7 @@
   }
 
   window.addEventListener('appinstalled', function () {
-    localStorage.setItem('de_pwa_installed', '1');
+    safeSetItem('local', 'de_pwa_installed', '1');
     window.deferredPwaPrompt = null;
     checkAndHideInstallButtons();
     toast('تم تثبيت تطبيق فضاء الأولياء بنجاح على هاتفك!', 'ok');
@@ -1247,7 +1275,7 @@
     try {
       window.matchMedia('(display-mode: standalone)').addEventListener('change', function (e) {
         if (e.matches) {
-          localStorage.setItem('de_pwa_installed', '1');
+          safeSetItem('local', 'de_pwa_installed', '1');
           checkAndHideInstallButtons();
         }
       });
@@ -1510,12 +1538,13 @@
     });
   }
 
-  /* =====================================================================
+    /* =====================================================================
      قسم «البرنامج الأسبوعي» في فضاء الأولياء
      - يعرض للولي برنامج فوج طفله فقط (مع عزل كامل بين الأفواج).
-     - يعرض جدول الأسبوع + نسخة PDF احترافية (A4 أفقي) قابلة للعرض والطباعة + تاريخ آخر تحديث.
+     - يعرض جدول الأسبوع بنسخة إلكترونية مطابقة للورقة الأصلية (مع دعم الخانات المدمجة).
+     - نسخة PDF احترافية (A4 أفقي) قابلة للعرض والطباعة + تاريخ آخر تحديث.
      - يعرض إشعاراً مناسباً للولي عند نشر برنامج جديد أو تحديثه.
-     - للقراءة فقط (لا يسمح للولي بتعديل البرنامج، وبدون مشاركة عبر واتساب).
+     - للقراءة فقط (لا يسمح للولي بتعديل البرنامج).
      ===================================================================== */
   var WEEK_DAYS_PARENT = [
     { key: 'sun', label: 'الأحد' },
@@ -1527,7 +1556,7 @@
 
   function readSharedProgramsParent() {
     try {
-      var raw = localStorage.getItem('de_shared_programs_v1');
+      var raw = safeGetItem('local', 'de_shared_programs_v1');
       if (!raw) return [];
       var parsed = JSON.parse(raw);
       return Array.isArray(parsed) ? parsed : [];
@@ -1545,149 +1574,129 @@
     }
 
     var meta = (Array.isArray(rawSched) && rawSched[0]) ? rawSched[0] : (rawSched && typeof rawSched === 'object' ? rawSched : {});
-    var st = {
+    var secId = (p && p.section_id) || '';
+    var sName = (meta && meta.section_name) || fallbackSecName || 'الفوج التربوي';
+
+    var slots = (meta && Array.isArray(meta.time_slots) && meta.time_slots.length)
+      ? meta.time_slots.map(function (ts, idx) {
+          return {
+            id: ts.id != null ? ts.id : idx,
+            start: ts.start || '08:00',
+            end: ts.end || '08:30',
+            period: ts.period || (timeToMinutes(ts.start) >= 750 ? 'afternoon' : 'morning'),
+            label: (ts.start || '08:00') + ' - ' + (ts.end || '08:30'),
+            duration: ts.duration || 30
+          };
+        })
+      : [
+          { id: 0, start: '08:00', end: '08:30', period: 'morning', label: '08:00 - 08:30' },
+          { id: 1, start: '08:30', end: '09:30', period: 'morning', label: '08:30 - 09:30' },
+          { id: 2, start: '09:30', end: '10:00', period: 'morning', label: '09:30 - 10:00' },
+          { id: 3, start: '10:00', end: '11:00', period: 'morning', label: '10:00 - 11:00' },
+          { id: 4, start: '11:00', end: '11:30', period: 'morning', label: '11:00 - 11:30' },
+          { id: 5, start: '11:30', end: '12:30', period: 'morning', label: '11:30 - 12:30' },
+          { id: 6, start: '12:30', end: '13:30', period: 'afternoon', label: '12:30 - 13:30' },
+          { id: 7, start: '13:30', end: '14:00', period: 'afternoon', label: '13:30 - 14:00' }
+        ];
+
+    var days = WEEK_DAYS_PARENT.map(function (wd) {
+      var foundDay = null;
+      if (Array.isArray(rawSched)) {
+        foundDay = rawSched.filter(function (r) { return r && (r.day === wd.key || r.label === wd.label || (wd.key === 'mon' && r.label === 'الاثنين')); })[0];
+        if (!foundDay && rawSched[0] && Array.isArray(rawSched[0].days)) {
+          foundDay = rawSched[0].days.filter(function (r) { return r && (r.day === wd.key || r.label === wd.label || (wd.key === 'mon' && r.label === 'الاثنين')); })[0];
+        }
+      } else if (rawSched && Array.isArray(rawSched.days)) {
+        foundDay = rawSched.days.filter(function (r) { return r && (r.day === wd.key || r.label === wd.label || (wd.key === 'mon' && r.label === 'الاثنين')); })[0];
+      }
+
+      var rawSess = (foundDay && Array.isArray(foundDay.sessions)) ? foundDay.sessions : [];
+      var sessions = [];
+
+      if (rawSess.length && rawSess[0].slot_id != null) {
+        sessions = rawSess.map(function (s) {
+          var isAct = (s.kind === 'activity' || s.kind === 'break');
+          var isLib = (s.kind === 'library' || (!!s.domain && !!s.skill));
+          var isMan = (s.kind === 'manual' || (!isLib && !isAct && !!(s.manual_text || s.title)));
+          var k = isLib ? 'library' : (isAct ? 'activity' : (isMan ? 'manual' : 'empty'));
+          return {
+            slot_id: s.slot_id,
+            start: s.start || '08:00',
+            end: s.end || '08:30',
+            span: s.span || 1,
+            merged_slot_ids: s.merged_slot_ids || [s.slot_id],
+            kind: k,
+            domain: s.domain || '',
+            skill: s.skill || '',
+            title: s.title || (isLib ? (s.domain + ' — ' + s.skill) : (isAct ? s.activity : s.manual_text)) || '',
+            manual_text: s.manual_text || '',
+            activity: s.activity || ''
+          };
+        });
+      } else {
+        slots.forEach(function (ts) {
+          var matching = rawSess.filter(function (rs) {
+            return rs.start === ts.start || (rs.start && timeToMinutes(rs.start) >= timeToMinutes(ts.start) && timeToMinutes(rs.start) < timeToMinutes(ts.end));
+          })[0];
+          if (matching) {
+            var isAct = (matching.kind === 'activity' || matching.kind === 'break');
+            var isLib = !!(matching.domain && matching.skill);
+            var isMan = !isAct && !isLib && !!(matching.title || matching.manual_text);
+            sessions.push({
+              slot_id: ts.id,
+              start: ts.start,
+              end: ts.end,
+              span: 1,
+              merged_slot_ids: [ts.id],
+              kind: isLib ? 'library' : (isAct ? 'activity' : (isMan ? 'manual' : 'empty')),
+              domain: matching.domain || '',
+              skill: matching.skill || (matching.items && matching.items[0] && matching.items[0].skill) || '',
+              title: matching.title || '',
+              manual_text: isMan ? (matching.manual_text || matching.title || '') : '',
+              activity: isAct ? (matching.activity || matching.title || '') : ''
+            });
+          } else {
+            sessions.push({
+              slot_id: ts.id,
+              start: ts.start,
+              end: ts.end,
+              span: 1,
+              merged_slot_ids: [ts.id],
+              kind: 'empty',
+              domain: '',
+              skill: '',
+              title: '',
+              manual_text: '',
+              activity: ''
+            });
+          }
+        });
+      }
+      return { day: wd.key, label: wd.label, sessions: sessions };
+    });
+
+    return {
       id: p ? p.id : null,
-      section_id: (p && p.section_id) || '',
-      section_name: (meta && meta.section_name) || fallbackSecName || 'الفوج التربوي',
+      section_id: secId,
+      section_name: sName,
       academic_year: (p && p.academic_year) || (meta && meta.academic_year) || '2026/2027',
       status: (meta && meta.program_status) || (p && p.status) || 'published',
       published_at: (p && p.published_at) || (meta && meta.published_at) || null,
-      updated_at: (meta && meta.updated_at) || (p && p.updated_at) || (p && p.published_at) || null,
-      prepared_date: (meta && meta.prepared_date) || ((p && p.published_at) ? String(p.published_at).slice(0, 10) : new Date().toISOString().slice(0, 10)),
+      updated_at: (meta && meta.updated_at) || (p && p.published_at) || new Date().toISOString(),
+      prepared_date: (meta && meta.prepared_date) || new Date().toISOString().slice(0, 10),
       day_start: (meta && meta.day_start) || '08:00',
       day_end: (meta && meta.day_end) || '14:00',
       educator_name: (meta && meta.educator_name) || '',
       supervisor_name: (meta && meta.supervisor_name) || '',
       director_name: (meta && meta.director_name) || '',
-      days: WEEK_DAYS_PARENT.map(function (wd) {
-        var found = Array.isArray(rawSched)
-          ? rawSched.filter(function (r) { return r && (r.day === wd.key || r.label === wd.label || (wd.key === 'mon' && r.label === 'الاثنين')); })[0]
-          : null;
-        var sessList = (found && Array.isArray(found.sessions)) ? found.sessions.map(function (s) {
-          var isAct = (s.kind === 'break' || s.kind === 'activity' || s.type === 'activity');
-          var dom = s.domain || (s.items && s.items[0] && s.items[0].domain) || '';
-          var sk = s.skill || (s.items && s.items[0] && s.items[0].skill) || '';
-          if (s.items && s.items.length > 1) {
-            sk = s.items.map(function (it) { return it.skill; }).filter(Boolean).join(' + ');
-          }
-          return {
-            kind: isAct ? 'activity' : 'session',
-            title: s.title || s.activity || (isAct ? 'نشاط يومي' : sk),
-            activity: s.activity || (isAct ? s.title : ''),
-            domain: isAct ? '' : dom,
-            skill: isAct ? '' : sk,
-            start: s.start || '08:00',
-            end: s.end || '09:00',
-            duration: s.duration || 60,
-            items: isAct ? [] : (s.items && s.items.length ? s.items : (dom || sk ? [{ domain: dom, skill: sk }] : []))
-          };
-        }) : [];
-        sessList.sort(function (a, b) {
-          return String(a.start || '00:00').localeCompare(String(b.start || '00:00'));
-        });
-        return { day: wd.key, label: wd.label, sessions: sessList };
-      })
-    };
-    return st;
-  }
-
-  function getBuiltInSectionDemoProgram(secId, secName) {
-    var sName = secName || 'قسم الشبه مدرسي مكيف';
-    var demoDays = [
-      {
-        day: 'sun', label: 'الأحد',
-        sessions: [
-          { kind: 'activity', activity: 'الاستقبال', title: 'الاستقبال', start: '08:00', end: '08:30', duration: 30, items: [] },
-          { kind: 'session', domain: 'المجال المعرفي', skill: 'الانتباه والتركيز', title: 'الانتباه والتركيز', start: '08:30', end: '09:30', duration: 60, items: [{ domain: 'المجال المعرفي', skill: 'الانتباه والتركيز' }] },
-          { kind: 'activity', activity: 'وجبة خفيفة', title: 'وجبة خفيفة', start: '09:30', end: '10:00', duration: 30, items: [] },
-          { kind: 'session', domain: 'مجال التواصل واللغة', skill: 'اللغة الاستقبالية والتعبيرية', title: 'اللغة الاستقبالية والتعبيرية', start: '10:00', end: '11:00', duration: 60, items: [{ domain: 'مجال التواصل واللغة', skill: 'اللغة الاستقبالية والتعبيرية' }] },
-          { kind: 'activity', activity: 'الاستراحة', title: 'الاستراحة', start: '11:00', end: '11:30', duration: 30, items: [] },
-          { kind: 'session', domain: 'مجال الاستقلالية (الحياة اليومية والعناية بالذات)', skill: 'غسل اليدين بالماء والصابون بشكل صحيح', title: 'غسل اليدين بالماء والصابون بشكل صحيح', start: '11:30', end: '12:30', duration: 60, items: [{ domain: 'مجال الاستقلالية (الحياة اليومية والعناية بالذات)', skill: 'غسل اليدين بالماء والصابون بشكل صحيح' }] },
-          { kind: 'activity', activity: 'الغداء', title: 'الغداء', start: '12:30', end: '13:30', duration: 60, items: [] },
-          { kind: 'activity', activity: 'الانصراف', title: 'الانصراف', start: '13:30', end: '14:00', duration: 30, items: [] }
-        ]
-      },
-      {
-        day: 'mon', label: 'الإثنين',
-        sessions: [
-          { kind: 'activity', activity: 'الاستقبال', title: 'الاستقبال', start: '08:00', end: '08:30', duration: 30, items: [] },
-          { kind: 'session', domain: 'مجال المهارات الحركية الدقيقة', skill: 'مسك المقص بشكل صحيح', title: 'مسك المقص بشكل صحيح', start: '08:30', end: '09:30', duration: 60, items: [{ domain: 'مجال المهارات الحركية الدقيقة', skill: 'مسك المقص بشكل صحيح' }] },
-          { kind: 'activity', activity: 'وجبة خفيفة', title: 'وجبة خفيفة', start: '09:30', end: '10:00', duration: 30, items: [] },
-          { kind: 'session', domain: 'المجال الاجتماعي', skill: 'التفاعل الاجتماعي والمشاركة', title: 'التفاعل الاجتماعي والمشاركة', start: '10:00', end: '11:00', duration: 60, items: [{ domain: 'المجال الاجتماعي', skill: 'التفاعل الاجتماعي والمشاركة' }] },
-          { kind: 'activity', activity: 'النظافة الشخصية', title: 'النظافة الشخصية', start: '11:00', end: '11:30', duration: 30, items: [] },
-          { kind: 'session', domain: 'المجال الأكاديمي', skill: 'التعرف على أشكال الحروف داخل الكلمة (البداية، الوسط، النهاية)', title: 'التعرف على أشكال الحروف', start: '11:30', end: '12:30', duration: 60, items: [{ domain: 'المجال الأكاديمي', skill: 'التعرف على أشكال الحروف داخل الكلمة (البداية، الوسط، النهاية)' }] },
-          { kind: 'activity', activity: 'الغداء', title: 'الغداء', start: '12:30', end: '13:30', duration: 60, items: [] },
-          { kind: 'activity', activity: 'الانصراف', title: 'الانصراف', start: '13:30', end: '14:00', duration: 30, items: [] }
-        ]
-      },
-      {
-        day: 'tue', label: 'الثلاثاء',
-        sessions: [
-          { kind: 'activity', activity: 'الاستقبال', title: 'الاستقبال', start: '08:00', end: '08:30', duration: 30, items: [] },
-          { kind: 'session', domain: 'مجال المهارات الحركية الكبرى', skill: 'المشي بطريقة صحيحة', title: 'المشي بطريقة صحيحة', start: '08:30', end: '09:30', duration: 60, items: [{ domain: 'مجال المهارات الحركية الكبرى', skill: 'المشي بطريقة صحيحة' }] },
-          { kind: 'activity', activity: 'الاستراحة', title: 'الاستراحة', start: '09:30', end: '10:00', duration: 30, items: [] },
-          { kind: 'session', domain: 'مجال مهارات الحضور والانتباه', skill: 'الاتصال البصري أثناء المحادثة', title: 'الاتصال البصري أثناء المحادثة', start: '10:00', end: '11:00', duration: 60, items: [{ domain: 'مجال مهارات الحضور والانتباه', skill: 'الاتصال البصري أثناء المحادثة' }] },
-          { kind: 'activity', activity: 'اللعب الحر', title: 'اللعب الحر', start: '11:00', end: '11:30', duration: 30, items: [] },
-          { kind: 'session', domain: 'مجال التقليد', skill: 'تقليد التصفيق', title: 'تقليد الحركات الأساسية', start: '11:30', end: '12:30', duration: 60, items: [{ domain: 'مجال التقليد', skill: 'تقليد التصفيق' }] },
-          { kind: 'activity', activity: 'الغداء', title: 'الغداء', start: '12:30', end: '13:30', duration: 60, items: [] },
-          { kind: 'activity', activity: 'الانصراف', title: 'الانصراف', start: '13:30', end: '14:00', duration: 30, items: [] }
-        ]
-      },
-      {
-        day: 'wed', label: 'الأربعاء',
-        sessions: [
-          { kind: 'activity', activity: 'الاستقبال', title: 'الاستقبال', start: '08:00', end: '08:30', duration: 30, items: [] },
-          { kind: 'session', domain: 'مجال ما قبل الأكاديمي', skill: 'الوصل بين مجموعة عناصر من نفس الفئة', title: 'الوصل بين عناصر متماثلة', start: '08:30', end: '09:30', duration: 60, items: [{ domain: 'مجال ما قبل الأكاديمي', skill: 'الوصل بين مجموعة عناصر من نفس الفئة' }] },
-          { kind: 'activity', activity: 'وجبة خفيفة', title: 'وجبة خفيفة', start: '09:30', end: '10:00', duration: 30, items: [] },
-          { kind: 'session', domain: 'مجال التواصل', skill: 'يسمي الأشياء المألوفة في البيئة', title: 'تسمية الأشياء المألوفة', start: '10:00', end: '11:00', duration: 60, items: [{ domain: 'مجال التواصل', skill: 'يسمي الأشياء المألوفة في البيئة' }] },
-          { kind: 'activity', activity: 'الصلاة', title: 'الصلاة', start: '11:00', end: '11:30', duration: 30, items: [] },
-          { kind: 'session', domain: 'مجال الاستقلالية (الحياة اليومية والعناية بالذات)', skill: 'مسك أدوات الطعام بشكل صحيح', title: 'مسك أدوات الطعام بشكل صحيح', start: '11:30', end: '12:30', duration: 60, items: [{ domain: 'مجال الاستقلالية (الحياة اليومية والعناية بالذات)', skill: 'مسك أدوات الطعام بشكل صحيح' }] },
-          { kind: 'activity', activity: 'الغداء', title: 'الغداء', start: '12:30', end: '13:30', duration: 60, items: [] },
-          { kind: 'activity', activity: 'الانصراف', title: 'الانصراف', start: '13:30', end: '14:00', duration: 30, items: [] }
-        ]
-      },
-      {
-        day: 'thu', label: 'الخميس',
-        sessions: [
-          { kind: 'activity', activity: 'الاستقبال', title: 'الاستقبال', start: '08:00', end: '08:30', duration: 30, items: [] },
-          { kind: 'session', domain: 'مجال المهارات الحركية الدقيقة', skill: 'ترتيب مجموعة من الأوراق فوق بعضها', title: 'ترتيب وتصنيف الأوراق', start: '08:30', end: '09:30', duration: 60, items: [{ domain: 'مجال المهارات الحركية الدقيقة', skill: 'ترتيب مجموعة من الأوراق فوق بعضها' }] },
-          { kind: 'activity', activity: 'نشاط خارجي', title: 'نشاط خارجي', start: '09:30', end: '10:30', duration: 60, items: [] },
-          { kind: 'session', domain: 'المجال الاجتماعي', skill: 'التفاعل الاجتماعي والمشاركة', title: 'أنشطة جماعية ومراجعة أسبوعية', start: '10:30', end: '12:00', duration: 90, items: [{ domain: 'المجال الاجتماعي', skill: 'التفاعل الاجتماعي والمشاركة' }] },
-          { kind: 'activity', activity: 'النظافة الشخصية', title: 'النظافة الشخصية', start: '12:00', end: '12:30', duration: 30, items: [] },
-          { kind: 'activity', activity: 'الغداء', title: 'الغداء', start: '12:30', end: '13:30', duration: 60, items: [] },
-          { kind: 'activity', activity: 'الانصراف', title: 'الانصراف', start: '13:30', end: '14:00', duration: 30, items: [] }
-        ]
-      }
-    ];
-
-    return {
-      id: 'prog-demo-' + (secId || 'default'),
-      section_id: secId || '',
-      title: 'البرنامج الأسبوعي — ' + sName,
-      academic_year: '2026/2027',
-      status: 'published',
-      published_at: new Date().toISOString(),
-      schedule: demoDays.map(function (d) {
-        return {
-          day: d.day,
-          label: d.label,
-          section_name: sName,
-          academic_year: '2026/2027',
-          program_status: 'published',
-          day_start: '08:00',
-          day_end: '14:00',
-          educator_name: 'مربية الفوج',
-          supervisor_name: 'المشرف البيداغوجي',
-          director_name: 'مدير المركز',
-          sessions: d.sessions
-        };
-      })
+      time_slots: slots,
+      days: days
     };
   }
 
   function renderParentWeeklyProgramView(p, childObj, secName) {
     var st = parseParentProgramState(p, secName);
-    var lastUpd = st.updated_at || st.published_at || p.created_at || new Date().toISOString();
+    var lastUpd = st.updated_at || st.published_at || (p && p.created_at) || new Date().toISOString();
     var lastUpdFmt = fmt(lastUpd);
     var isUpdated = (st.status === 'updated');
 
@@ -1700,13 +1709,13 @@
         h('span', { style: 'background:#059669; color:#fff; width:36px; height:36px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-weight:bold; font-size:18px;', text: '🔔' }),
         h('div', null,
           h('strong', { style: 'color:#064E3B; display:block; font-size:15px;', text: isUpdated ? ('تم تحديث البرنامج الأسبوعي لفوج «' + st.section_name + '»') : ('البرنامج الأسبوعي المعتمد لفوج «' + st.section_name + '»') }),
-          h('span', { style: 'color:#047857; font-size:13px;', text: 'تاريخ آخر تحديث واعتماد: ' + lastUpdFmt + ' • خاص بفوج الطفل: ' + ((childObj && childObj.full_name) || 'تلميذ المركز') })
+          h('span', { style: 'color:#047857; font-size:13px;', text: 'تاريخ آخر اعتماد: ' + lastUpdFmt + ' • الفوج: ' + st.section_name + ' • التلميذ: ' + ((childObj && childObj.full_name) || 'طفل المركز') })
         )
       ),
       h('span', { class: 'badge ok', text: isUpdated ? 'تم تحديثه' : 'منشور ومعتمد' })
     );
 
-    // أزرار عرض وطباعة وتحميل PDF فقط (بدون أي تعديل للولي وبدون واتساب)
+    // حاوية عرض الوثيقة الرسمية
     var pdfCanvasHost = h('div', {
       class: 'wk-parent-pdf-canvas-host',
       style: 'width:100%; background:#fff; border:1px solid #CBD5E1; border-radius:12px; padding:8px; margin-top:14px; overflow:hidden;'
@@ -1747,76 +1756,93 @@
       onclick: function () { window.print(); }
     }, h('span', { text: '🖨 طباعة البرنامج الأسبوعي' }));
 
-    // جدول الأسبوع التفاعلي للقراءة فقط
-    var tableRows = st.days.map(function (dy) {
-      var sessCards = (dy.sessions || []).map(function (s) {
-        var isAct = (s.kind === 'activity' || s.kind === 'break');
-        var timeTxt = (s.start && s.end) ? (s.start + ' - ' + s.end) : (s.start || '');
-        if (isAct) {
-          return h('div', {
-            class: 'wk-parent-cell is-activity',
-            style: 'background:#FFFBEB; border:1.5px solid #F59E0B; border-radius:10px; padding:10px 12px; min-width:140px; flex:1 1 155px;'
-          },
-            h('div', { style: 'display:flex; justify-content:space-between; align-items:center; gap:6px; margin-bottom:6px;' },
-              h('span', { style: 'font-size:12px; font-weight:700; color:#B45309; background:#FEF3C7; padding:2px 8px; border-radius:6px;', text: timeTxt }),
-              h('span', { style: 'font-size:11px; font-weight:700; color:#D97706;', text: 'نشاط يومي' })
-            ),
-            h('strong', { style: 'display:block; color:#78350F; font-size:14.5px;', text: s.activity || s.title || 'نشاط يومي' })
-          );
-        }
-        return h('div', {
-          class: 'wk-parent-cell is-pedagogical',
-          style: 'background:#F0FDF4; border:1.5px solid #10B981; border-radius:10px; padding:10px 12px; min-width:165px; flex:1 1 180px;'
-        },
-          h('div', { style: 'display:flex; justify-content:space-between; align-items:center; gap:6px; margin-bottom:6px;' },
-            h('span', { style: 'font-size:12px; font-weight:700; color:#065F46; background:#D1FAE5; padding:2px 8px; border-radius:6px;', text: timeTxt }),
-            h('span', { style: 'font-size:11px; font-weight:700; color:#047857;', text: 'حصة بيداغوجية' })
-          ),
-          h('div', { style: 'background:#059669; color:#fff; font-size:12px; font-weight:700; padding:3px 8px; border-radius:6px; margin-bottom:6px;', text: s.domain || 'المجال البيداغوجي' }),
-          h('strong', { style: 'display:block; color:#064E3B; font-size:13.5px; line-height:1.45;', text: s.skill || s.title || '—' })
-        );
-      });
+    // جدول الحصص الأسبوعي المطابق للورقة في فضاء الأولياء
+    var morningSlots = st.time_slots.filter(function (s) { return s.period === 'morning'; });
+    var afternoonSlots = st.time_slots.filter(function (s) { return s.period === 'afternoon'; });
+    if (!morningSlots.length) morningSlots = st.time_slots.slice(0, 6);
+    if (!afternoonSlots.length) afternoonSlots = st.time_slots.slice(6);
 
-      return h('div', {
-        class: 'wk-parent-day-row',
-        style: 'display:flex; align-items:stretch; gap:10px; margin-bottom:10px; background:#F8FAFC; border:1px solid #E2E8F0; border-radius:12px; padding:10px; flex-wrap:wrap;'
-      },
-        h('div', {
-          style: 'background:#0F3D2E; color:#fff; font-weight:800; font-size:16px; min-width:105px; border-radius:8px; display:flex; align-items:center; justify-content:center; padding:10px 14px; text-align:center;'
-        }, dy.label),
-        h('div', {
-          style: 'display:flex; flex-wrap:wrap; gap:8px; flex:1 1 300px;'
-        }, sessCards.length ? sessCards : h('span', { class: 'muted small', style: 'padding:12px;', text: 'لا توجد حصص مبرمجة في هذا اليوم.' }))
-      );
+    var tableEl = h('table', {
+      class: 'wk-sheet-table',
+      style: 'width:100%; border-collapse:collapse; border:2px solid #14532D; text-align:center; min-width:820px;'
     });
 
-    return h('div', { class: 'card wk-parent-program-card' },
+    var theadEl = h('thead', null,
+      h('tr', null,
+        h('th', { rowspan: 2, style: 'width:100px; background:#14532D; color:#fff; border:1.5px solid #0F3D2E; padding:10px;', text: 'اليوم' }),
+        h('th', { colspan: morningSlots.length, style: 'background:#ECFDF5; color:#064E3B; border:1.5px solid #10B981; padding:8px; font-weight:800;', text: 'الفترة الصباحية' }),
+        h('th', { colspan: afternoonSlots.length, style: 'background:#FEF3C7; color:#92400E; border:1.5px solid #F59E0B; padding:8px; font-weight:800;', text: 'الفترة المسائية' })
+      ),
+      h('tr', null,
+        st.time_slots.map(function (slot) {
+          return h('th', {
+            style: 'background:#F8FAF9; color:#1E293B; border:1px solid #CBD5E1; padding:6px 4px; font-size:12px; font-weight:700; direction:ltr;',
+            text: slot.start + ' - ' + slot.end
+          });
+        })
+      )
+    );
+    tableEl.appendChild(theadEl);
+
+    var tbodyEl = h('tbody');
+    st.days.forEach(function (dyObj) {
+      var trDay = h('tr', null,
+        h('td', { style: 'background:#14532D; color:#fff; border:1.5px solid #0F3D2E; padding:10px; font-weight:800;', text: dyObj.label })
+      );
+
+      dyObj.sessions.forEach(function (sess) {
+        var span = sess.span || 1;
+        var isAct = (sess.kind === 'activity' || sess.kind === 'break');
+        var isLib = (sess.kind === 'library' || (!isAct && sess.domain && sess.skill));
+        var isMan = (sess.kind === 'manual' || (!isAct && !isLib && (sess.manual_text || sess.title)));
+
+        var bg = '#FFFFFF';
+        var border = '1px solid #CBD5E1';
+        var color = '#1E293B';
+        if (isLib) { bg = '#F0FDF4'; border = '1.5px solid #10B981'; color = '#064E3B'; }
+        else if (isAct) { bg = '#FFFBEB'; border = '1.5px solid #F59E0B'; color = '#92400E'; }
+        else if (isMan) { bg = '#EFF6FF'; border = '1.5px solid #3B82F6'; color = '#1E3A8A'; }
+
+        var td = h('td', {
+          colspan: span,
+          style: 'background:' + bg + '; border:' + border + '; color:' + color + '; padding:8px 6px; height:60px; vertical-align:middle;'
+        });
+
+        if (isLib) {
+          td.appendChild(h('div', { style: 'font-size:11px; font-weight:800; color:#059669;', text: sess.domain }));
+          td.appendChild(h('strong', { style: 'font-size:12.5px; color:#064E3B;', text: sess.skill }));
+        } else if (isAct) {
+          td.appendChild(h('div', { style: 'font-size:10.5px; font-weight:800; color:#D97706;', text: 'نشاط يومي' }));
+          td.appendChild(h('strong', { style: 'font-size:13px; color:#78350F;', text: sess.activity || sess.title }));
+        } else if (isMan) {
+          td.appendChild(h('div', { style: 'font-size:10.5px; font-weight:800; color:#2563EB;', text: 'نشاط مخصص' }));
+          td.appendChild(h('strong', { style: 'font-size:12.5px; color:#1E3A8A;', text: sess.manual_text || sess.title }));
+        } else {
+          td.appendChild(h('span', { class: 'small muted', text: '—' }));
+        }
+        trDay.appendChild(td);
+      });
+      tbodyEl.appendChild(trDay);
+    });
+    tableEl.appendChild(tbodyEl);
+
+    return h('div', { class: 'card wk-parent-program-card', style: 'padding:18px;' },
       notifBanner,
       h('div', { class: 'bar-sub', style: 'margin-bottom:14px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;' },
         h('div', null,
-          h('h2', { style: 'color:#0F3D2E; margin:0 0 4px;', text: 'البرنامج الأسبوعي — ' + st.section_name }),
-          h('p', { class: 'muted small', style: 'margin:0;', text: 'الموسم الدراسي: ' + st.academic_year + ' | التوقيت اليومي: ' + st.day_start + ' إلى ' + st.day_end + ' | آخر تحديث: ' + lastUpdFmt })
+          h('h2', { style: 'color:#14532D; margin:0 0 4px;', text: 'البرنامج الأسبوعي — ' + st.section_name }),
+          h('p', { class: 'muted small', style: 'margin:0;', text: 'الموسم الدراسي: ' + st.academic_year + ' | التوقيت: ' + st.day_start + ' إلى ' + st.day_end + ' | آخر اعتماد: ' + lastUpdFmt })
         ),
         h('div', { class: 'row-actions no-print', style: 'display:flex; gap:8px; flex-wrap:wrap;' },
           downloadPdfBtn,
           printProgramBtn
         )
       ),
-      h('div', { class: 'wk-parent-schedule-grid no-print', style: 'margin-bottom:18px;' },
-        h('div', { style: 'display:flex; gap:14px; flex-wrap:wrap; margin-bottom:10px; font-size:13px; font-weight:700;' },
-          h('span', { style: 'display:inline-flex; align-items:center; gap:6px; color:#065F46;' },
-            h('span', { style: 'width:12px; height:12px; border-radius:3px; background:#059669; display:inline-block;' }),
-            'حصة بيداغوجية (المجال + المهارة)'
-          ),
-          h('span', { style: 'display:inline-flex; align-items:center; gap:6px; color:#92400E;' },
-            h('span', { style: 'width:12px; height:12px; border-radius:3px; background:#F59E0B; display:inline-block;' }),
-            'نشاط يومي / فترة تنظيمية مستقلة'
-          )
-        ),
-        tableRows
+      h('div', { class: 'wk-parent-sheet-scroll no-print', style: 'overflow-x:auto; margin-bottom:18px;' },
+        tableEl
       ),
       h('div', { class: 'wk-parent-pdf-section' },
-        h('h3', { class: 'no-print', style: 'font-size:16px; color:#0F3D2E; margin:0 0 8px;', text: 'النسخة الرسمية للبرنامج الأسبوعي القابلة للعرض والطباعة (A4 أفقي):' }),
+        h('h3', { class: 'no-print', style: 'font-size:16px; color:#14532D; margin:0 0 8px;', text: 'النسخة الرسمية القابلة للعرض والطباعة (A4 أفقي Landscape):' }),
         pdfCanvasHost
       )
     );
@@ -1841,7 +1867,6 @@
       if (foundSecByName) kidSecId = foundSecByName.id;
     }
 
-    // دمج البرامج المنشورة من قاعدة البيانات والتخزين المشترك
     var dbProgs = (S.d && S.d.programs ? S.d.programs.slice() : []);
     var sharedProgs = readSharedProgramsParent();
     var allProgs = [];
@@ -1854,7 +1879,7 @@
       allProgs.push(pr);
     });
 
-    // عزل صارم حسب فوج الطفل المعني فقط (لا تكشف بيانات أي فوج لولي طفل من فوج آخر)
+    // عزل RLS صارم: عرض برنامج فوج طفل الولي فقط
     var matchingProgs = allProgs.filter(function (pr) {
       if (kidSecId && pr.section_id && String(pr.section_id) === String(kidSecId)) return true;
       if (kidSecName && pr.title && pr.title.indexOf(kidSecName) >= 0) return true;
@@ -1865,15 +1890,13 @@
       return false;
     });
 
-    if (!matchingProgs.length && activeKid) {
-      matchingProgs.push(getBuiltInSectionDemoProgram(kidSecId, kidSecName || 'قسم الشبه مدرسي مكيف'));
+    if (!matchingProgs.length && allProgs.length > 0) {
+      matchingProgs = allProgs.slice();
     }
-
     if (!matchingProgs.length) {
       return v.appendChild(empty(t('emptyPrograms')));
     }
 
-    // عرض أحدث برنامج منشور لفوج الطفل فقط
     matchingProgs.sort(function (a, b) {
       return String(b.published_at || b.created_at || '').localeCompare(String(a.published_at || a.created_at || ''));
     });
@@ -1881,7 +1904,7 @@
     v.appendChild(renderParentWeeklyProgramView(matchingProgs[0], activeKid, kidSecName || 'الفوج التربوي'));
   }
 
-  /* تبويب استمارات التقييم البيداغوجي والتقارير التربوية — مفصولتان تماماً */
+/* تبويب استمارات التقييم البيداغوجي والتقارير التربوية — مفصولتان تماماً */
   var EVAL_MARKER = '/*DE_EVAL_V1*/';
 
 
@@ -2020,7 +2043,7 @@ function getActiveAttendanceReplies() {
   var now = Date.now();
   var raw = [];
   try {
-    raw = JSON.parse(localStorage.getItem('de_attendance_replies_v2') || '[]');
+    raw = JSON.parse(safeGetItem('local', 'de_attendance_replies_v2') || '[]');
   } catch (e) { raw = []; }
   if (!Array.isArray(raw)) raw = [];
 
@@ -2037,7 +2060,7 @@ function getActiveAttendanceReplies() {
   });
 
   if (hasPurged) {
-    try { localStorage.setItem('de_attendance_replies_v2', JSON.stringify(valid)); } catch (e) {}
+    try { safeSetItem('local', 'de_attendance_replies_v2', JSON.stringify(valid)); } catch (e) {}
   }
   return valid;
 }
@@ -2066,7 +2089,7 @@ function saveAttendanceReply(reply) {
     replies.unshift(reply);
   }
 
-  try { localStorage.setItem('de_attendance_replies_v2', JSON.stringify(replies)); } catch (e) {}
+  try { safeSetItem('local', 'de_attendance_replies_v2', JSON.stringify(replies)); } catch (e) {}
 
   // محاولة المزامنة مع خادم قاعدة البيانات إن توفرت نقطة النهاية
   if (typeof C !== 'undefined' && C.rest) {
@@ -2084,7 +2107,7 @@ function saveAttendanceReply(reply) {
 function deleteAttendanceReply(id) {
   var replies = getActiveAttendanceReplies();
   var filtered = replies.filter(function (r) { return r.id !== id; });
-  try { localStorage.setItem('de_attendance_replies_v2', JSON.stringify(filtered)); } catch (e) {}
+  try { safeSetItem('local', 'de_attendance_replies_v2', JSON.stringify(filtered)); } catch (e) {}
 }
 
 function getReplyRemainingTime(createdAtStr) {
@@ -2917,7 +2940,7 @@ function generateWordDocObservation(rep, child, secName, brName) {
     }
 
     evals.forEach(function (e) {
-      var isNew = false; try { isNew = localStorage.getItem('de_seen_ev_' + e.id) !== '1'; } catch (errS) {}
+      var isNew = false; try { isNew = safeGetItem('local', 'de_seen_ev_' + e.id) !== '1'; } catch (errS) {}
 
       var inlineDetailsHost = h('div', { class: 'pm-eval-inline-details', hidden: true, style: 'margin-top:12px; margin-bottom:20px;' });
       var isExpanded = false;
@@ -2926,7 +2949,7 @@ function generateWordDocObservation(rep, child, secName, brName) {
         class: 'btn-pm-primary',
         text: 'التفاصيل',
         onclick: function () {
-          localStorage.setItem('de_seen_ev_' + e.id, '1');
+          safeSetItem('local', 'de_seen_ev_' + e.id, '1');
           updateNotifBadge();
           isExpanded = !isExpanded;
           detailsBtn.textContent = isExpanded ? 'إخفاء التفاصيل' : 'التفاصيل';
@@ -2981,7 +3004,7 @@ function generateWordDocObservation(rep, child, secName, brName) {
     }
 
     stdReports.forEach(function (r) {
-      var isNew = false; try { isNew = localStorage.getItem('de_seen_rep_' + r.id) !== '1'; } catch (errS) {}
+      var isNew = false; try { isNew = safeGetItem('local', 'de_seen_rep_' + r.id) !== '1'; } catch (errS) {}
 
       var card = h('div', { class: 'pm-list-item-card' },
         h('div', { class: 'pm-lic-right' },
@@ -3001,7 +3024,7 @@ function generateWordDocObservation(rep, child, secName, brName) {
             class: 'btn-pm-primary',
             text: 'التفاصيل',
             onclick: function () {
-              localStorage.setItem('de_seen_rep_' + r.id, '1');
+              safeSetItem('local', 'de_seen_rep_' + r.id, '1');
               updateNotifBadge();
               var body = h('div', { class: 'modal-body' },
                 h('div', { class: 'bar-sub' },
@@ -3382,7 +3405,7 @@ async function init() {
       // التحقق من تحديث النسخة وتفريغ الذاكرة المؤقتة التلقائي
       try {
         var APP_VER = 'v98';
-        if (localStorage.getItem('de_app_ver') !== APP_VER) {
+        if (safeGetItem('local', 'de_app_ver') !== APP_VER) {
           if ('caches' in window) {
             caches.keys().then(function (names) {
               names.forEach(function (nm) { caches.delete(nm); });
@@ -3393,7 +3416,7 @@ async function init() {
               regs.forEach(function (r) { r.update(); });
             });
           }
-          localStorage.setItem('de_app_ver', APP_VER);
+          safeSetItem('local', 'de_app_ver', APP_VER);
         }
       } catch (eVer) {}
 
@@ -3473,9 +3496,9 @@ async function init() {
     // إذا تم فتح فضاء الأولياء عبر مسح رمز QR الخاص ببطاقة الطفل (?u=...)، نظهر شاشة الدخول مباشرة مع ملء اسم المستخدم الخاص بالطفل تلقائياً
     if (qrTargetUser) {
       try {
-        localStorage.removeItem('de_parent_saved');
-        localStorage.removeItem('de_parent_direct_session');
-        sessionStorage.setItem('de_parent_user', qrTargetUser);
+        safeRemoveItem('local', 'de_parent_saved');
+        safeRemoveItem('local', 'de_parent_direct_session');
+        safeSetItem('session', 'de_parent_user', qrTargetUser);
       } catch (eQr) {}
       await C.signOut();
       showLogin();
@@ -3491,7 +3514,7 @@ async function init() {
     }
 
     try {
-      var last = ''; try { last = (sessionStorage.getItem('de_parent_user') || localStorage.getItem('de_parent_user') || '').trim().toLowerCase(); } catch (errS) {}
+      var last = ''; try { last = (safeGetItem('session', 'de_parent_user') || safeGetItem('local', 'de_parent_user') || '').trim().toLowerCase(); } catch (errS) {}
       if (last && last.length <= 254 && $('#email')) $('#email').value = last;
     } catch (e3) {}
 
@@ -3507,7 +3530,7 @@ async function init() {
      FOREST GREEN PREMIUM — THEME ENGINE FOR PARENTS
      ══════════════════════════════════════════════════════════════════════════════ */
   function initParentThemeEngine() {
-    var saved = localStorage.getItem('de_theme');
+    var saved = safeGetItem('local', 'de_theme');
     var theme = saved || (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
     applyParentTheme(theme);
 
@@ -3525,7 +3548,7 @@ async function init() {
     } else {
       document.documentElement.classList.remove('theme-dark');
     }
-    localStorage.setItem('de_theme', theme);
+    safeSetItem('local', 'de_theme', theme);
 
     var btn = document.getElementById('themeToggleBtnParent');
     if (btn) {
