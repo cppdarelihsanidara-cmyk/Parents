@@ -3235,7 +3235,7 @@
     };
   }
 
-  /* الدالة الرئيسية لقسم البرامج الأسبوعية في لوحة الإدارة */
+  /* الدالة الرئيسية لقسم البرامج الأسبوعية في لوحة الإدارة (واجهة الأقسام مع زر إضافة برنامج وزر التفاصيل) */
   async function secPrograms(v) {
     if (S.isEducator) return go('children');
     v.textContent = '';
@@ -3247,64 +3247,279 @@
     var secIdsMap = {};
     sections.forEach(function (s) { secIdsMap[s.id] = true; });
     var rows = allProgs.filter(function (p) { return !p.section_id || !!secIdsMap[p.section_id]; });
-    var secOpts = sections.map(function (s) { return [s.id, s.name]; });
 
-    var currentSelectedProg = rows[0] || null;
-    var currentWeekState = currentSelectedProg ? parseExistingProgramState(currentSelectedProg, sections) : createOfficialPresetWeekState(sections[0] ? sections[0].id : '', sections[0] ? sections[0].name : 'توحد 02');
+    // مصفوفة البرامج المحلية المشتركة
+    var sharedList = readSharedProgramsLocal();
 
-    // وضع التحديد لدمج الخانات (يدعم الدمج الأفقي والرأسي بين الأيام)
+    // القسم المفتوح حالياً بالتفاصيل (null = البداية على قائمة الأقسام مع زر إضافة برنامج)
+    var expandedSecId = null;
+    var activeWeekState = null;
     var isMergeMode = false;
-    var mergeSelectedCells = {}; // مثل "sun:0" : { dayIdx: 0, slotIdx: 0 }
-
-    function getSecName() {
-      return (sections && nameOf(sections, currentWeekState.section_id, 'name')) || currentWeekState.section_name || 'الفوج التربوي';
-    }
+    var mergeSelectedCells = {};
 
     var mainContainer = h('div', { class: 'wk-programs-main-wrap', style: 'display:flex; flex-direction:column; gap:16px;' });
     v.appendChild(mainContainer);
 
-    function renderFullView() {
+    function getSectionName(secId) {
+      return (sections && nameOf(sections, secId, 'name')) || 'الفوج التربوي';
+    }
+
+    function findProgramForSection(secId) {
+      var found = rows.find(function (r) { return r.section_id === secId; });
+      if (found) return found;
+      return sharedList.find(function (r) { return r && r.section_id === secId; });
+    }
+
+    function renderProgramsDashboard() {
       mainContainer.textContent = '';
 
-      // 1. الترويسة العلوية الأنيقة وأزرار التحكم
-      var groupSelect = h('select', {
-        class: 'input',
-        style: 'font-weight:700; color:#14532D; min-width:180px;',
-        onchange: function (e) {
-          currentWeekState.section_id = e.target.value;
-          currentWeekState.section_name = getSecName();
-          var progForSec = rows.filter(function (r) { return r.section_id === currentWeekState.section_id; })[0];
-          if (progForSec) {
-            currentWeekState = parseExistingProgramState(progForSec, sections);
-          } else {
-            currentWeekState = createOfficialPresetWeekState(currentWeekState.section_id, currentWeekState.section_name);
-          }
-          renderFullView();
-        }
-      }, secOpts.map(function (o) {
-        return h('option', { value: o[0], selected: o[0] === currentWeekState.section_id ? 'selected' : null, text: o[1] });
-      }));
+      // 1. بطاقة الترويسة الرئيسية مع زر «+ إضافة برنامج أسبوعي»
+      var addProgramBtn = h('button', {
+        type: 'button',
+        class: 'btn primary gold',
+        style: 'font-weight:900; font-size:14px; padding:10px 20px; box-shadow:0 4px 14px rgba(245,158,11,0.25); display:flex; align-items:center; gap:8px;',
+        onclick: function () { openAddProgramModal(); }
+      }, makeSvgIcon('s-plus'), h('span', { text: '+ إضافة برنامج أسبوعي' }));
 
-      var yearInput = h('input', {
-        class: 'input',
-        type: 'text',
-        value: currentWeekState.academic_year || '2026/2027',
-        style: 'width:115px; text-align:center; font-weight:700;',
-        onchange: function (e) { currentWeekState.academic_year = e.target.value; }
+      var heroCard = h('div', {
+        class: 'card wk-programs-hero-card',
+        style: 'display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px; padding:20px 24px; background:linear-gradient(135deg, #F0FDF4 0%, #FFFFFF 100%); border:1.5px solid #10B981; border-radius:16px; box-shadow:0 6px 24px rgba(16,185,129,0.08);'
+      },
+        h('div', { style: 'display:flex; align-items:center; gap:14px;' },
+          h('div', { style: 'background:#DCFCE7; color:#15803D; width:52px; height:52px; border-radius:14px; display:flex; align-items:center; justify-content:center; flex-shrink:0;' },
+            makeSvgIcon('s-cal')
+          ),
+          h('div', null,
+            h('h2', { style: 'margin:0 0 4px; color:#14532D; font-size:1.4rem; font-weight:900;', text: 'البرامج الأسبوعية للأفواج' }),
+            h('p', { class: 'small muted', style: 'margin:0; font-size:13px; color:#475569;', text: 'إعداد وإدارة واعتماد البرامج الأسبوعية المعتمدة لكل فوج تربوي، ونشرها في فضاء الأولياء بصيغة A4' })
+          )
+        ),
+        h('div', { style: 'display:flex; align-items:center; gap:10px; flex-wrap:wrap;' },
+          addProgramBtn
+        )
+      );
+      mainContainer.appendChild(heroCard);
+
+      // 2. قائمة بطاقات البرامج حسب القسم
+      var listHeader = h('div', { style: 'display:flex; justify-content:space-between; align-items:center; margin-top:4px;' },
+        h('h3', { style: 'margin:0; color:#14532D; font-size:1.15rem; font-weight:800; display:flex; align-items:center; gap:8px;' },
+          makeSvgIcon('s-users'),
+          h('span', { text: 'قائمة الأفواج والبرامج المعتمدة (' + sections.length + ' أفواج)' })
+        ),
+        h('span', { class: 'small muted', text: 'اضغط على زر «التفاصيل» لعرض ورقة البرنامج الأسبوعي والتحكم فيه' })
+      );
+      mainContainer.appendChild(listHeader);
+
+      var sectionsGrid = h('div', { style: 'display:flex; flex-direction:column; gap:14px;' });
+
+      sections.forEach(function (sec) {
+        var prog = findProgramForSection(sec.id);
+        var isExpanded = (expandedSecId === sec.id);
+
+        var secCard = h('div', {
+          class: 'card wk-section-program-card',
+          style: 'background:#FFFFFF; border:1.5px solid ' + (isExpanded ? '#14532D' : '#E2E8F0') + '; border-radius:14px; padding:16px 20px; box-shadow:' + (isExpanded ? '0 8px 30px rgba(20,83,45,0.1)' : '0 2px 10px rgba(0,0,0,0.03)') + '; transition:all 0.2s ease;'
+        });
+
+        // الصف العلوي لبطاقة القسم
+        var topRow = h('div', { style: 'display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;' },
+          // يمين: اسم الفوج والحالة والمعلومات
+          h('div', { style: 'display:flex; align-items:center; gap:12px; flex-wrap:wrap;' },
+            h('div', { style: 'background:' + (prog ? '#ECFDF5' : '#F1F5F9') + '; color:' + (prog ? '#064E3B' : '#64748B') + '; width:42px; height:42px; border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0;' },
+              makeSvgIcon('s-users')
+            ),
+            h('div', null,
+              h('div', { style: 'display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:2px;' },
+                h('h3', { style: 'margin:0; color:#0F172A; font-size:1.15rem; font-weight:800;', text: sec.name }),
+                prog ? (
+                  (prog.status === 'published' || prog.status === 'updated')
+                    ? h('span', { style: 'background:#DCFCE7; color:#166534; border:1px solid #86EFAC; font-weight:800; font-size:11.5px; padding:2px 10px; border-radius:12px;', text: '✓ معتمد ومنشور للأولياء' })
+                    : h('span', { style: 'background:#FEF3C7; color:#92400E; border:1px solid #FCD34D; font-weight:800; font-size:11.5px; padding:2px 10px; border-radius:12px;', text: '📝 مسودة برنامج أسبوعي' })
+                ) : h('span', { style: 'background:#F1F5F9; color:#64748B; border:1px solid #CBD5E1; font-weight:700; font-size:11.5px; padding:2px 10px; border-radius:12px;', text: '⚪ لا يوجد برنامج بعد' })
+              ),
+              h('div', { class: 'small muted', style: 'font-size:12px; color:#64748B;' },
+                'الموسم: ' + ((prog && prog.academic_year) || '2026/2027') + ' | التوقيت: 08:00 إلى 14:00 | الحجم: 25 حصة أسبوعياً' + (prog && prog.updated_at ? (' | آخر تحديث: ' + fmtDate(prog.updated_at)) : '')
+              )
+            )
+          ),
+          // يسار: أزرار الإجراءات
+          h('div', { style: 'display:flex; align-items:center; gap:8px; flex-wrap:wrap;' },
+            prog ? (
+              h('div', { style: 'display:flex; gap:8px; align-items:center;' },
+                h('button', {
+                  type: 'button',
+                  class: 'btn ' + (isExpanded ? 'gold' : 'light'),
+                  style: 'font-weight:800; font-size:13px; display:flex; align-items:center; gap:6px; min-width:115px; justify-content:center;',
+                  title: isExpanded ? 'إخفاء ورقة البرنامج الأسبوعي' : 'عرض التفاصيل والبرنامج الأسبوعي نفسه',
+                  onclick: function () {
+                    if (isExpanded) {
+                      expandedSecId = null;
+                      activeWeekState = null;
+                    } else {
+                      expandedSecId = sec.id;
+                      activeWeekState = parseExistingProgramState(prog, sections);
+                      isMergeMode = false;
+                      mergeSelectedCells = {};
+                    }
+                    renderProgramsDashboard();
+                  }
+                }, makeSvgIcon(isExpanded ? 's-close' : 's-eye'), h('span', { text: isExpanded ? 'إخفاء التفاصيل' : '👁 التفاصيل' })),
+
+                h('button', {
+                  type: 'button',
+                  class: 'btn light',
+                  style: 'font-size:12.5px; font-weight:700;',
+                  title: 'تحميل البرنامج بصيغة PDF (A4 أفقي)',
+                  onclick: async function () {
+                    try {
+                      var pState = parseExistingProgramState(prog, sections);
+                      toast('جارٍ تجهيز ملف PDF...', 'ok');
+                      var bytes = await window.DE_PDF.renderWeeklyProgramToPdf(pState, sec.name);
+                      window.DE_PDF.downloadPdf(bytes, 'البرنامج_الأسبوعي_' + sec.name.replace(/\s+/g, '_') + '.pdf');
+                    } catch (e) {
+                      toast('تعذر تحميل PDF: ' + e.message, 'bad');
+                    }
+                  }
+                }, makeSvgIcon('s-file'), h('span', { text: 'PDF' })),
+
+                h('button', {
+                  type: 'button',
+                  class: 'btn light danger',
+                  style: 'font-size:12.5px;',
+                  title: 'حذف هذا البرنامج الأسبوعي',
+                  onclick: function () {
+                    confirmModal('هل أنت متأكد من حذف البرنامج الأسبوعي لفوج «' + sec.name + '»؟', async function () {
+                      try {
+                        if (prog.id && !String(prog.id).startsWith('prog-')) {
+                          await C.rest('DELETE', '/educational_programs?id=eq.' + uid(prog.id));
+                        }
+                        var shared = readSharedProgramsLocal().filter(function (x) { return x && x.section_id !== sec.id; });
+                        writeSharedProgramsLocal(shared);
+                        rows = rows.filter(function (r) { return r.section_id !== sec.id; });
+                        if (expandedSecId === sec.id) {
+                          expandedSecId = null;
+                          activeWeekState = null;
+                        }
+                        bust();
+                        renderProgramsDashboard();
+                        toast('تم حذف البرنامج الأسبوعي بنجاح.', 'ok');
+                      } catch (err) {
+                        toast('تعذر حذف البرنامج: ' + err.message, 'bad');
+                      }
+                    });
+                  }
+                }, makeSvgIcon('s-delete'))
+              )
+            ) : (
+              h('button', {
+                type: 'button',
+                class: 'btn primary',
+                style: 'font-weight:800; font-size:13px; display:flex; align-items:center; gap:6px;',
+                title: 'إنشاء برنامج أسبوعي جديد لهذا الفوج',
+                onclick: function () {
+                  expandedSecId = sec.id;
+                  activeWeekState = createOfficialPresetWeekState(sec.id, sec.name);
+                  isMergeMode = false;
+                  mergeSelectedCells = {};
+                  renderProgramsDashboard();
+                  toast('تم تهيئة نموذج البرنامج الأسبوعي لفوج «' + sec.name + '».', 'ok');
+                }
+              }, makeSvgIcon('s-plus'), h('span', { text: '+ إنشاء برنامج لهذا القسم' }))
+            )
+          )
+        );
+        secCard.appendChild(topRow);
+
+        // إذا كان هذا القسم مفتوحاً بالتفاصيل، نعرض الورقة الكاملة تحته مباشرة
+        if (isExpanded && activeWeekState) {
+          var detailsDivider = h('div', { style: 'margin:16px 0 14px 0; border-top:1.5px dashed #10B981;' });
+          secCard.appendChild(detailsDivider);
+
+          var detailsSheetWrap = renderProgramSheetDetails(activeWeekState, sec.name, sec.id);
+          secCard.appendChild(detailsSheetWrap);
+        }
+
+        sectionsGrid.appendChild(secCard);
       });
 
-      var newBlankBtn = h('button', {
+      mainContainer.appendChild(sectionsGrid);
+    }
+
+    // نافذة إضافة برنامج أسبوعي لاختيار الفوج والموسم
+    function openAddProgramModal() {
+      var modalWrap = h('div', {
+        class: 'modal card',
+        style: 'max-width:540px; width:95%; background:#FFFFFF; padding:24px; border-radius:16px; box-shadow:0 20px 50px rgba(0,0,0,0.25); border:1.5px solid #14532D;'
+      });
+
+      var secSelect = h('select', { class: 'input', style: 'font-weight:700; width:100%;' },
+        sections.map(function (s) {
+          return h('option', { value: s.id, text: s.name });
+        })
+      );
+
+      var yearInp = h('input', {
+        class: 'input',
+        type: 'text',
+        value: '2026/2027',
+        style: 'font-weight:700; width:100%; text-align:center;'
+      });
+
+      var closeBtn = h('button', {
         type: 'button',
         class: 'btn light',
-        title: 'استعادة النموذج الأسبوعي المعتمد',
+        onclick: function () { closeModal(); }
+      }, h('span', { text: 'إلغاء' }));
+
+      var proceedBtn = h('button', {
+        type: 'button',
+        class: 'btn primary gold',
+        style: 'font-weight:800;',
         onclick: function () {
-          currentWeekState = createOfficialPresetWeekState(currentWeekState.section_id, getSecName());
+          var chosenSecId = secSelect.value;
+          var chosenSecName = getSectionName(chosenSecId);
+          var existing = findProgramForSection(chosenSecId);
+          if (existing) {
+            activeWeekState = parseExistingProgramState(existing, sections);
+          } else {
+            activeWeekState = createOfficialPresetWeekState(chosenSecId, chosenSecName);
+            activeWeekState.academic_year = yearInp.value || '2026/2027';
+          }
+          expandedSecId = chosenSecId;
           isMergeMode = false;
           mergeSelectedCells = {};
-          renderFullView();
-          toast('تم تحميل نموذج البرنامج المؤقت الأسبوعي بنجاح.', 'ok');
+          closeModal();
+          renderProgramsDashboard();
+          toast('تم فتح البرنامج الأسبوعي لفوج «' + chosenSecName + '».', 'ok');
         }
-      }, makeSvgIcon('s-plus'), h('span', { text: 'النموذج الرسمي المعتمد' }));
+      }, h('span', { text: 'متابعة وفتح البرنامج الأسبوعي' }));
+
+      modalWrap.appendChild(h('h3', { style: 'margin:0 0 8px; color:#14532D; font-size:1.3rem; font-weight:900;', text: 'إضافة / تعديل برنامج أسبوعي لفوج' }));
+      modalWrap.appendChild(h('p', { class: 'small muted', style: 'margin-bottom:16px;', text: 'اختر الفوج التربوي لفتح وتعبئة برنامجه الأسبوعي وتصديره للأولياء:' }));
+
+      modalWrap.appendChild(h('label', { style: 'font-weight:800; font-size:13px; display:block; margin-bottom:4px;', text: 'الفوج التربوي:' }));
+      modalWrap.appendChild(secSelect);
+
+      modalWrap.appendChild(h('label', { style: 'font-weight:800; font-size:13px; display:block; margin-top:14px; margin-bottom:4px;', text: 'الموسم الدراسي:' }));
+      modalWrap.appendChild(yearInp);
+
+      var actionsRow = h('div', { style: 'display:flex; justify-content:flex-end; gap:10px; margin-top:20px;' }, closeBtn, proceedBtn);
+      modalWrap.appendChild(actionsRow);
+
+      openModal(modalWrap);
+    }
+
+    // دالة بناء ورقة البرنامج الأسبوعي التفاعلية مع الخانات البيضاء والكتابة السوداء الكبيرة ومكان الإمضاء
+    function renderProgramSheetDetails(currentWeekState, secName, secId) {
+      var detailsContainer = h('div', { class: 'wk-program-expanded-details', style: 'display:flex; flex-direction:column; gap:14px;' });
+
+      // أ) شريط الإجراءات والتحكم بالبرنامج المفتوح
+      var saveDraftBtn = h('button', {
+        type: 'button',
+        class: 'btn light',
+        title: 'حفظ الورقة الأسبوعية كمسودة',
+        onclick: function () { act(saveDraftBtn, function () { return saveProgramAction(false); }); }
+      }, makeSvgIcon('s-edit'), h('span', { text: 'حفظ مسودة' }));
 
       var mergeToggleBtn = h('button', {
         type: 'button',
@@ -3313,23 +3528,16 @@
         onclick: function () {
           isMergeMode = !isMergeMode;
           mergeSelectedCells = {};
-          renderFullView();
+          renderProgramsDashboard();
         }
       }, makeSvgIcon('s-merge'), h('span', { text: isMergeMode ? 'إلغاء وضع الدمج' : 'دمج الخانات (أفقي ورأسي)' }));
-
-      var saveDraftBtn = h('button', {
-        type: 'button',
-        class: 'btn light',
-        title: 'حفظ الورقة الأسبوعية كمسودة',
-        onclick: function () { act(saveDraftBtn, function () { return saveProgramAction(false); }); }
-      }, makeSvgIcon('s-edit'), h('span', { text: 'حفظ مسودة' }));
 
       var previewPdfBtn = h('button', {
         type: 'button',
         class: 'btn light',
         title: 'معاينة الوثيقة الرسمية للبرنامج الأسبوعي المطابقة تماماً لورقة 23499.jpg',
         onclick: function () { openPdfLandscapePreviewModal(); }
-      }, makeSvgIcon('s-eye'), h('span', { text: 'معاينة PDF (A4 أفقي)' }));
+      }, makeSvgIcon('s-eye'), h('span', { text: 'معاينة PDF (A4)' }));
 
       var publishBtn = h('button', {
         type: 'button',
@@ -3337,74 +3545,43 @@
         style: 'font-weight:800;',
         title: 'نشر البرنامج الأسبوعي في فضاء أولياء أطفال الفوج',
         onclick: function () { act(publishBtn, function () { return saveProgramAction(true); }); }
-      }, makeSvgIcon('s-send'), h('span', { text: 'نشر البرنامج للأولياء' }));
+      }, makeSvgIcon('s-send'), h('span', { text: 'نشر للأولياء' }));
 
-      var topBarCard = h('div', {
-        class: 'card wk-top-hero-card',
-        style: 'display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; padding:16px 20px; background:linear-gradient(135deg, #F8FAF9 0%, #FFFFFF 100%); border:1px solid #CBD5E1; border-radius:14px;'
+      var collapseBtn = h('button', {
+        type: 'button',
+        class: 'btn light',
+        title: 'إغلاق التفاصيل والعودة للقائمة',
+        onclick: function () {
+          expandedSecId = null;
+          activeWeekState = null;
+          renderProgramsDashboard();
+        }
+      }, makeSvgIcon('s-close'), h('span', { text: 'إغلاق التفاصيل' }));
+
+      var sheetActionsBar = h('div', {
+        style: 'display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; padding:10px 14px; background:#F8FAF9; border:1px solid #CBD5E1; border-radius:10px;'
       },
-        h('div', { style: 'display:flex; align-items:center; gap:14px; flex-wrap:wrap;' },
-          h('div', { style: 'display:flex; align-items:center; gap:8px;' },
-            makeSvgIcon('s-cal'),
-            h('h2', { style: 'margin:0; color:#14532D; font-size:1.35rem;', text: 'البرنامج المؤقت الأسبوعي' })
-          ),
-          h('div', { style: 'display:flex; align-items:center; gap:8px;' },
-            h('span', { class: 'small muted', text: 'الفوج:' }),
-            groupSelect
-          ),
-          h('div', { style: 'display:flex; align-items:center; gap:8px;' },
-            h('span', { class: 'small muted', text: 'الموسم:' }),
-            yearInput
-          ),
-          badge(currentWeekState.status === 'updated' ? 'تم تحديثه' : (currentWeekState.status === 'published' ? 'منشور للأولياء' : 'مسودة'), currentWeekState.status === 'draft' ? 'gray' : 'ok')
+        h('div', { style: 'font-weight:800; color:#14532D; font-size:13.5px; display:flex; align-items:center; gap:8px;' },
+          makeSvgIcon('s-book'),
+          h('span', { text: 'تحرير ورقة البرنامج الأسبوعي — ' + secName })
         ),
         h('div', { style: 'display:flex; align-items:center; gap:8px; flex-wrap:wrap;' },
-          newBlankBtn,
           mergeToggleBtn,
           saveDraftBtn,
           previewPdfBtn,
-          publishBtn
+          publishBtn,
+          collapseBtn
         )
       );
-      mainContainer.appendChild(topBarCard);
+      detailsContainer.appendChild(sheetActionsBar);
 
-      // شريط إرشادي عند تفعيل وضع الدمج
-      if (isMergeMode) {
-        var selectedCount = Object.keys(mergeSelectedCells).length;
-        var executeMergeBtn = h('button', {
-          type: 'button',
-          class: 'btn gold',
-          disabled: selectedCount < 2,
-          onclick: function () { executeMultiDirectionalMerge(); }
-        }, makeSvgIcon('s-merge'), h('span', { text: 'دمج الخانات المحددة (' + selectedCount + ')' }));
-
-        var mergeBanner = h('div', {
-          style: 'background:#FEF3C7; border:1.5px solid #F59E0B; border-radius:12px; padding:12px 18px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;'
-        },
-          h('div', { style: 'display:flex; align-items:center; gap:10px;' },
-            makeSvgIcon('s-merge'),
-            h('span', { style: 'color:#92400E; font-weight:700; font-size:14px;', text: 'وضع دمج الخانات مفعل: اضغط على خانات متجاورة أفقياً (في نفس اليوم) أو رأسياً (بين الأيام لنفس التوقيت مثل حصة الاعتماد على الذات أو رياضة) ثم اضغط دمج.' })
-          ),
-          h('div', { style: 'display:flex; gap:8px;' },
-            executeMergeBtn,
-            h('button', {
-              type: 'button',
-              class: 'btn light small',
-              text: 'إلغاء التحديد',
-              onclick: function () { mergeSelectedCells = {}; renderFullView(); }
-            })
-          )
-        );
-        mainContainer.appendChild(mergeBanner);
-      }
-
-      // 2. بطاقة ورقة البرنامج الأسبوعي المطابقة تماماً للورقة الأصلية 23499.jpg (أبعاد A4 أفقية مدمجة)
+      // ب) بطاقة ورقة البرنامج الأسبوعي المطابقة تماماً للورقة الرسمية A4
       var sheetPaperCard = h('div', {
         class: 'card wk-interactive-sheet-paper',
         style: 'max-width:1040px; margin:0 auto; padding:14px 18px; background:#FFFFFF; border:2px solid #14532D; border-radius:12px; box-shadow:0 4px 20px rgba(20,83,45,0.08); overflow-x:auto; box-sizing:border-box; font-family:"Cairo","Tajawal","IBM Plex Sans Arabic",system-ui,sans-serif;'
       });
 
-      // أ) ترويسة الورقة الرسمية (الجمعية - المركز - اسم الوثيقة - الفوج - الموسم)
+      // 1. ترويسة الورقة الرسمية
       var sheetHeader = h('div', {
         class: 'wk-sheet-header-grid',
         style: 'display:grid; grid-template-columns:1fr 2fr 1fr; align-items:center; gap:8px; padding-bottom:8px; margin-bottom:8px; border-bottom:1.5px solid #14532D;'
@@ -3416,12 +3593,12 @@
         ),
         h('div', { style: 'text-align:center;' },
           h('h2', {
-            style: 'margin:0 0 2px; color:#14532D; font-size:1.3rem; letter-spacing:0.5px; font-weight:900;',
+            style: 'margin:0 0 2px; color:#14532D; font-size:1.35rem; letter-spacing:0.5px; font-weight:900;',
             text: 'البرنامج المؤقت الأسبوعي'
           }),
           h('div', {
             style: 'display:inline-block; background:#FEF3C7; color:#92400E; border:1px solid #F59E0B; padding:2px 14px; border-radius:14px; font-weight:800; font-size:12px;',
-            text: 'الفوج: ' + getSecName()
+            text: 'الفوج: ' + secName
           })
         ),
         h('div', { style: 'text-align:left;' },
@@ -3431,7 +3608,10 @@
       );
       sheetPaperCard.appendChild(sheetHeader);
 
-      // ب) جدول ملخص الأنشطة والأنصبة الأسبوعية في أعلى الورقة (مطابق لـ 23499.jpg - مضغوط ومحكم)
+      var mobileHint = h('div', { class: 'wk-mobile-scroll-hint' }, h('span', { text: '↔ اسحب الجدول يميناً ويساراً للاطلاع على كامل البرنامج' }));
+      sheetPaperCard.appendChild(mobileHint);
+
+      // 2. جدول ملخص الأنشطة والأنصبة الأسبوعية في أعلى الورقة
       var loadTable = h('table', {
         style: 'width:100%; min-width:700px; border-collapse:collapse; border:1.5px solid #14532D; text-align:center; font-size:10px; table-layout:fixed;'
       });
@@ -3457,13 +3637,10 @@
       loadTable.appendChild(trLoad2);
       loadTable.appendChild(trLoad3);
 
-      var mobileHint = h('div', { class: 'wk-mobile-scroll-hint' }, h('span', { text: '↔ اسحب الجدول يميناً ويساراً للاطلاع على كامل البرنامج' }));
-      sheetPaperCard.appendChild(mobileHint);
-
       var loadWrap = h('div', { class: 'wk-table-scroll-wrap', style: 'width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch; margin-bottom:8px;' }, loadTable);
       sheetPaperCard.appendChild(loadWrap);
 
-      // ج) جدول الحصص الأسبوعي الرئيسي (خانات مصغرة ومحكمة ومتناسقة)
+      // 3. جدول الحصص الأسبوعي الرئيسي (خانات بيضاء نقية وكتابة سوداء مكبرة)
       var tableEl = h('table', {
         class: 'wk-sheet-table',
         style: 'width:100%; border-collapse:collapse; border:2px solid #14532D; text-align:center; min-width:800px; table-layout:fixed;'
@@ -3476,27 +3653,25 @@
 
       var theadEl = h('thead');
 
-      // 1. صف الفترات الصباحية والمسائية
       var trPeriods = h('tr', null,
         h('th', {
           rowspan: 2,
-          style: 'width:75px; background:#14532D; color:#FFFFFF; border:1.5px solid #0F3D2E; padding:4px 2px; font-size:12.5px; font-weight:800; text-align:center;',
+          style: 'width:75px; background:#14532D; color:#FFFFFF; border:1.5px solid #0F3D2E; padding:4px 2px; font-size:13.5px; font-weight:900; text-align:center;',
           text: 'اليوم'
         }),
         h('th', {
           colspan: morningSlots.length,
-          style: 'background:#ECFDF5; color:#064E3B; border:1.5px solid #10B981; padding:3px; font-size:12px; font-weight:800;',
+          style: 'background:#ECFDF5; color:#064E3B; border:1.5px solid #10B981; padding:3px; font-size:12.5px; font-weight:800;',
           text: 'الفترة الصباحية (08:00 — 12:00)'
         }),
         h('th', {
           colspan: afternoonSlots.length,
-          style: 'background:#FEF3C7; color:#92400E; border:1.5px solid #F59E0B; padding:3px; font-size:12px; font-weight:800;',
+          style: 'background:#FEF3C7; color:#92400E; border:1.5px solid #F59E0B; padding:3px; font-size:12.5px; font-weight:800;',
           text: 'الفترة المسائية (12:00 — 14:00)'
         })
       );
       theadEl.appendChild(trPeriods);
 
-      // 2. صف التوقيتات في مكانه مباشرة (Inline Editing — محكم ومضغوط دون تمدد غير مرغوب)
       var trTimes = h('tr', null,
         currentWeekState.time_slots.map(function (slot, slotIdx) {
           var timeBox = h('div', {
@@ -3529,7 +3704,7 @@
                 }
               })
             ),
-            h('span', { style: 'font-size:8.5px; color:#64748B; font-weight:700;', text: slot.duration ? (slot.duration + ' د') : '' })
+            h('span', { style: 'font-size:9px; color:#64748B; font-weight:700;', text: slot.duration ? (slot.duration + ' د') : '' })
           );
 
           return h('th', {
@@ -3540,7 +3715,6 @@
       theadEl.appendChild(trTimes);
       tableEl.appendChild(theadEl);
 
-      // دالة مزامنة توقيتات الحصص مع ترويسة التوقيت المعدلة
       function syncDaySessionTimes() {
         currentWeekState.days.forEach(function (dy) {
           (dy.sessions || []).forEach(function (s) {
@@ -3554,16 +3728,13 @@
         });
       }
 
-      // جسم الجدول: الأيام الخمسة مع دعم الدمج الأفقي والرأسي (بين الأيام)
       var tbodyEl = h('tbody');
-
-      // مصفوفة لتتبع الخانات المغطاة بـ rowspan من الأيام السابقة لنفس slot_id
-      var coveredSlotsByDay = {}; // "dayIdx:slotId" : true
+      var coveredSlotsByDay = {};
 
       currentWeekState.days.forEach(function (dayObj, dayIdx) {
         var trDay = h('tr', null,
           h('td', {
-            style: 'background:#14532D; color:#FFFFFF; border:1.5px solid #0F3D2E; padding:3px 2px; font-weight:800; font-size:12.5px; width:75px; text-align:center; vertical-align:middle;',
+            style: 'background:#14532D; color:#FFFFFF; border:1.5px solid #0F3D2E; padding:3px 2px; font-weight:900; font-size:13.5px; width:75px; text-align:center; vertical-align:middle;',
             text: dayObj.label
           })
         );
@@ -3571,15 +3742,11 @@
         var sessions = dayObj.sessions || [];
         sessions.forEach(function (sess, sessIdx) {
           var coveredKey = dayIdx + ':' + sess.slot_id;
-          if (coveredSlotsByDay[coveredKey]) {
-            // الخانة مغطاة برمجياً من يوم سابق بواسطة rowspan
-            return;
-          }
+          if (coveredSlotsByDay[coveredKey]) return;
 
           var colspan = sess.colspan || 1;
           var rowspan = sess.rowspan || 1;
 
-          // وضع علامات التغطية للأيام اللاحقة إن كان هناك دمج بين الأيام (rowspan > 1)
           if (rowspan > 1) {
             for (var r = 1; r < rowspan; r++) {
               for (var c = 0; c < colspan; c++) {
@@ -3591,30 +3758,20 @@
           var cellKey = dayObj.day + ':' + sess.slot_id;
           var isSelected = !!mergeSelectedCells[cellKey];
 
-          // تصميم واحترافية الخانة الرسمية: خانات بيضاء نقية وكتابة سوداء عريضة ومحكمة (مطابق لطلب الإدارة)
-          var bg = '#FFFFFF';
-          var border = '1px solid #1E293B';
-          var textClr = '#000000';
+          // خانات بيضاء نقية 100% وإطار أسود محكم
+          var bg = isSelected ? '#F1F5F9' : '#FFFFFF';
+          var border = isSelected ? '2px dashed #000000' : '1px solid #1E293B';
           var isFilled = (sess.kind && sess.kind !== 'empty');
-
-          if (isSelected) {
-            bg = '#F1F5F9';
-            border = '2px dashed #000000';
-          } else {
-            bg = '#FFFFFF';
-            border = '1px solid #1E293B';
-            textClr = '#000000';
-          }
 
           var td = h('td', {
             colspan: colspan,
             rowspan: rowspan,
-            style: 'background:' + bg + '; border:' + border + '; color:' + textClr + '; padding:2px 3px !important; vertical-align:middle; text-align:center; cursor:pointer; height:38px !important; min-height:36px; max-height:44px; box-sizing:border-box; overflow:hidden; transition:all 0.15s ease;'
+            style: 'background:' + bg + ' !important; border:' + border + ' !important; color:#000000 !important; padding:3px 4px !important; vertical-align:middle; text-align:center; cursor:pointer; height:40px !important; min-height:38px; box-sizing:border-box; overflow:hidden; transition:all 0.15s ease;'
           });
 
           if (!isFilled) {
             td.appendChild(h('span', {
-              style: 'color:#94A3B8; font-size:9px; font-weight:600; display:block; border:1px dashed #CBD5E1; padding:2px 1px; border-radius:3px;',
+              style: 'color:#64748B; font-size:10px; font-weight:700; display:block; border:1px dashed #CBD5E1; padding:2px 1px; border-radius:3px;',
               text: isMergeMode ? (isSelected ? '✓ محددة' : 'حدد') : '+ تعبئة'
             }));
           } else {
@@ -3622,17 +3779,20 @@
             if (rowspan > 1 || colspan > 1) {
               var spanTag = (rowspan > 1 && colspan > 1) ? ('مدمجة ' + rowspan + '×' + colspan) : (rowspan > 1 ? ('ممتدة ' + rowspan + ' أيام') : ('مدمجة ' + colspan + ' حصص'));
               contentWrap.appendChild(h('span', {
-                style: 'font-size:7.5px; background:#F1F5F9; color:#0F172A; border:1px solid #CBD5E1; padding:0 3px; border-radius:2px; font-weight:800;',
+                style: 'font-size:8px; background:#F1F5F9; color:#0F172A; border:1px solid #CBD5E1; padding:0 3px; border-radius:2px; font-weight:800; margin-bottom:1px;',
                 text: spanTag
               }));
             }
             if (sess.kind === 'activity') {
-              contentWrap.appendChild(h('strong', { style: 'font-size:11px; font-weight:800; color:#000000; line-height:1.2; word-break:break-word; text-align:center;', text: sess.activity || sess.title }));
+              // خط كبير وأسود عريض عالي التباين
+              contentWrap.appendChild(h('strong', { style: 'font-size:13.5px; font-weight:900; color:#000000 !important; line-height:1.25; word-break:break-word; text-align:center;', text: sess.activity || sess.title }));
             } else if (sess.kind === 'library') {
-              contentWrap.appendChild(h('span', { style: 'font-size:8.5px; font-weight:700; color:#334155; margin-bottom:0; letter-spacing:-0.2px; text-align:center;', text: sess.domain }));
-              contentWrap.appendChild(h('strong', { style: 'font-size:11px; font-weight:800; color:#000000; line-height:1.2; word-break:break-word; text-align:center;', text: sess.skill }));
+              // اسم المجال داكن وواضح
+              contentWrap.appendChild(h('span', { class: 'wk-domain-tag', style: 'font-size:10px; font-weight:800; color:#334155 !important; margin-bottom:1px; letter-spacing:-0.2px; text-align:center;', text: sess.domain }));
+              // اسم المهارة كبير وأسود عريض
+              contentWrap.appendChild(h('strong', { style: 'font-size:13px; font-weight:900; color:#000000 !important; line-height:1.25; word-break:break-word; text-align:center;', text: sess.skill }));
             } else if (sess.kind === 'manual') {
-              contentWrap.appendChild(h('strong', { style: 'font-size:11px; font-weight:800; color:#000000; line-height:1.2; word-break:break-word; text-align:center;', text: sess.manual_text || sess.title }));
+              contentWrap.appendChild(h('strong', { style: 'font-size:13px; font-weight:900; color:#000000 !important; line-height:1.25; word-break:break-word; text-align:center;', text: sess.manual_text || sess.title }));
             }
             td.appendChild(contentWrap);
           }
@@ -3644,7 +3804,7 @@
               } else {
                 mergeSelectedCells[cellKey] = { dayIdx: dayIdx, slot_id: sess.slot_id, colspan: colspan, rowspan: rowspan };
               }
-              renderFullView();
+              renderProgramsDashboard();
             } else {
               openHorizontalFillModal(dayObj, sess, dayIdx);
             }
@@ -3657,56 +3817,70 @@
       });
 
       tableEl.appendChild(tbodyEl);
+
       var tableWrap = h('div', { class: 'wk-table-scroll-wrap', style: 'width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch; margin-bottom:8px;' }, tableEl);
       sheetPaperCard.appendChild(tableWrap);
 
-      // د) تذييل التوقيعات الثلاثة للورقة الرسمية (مضغوط ومحدد المقاس)
+      // 4. تذييل التوقيعات الثلاثة مع ترك مساحة واسعة ومميزة للإمضاء والختم في أسفل اليسار
       var sheetFooter = h('div', {
-        style: 'display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-top:10px; padding-top:8px; border-top:1.5px solid #14532D; text-align:center;'
+        style: 'display:grid; grid-template-columns:1fr 1fr 1.35fr; gap:12px; margin-top:12px; padding-top:10px; border-top:1.5px solid #14532D; text-align:center;'
       },
-        h('div', { style: 'background:#F8FAF9; padding:6px 8px; border-radius:8px; border:1px solid #E2E8F0;' },
-          h('strong', { style: 'display:block; color:#14532D; font-size:11.5px; margin-bottom:2px; font-weight:800;', text: 'توقيع المربية' }),
+        // يمين: توقيع المربية
+        h('div', { style: 'background:#F8FAF9; padding:8px 10px; border-radius:8px; border:1px solid #E2E8F0; display:flex; flex-direction:column; justify-content:space-between;' },
+          h('strong', { style: 'display:block; color:#14532D; font-size:12px; margin-bottom:2px; font-weight:800;', text: 'توقيع المربية' }),
           h('input', {
             class: 'input small',
             type: 'text',
             placeholder: 'اسم المربية...',
             value: currentWeekState.educator_name || '',
-            style: 'text-align:center; font-size:10.5px; margin-bottom:2px; padding:2px 4px;',
+            style: 'text-align:center; font-size:11px; margin-bottom:2px; padding:2px 4px;',
             onchange: function (e) { currentWeekState.educator_name = e.target.value; }
           }),
-          h('span', { class: 'small muted', style: 'font-size:9.5px;', text: 'الإمضاء والتأشيرة' })
+          h('span', { class: 'small muted', style: 'font-size:10px; color:#64748B;', text: 'الإمضاء والتأشيرة' })
         ),
-        h('div', { style: 'background:#F8FAF9; padding:6px 8px; border-radius:8px; border:1px solid #E2E8F0;' },
-          h('strong', { style: 'display:block; color:#14532D; font-size:11.5px; margin-bottom:2px; font-weight:800;', text: 'المشرف البيداغوجي' }),
+        // وسط: المشرف البيداغوجي
+        h('div', { style: 'background:#F8FAF9; padding:8px 10px; border-radius:8px; border:1px solid #E2E8F0; display:flex; flex-direction:column; justify-content:space-between;' },
+          h('strong', { style: 'display:block; color:#14532D; font-size:12px; margin-bottom:2px; font-weight:800;', text: 'المشرف البيداغوجي' }),
           h('input', {
             class: 'input small',
             type: 'text',
             placeholder: 'اسم المشرف البيداغوجي...',
             value: currentWeekState.supervisor_name || '',
-            style: 'text-align:center; font-size:10.5px; margin-bottom:2px; padding:2px 4px;',
+            style: 'text-align:center; font-size:11px; margin-bottom:2px; padding:2px 4px;',
             onchange: function (e) { currentWeekState.supervisor_name = e.target.value; }
           }),
-          h('span', { class: 'small muted', style: 'font-size:9.5px;', text: 'الإمضاء والتأشيرة' })
+          h('span', { class: 'small muted', style: 'font-size:10px; color:#64748B;', text: 'الإمضاء والتأشيرة' })
         ),
-        h('div', { style: 'background:#F8FAF9; padding:6px 8px; border-radius:8px; border:1px solid #E2E8F0;' },
-          h('strong', { style: 'display:block; color:#14532D; font-size:11.5px; margin-bottom:2px; font-weight:800;', text: 'توقيع وختم المدير' }),
-          h('input', {
-            class: 'input small',
-            type: 'text',
-            placeholder: 'اسم المدير...',
-            value: currentWeekState.director_name || '',
-            style: 'text-align:center; font-size:10.5px; margin-bottom:2px; padding:2px 4px;',
-            onchange: function (e) { currentWeekState.director_name = e.target.value; }
-          }),
-          h('span', { class: 'small muted', style: 'font-size:9.5px;', text: 'التأشيرة والختم الرسمي' })
+        // أسفل اليسار: مساحة واسعة ومميزة لتوقيع وختم المدير وموضع الختم الرسمي
+        h('div', {
+          style: 'background:#F8FAF9; padding:8px 12px; border-radius:8px; border:1.5px solid #14532D; text-align:center; display:flex; flex-direction:column; justify-content:space-between; min-height:92px;'
+        },
+          h('div', null,
+            h('strong', { style: 'display:block; color:#14532D; font-size:13px; font-weight:900;', text: 'توقيع وختم المدير' }),
+            h('input', {
+              class: 'input small',
+              type: 'text',
+              placeholder: 'اسم المدير العام...',
+              value: currentWeekState.director_name || '',
+              style: 'text-align:center; font-size:11px; padding:2px 6px; margin:2px auto; max-width:180px;',
+              onchange: function (e) { currentWeekState.director_name = e.target.value; }
+            })
+          ),
+          h('div', {
+            style: 'border:1px dashed #94A3B8; border-radius:6px; background:#FFFFFF; padding:4px; margin:4px 0; color:#475569; font-size:10.5px; font-weight:700;'
+          },
+            'موضع الختم الإداري الرسمي والتأشيرة'
+          ),
+          h('span', { class: 'small muted', style: 'font-size:10px; color:#64748B;', text: '......................................................' })
         )
       );
       sheetPaperCard.appendChild(sheetFooter);
 
-      mainContainer.appendChild(sheetPaperCard);
+      detailsContainer.appendChild(sheetPaperCard);
+      return detailsContainer;
     }
 
-    // 3. نافذة التعديل والتعبئة بالعرض (Horizontal Layout) بدلاً من الطول العمودي الضيق
+    // نافذة التعبئة الأفقية للحصص
     function openHorizontalFillModal(dayObj, sessObj, dayIdx) {
       var lib = getPedagogicalLibrary();
       var domKeys = Object.keys(lib);
@@ -3718,7 +3892,6 @@
       var manualText = sessObj.manual_text || (currentKind === 'manual' ? sessObj.title : '');
       var selectedActivity = sessObj.activity || (currentKind === 'activity' ? sessObj.title : dailyActs[0]);
 
-      // حاوية النافذة بالعرض (Horizontal Wide Layout) بمقاس واسع وتنسيق متجاوب
       var modalBox = h('div', {
         class: 'modal card wk-horizontal-fill-modal',
         style: 'max-width:880px; width:95%; background:#FFFFFF; padding:24px; border-radius:16px; box-shadow:0 20px 50px rgba(20,83,45,0.25); border:1.5px solid #14532D; max-height:90vh; overflow-y:auto; display:flex; flex-direction:column; gap:16px;'
@@ -3726,350 +3899,257 @@
 
       function renderModalFields() {
         modalBox.textContent = '';
-        var domainSkills = lib[selectedDomain] || [];
-        if (!selectedSkill || domainSkills.indexOf(selectedSkill) < 0) {
-          selectedSkill = domainSkills[0] || '';
-        }
 
-        // ترويسة النافذة
-        var head = h('div', {
-          style: 'display:flex; justify-content:space-between; align-items:center; border-bottom:1.5px solid #E2E8F0; padding-bottom:12px;'
-        },
+        var modalHdr = h('div', { style: 'display:flex; justify-content:space-between; align-items:center; border-bottom:1.5px solid #E2E8F0; padding-bottom:12px;' },
           h('div', null,
-            h('h3', { style: 'margin:0; color:#14532D; font-size:17px;', text: 'تعديل وتعبئة الخانة — يوم ' + dayObj.label + ' (' + sessObj.start + ' - ' + sessObj.end + ')' }),
-            sessObj.rowspan > 1 || sessObj.colspan > 1 ? h('span', { class: 'small gold', text: 'خانة مدمجة تشمل ' + (sessObj.rowspan > 1 ? (sessObj.rowspan + ' أيام ') : '') + (sessObj.colspan > 1 ? (sessObj.colspan + ' فترات') : '') }) : null
+            h('h3', { style: 'margin:0 0 2px; color:#14532D; font-size:1.3rem; font-weight:900;', text: 'تعبئة حصة ' + dayObj.label + ' (' + (sessObj.start || '') + ' - ' + (sessObj.end || '') + ')' }),
+            h('p', { class: 'small muted', style: 'margin:0;', text: 'اختر نوع الحصة وحدد المجال والمهارة أو النشاط اليومي' })
           ),
-          h('button', { type: 'button', class: 'btn small light', text: '✕', onclick: function () { dlg.remove(); } })
-        );
-        modalBox.appendChild(head);
-
-        // تبويبات طريقة التعبئة على العرض (أفقية واسعة)
-        var modeTabs = h('div', {
-          style: 'display:flex; justify-content:center; gap:10px; background:#F8FAF9; padding:6px; border-radius:12px; border:1px solid #CBD5E1; flex-wrap:wrap;'
-        },
           h('button', {
             type: 'button',
-            class: 'btn ' + (currentKind === 'activity' ? 'gold' : 'light'),
-            style: 'flex:1 1 200px; padding:10px 16px; font-weight:800; font-size:14px;',
+            class: 'icon-btn',
+            style: 'font-size:18px;',
+            onclick: function () { closeModal(); }
+          }, h('span', { text: '✕' }))
+        );
+        modalBox.appendChild(modalHdr);
+
+        var typeBtnsRow = h('div', { style: 'display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px;' },
+          h('button', {
+            type: 'button',
+            class: 'btn ' + (currentKind === 'activity' ? 'primary' : 'light'),
+            style: 'padding:10px 8px; border-radius:10px; font-weight:800; font-size:13.5px; cursor:pointer;',
             onclick: function () { currentKind = 'activity'; renderModalFields(); }
-          }, makeSvgIcon('s-star'), h('span', { text: 'أنشطة وفترات يومية' })),
+          }, h('span', { text: '1. نشاط يومي / روتين' })),
           h('button', {
             type: 'button',
-            class: 'btn ' + (currentKind === 'library' ? '' : 'light'),
-            style: 'flex:1 1 200px; padding:10px 16px; font-weight:800; font-size:14px; ' + (currentKind === 'library' ? 'background:#14532D; color:#fff;' : ''),
+            class: 'btn ' + (currentKind === 'library' ? 'primary' : 'light'),
+            style: 'padding:10px 8px; border-radius:10px; font-weight:800; font-size:13.5px; cursor:pointer;',
             onclick: function () { currentKind = 'library'; renderModalFields(); }
-          }, makeSvgIcon('s-book'), h('span', { text: 'من المكتبة البيداغوجية' })),
+          }, h('span', { text: '2. حصة بيداغوجية' })),
           h('button', {
             type: 'button',
-            class: 'btn ' + (currentKind === 'manual' ? '' : 'light'),
-            style: 'flex:1 1 200px; padding:10px 16px; font-weight:800; font-size:14px; ' + (currentKind === 'manual' ? 'background:#1E3A8A; color:#fff;' : ''),
+            class: 'btn ' + (currentKind === 'manual' ? 'primary' : 'light'),
+            style: 'padding:10px 8px; border-radius:10px; font-weight:800; font-size:13.5px; cursor:pointer;',
             onclick: function () { currentKind = 'manual'; renderModalFields(); }
-          }, makeSvgIcon('s-edit'), h('span', { text: 'ملء يدوي حر' }))
+          }, h('span', { text: '3. كتابة يدوية / مخصصة' }))
         );
-        modalBox.appendChild(modeTabs);
+        modalBox.appendChild(typeBtnsRow);
 
-        // محتوى الخيارات موزع أفقياً على العرض
+        var bodyWrap = h('div', { style: 'display:flex; flex-direction:column; gap:14px;' });
+
         if (currentKind === 'activity') {
-          // عرض الأنشطة اليومية في شبكة أفقية عريضة
-          var actGrid = h('div', {
-            style: 'display:grid; grid-template-columns:repeat(auto-fill, minmax(135px, 1fr)); gap:10px; padding:8px 0;'
-          });
-          dailyActs.forEach(function (actName) {
-            var isSel = (actName === selectedActivity);
-            var actBtn = h('button', {
-              type: 'button',
-              style: 'padding:10px 8px; border-radius:10px; border:2px solid ' + (isSel ? '#D97706' : '#FDE68A') + '; background:' + (isSel ? '#F59E0B' : '#FFFBEB') + '; color:' + (isSel ? '#FFFFFF' : '#92400E') + '; font-weight:800; font-size:13.5px; cursor:pointer; text-align:center; font-family:inherit; transition:all 0.15s ease;',
-              onclick: function () { selectedActivity = actName; renderModalFields(); }
-            }, actName);
-            actGrid.appendChild(actBtn);
-          });
-
-          modalBox.appendChild(h('div', {
-            style: 'background:#FFFBEB; border:1px solid #FDE68A; border-radius:12px; padding:16px;'
-          },
-            h('label', { style: 'display:block; font-weight:800; color:#92400E; margin-bottom:10px; font-size:14px;', text: 'اختر النشاط اليومي أو الفترة التنظيمية (توزيع أفقي مريح):' }),
-            actGrid
-          ));
-
-        } else if (currentKind === 'library') {
-          // عرض المجالات والمهارات على العرض في عمودين متجاورين أفقيين
-          var domSelect = h('select', {
+          var actSelect = h('select', {
             class: 'input',
-            style: 'width:100%; font-weight:700; margin-bottom:8px; font-size:14px;',
+            style: 'font-weight:700; width:100%;',
+            onchange: function (e) { selectedActivity = e.target.value; }
+          }, dailyActs.map(function (a) {
+            return h('option', { value: a, selected: a === selectedActivity ? 'selected' : null, text: a });
+          }));
+
+          var actBox = h('div', { style: 'background:#F8FAF9; border:1px solid #CBD5E1; border-radius:12px; padding:16px;' },
+            h('label', { style: 'display:block; font-weight:800; color:#14532D; font-size:13.5px; margin-bottom:6px;', text: 'اختر النشاط اليومي:' }),
+            actSelect
+          );
+          bodyWrap.appendChild(actBox);
+        } else if (currentKind === 'library') {
+          var domainSelect = h('select', {
+            class: 'input',
+            style: 'font-weight:700; width:100%;',
             onchange: function (e) {
               selectedDomain = e.target.value;
               selectedSkill = (lib[selectedDomain] && lib[selectedDomain][0]) || '';
               renderModalFields();
             }
-          }, domKeys.map(function (dk) {
-            return h('option', { value: dk, selected: dk === selectedDomain ? 'selected' : null, text: dk });
+          }, domKeys.map(function (k) {
+            return h('option', { value: k, selected: k === selectedDomain ? 'selected' : null, text: k });
           }));
 
-          var skillsGrid = h('div', {
-            style: 'display:grid; grid-template-columns:repeat(auto-fill, minmax(240px, 1fr)); gap:8px; max-height:240px; overflow-y:auto; padding:8px; border:1px solid #CBD5E1; border-radius:10px; background:#F8FAF9;'
-          });
-          domainSkills.forEach(function (sk) {
-            var isSel = (sk === selectedSkill);
-            var skBtn = h('button', {
-              type: 'button',
-              style: 'padding:8px 12px; text-align:right; border-radius:8px; border:1.5px solid ' + (isSel ? '#10B981' : '#E2E8F0') + '; background:' + (isSel ? '#ECFDF5' : '#FFFFFF') + '; color:' + (isSel ? '#064E3B' : '#1E293B') + '; font-weight:' + (isSel ? '800' : '600') + '; font-size:13px; cursor:pointer; font-family:inherit;',
-              onclick: function () { selectedSkill = sk; renderModalFields(); }
-            }, (isSel ? '✓ ' : '• ') + sk);
-            skillsGrid.appendChild(skBtn);
-          });
-
-          modalBox.appendChild(h('div', {
-            style: 'background:#F0FDF4; border:1px solid #BBF7D0; border-radius:12px; padding:16px; display:flex; flex-direction:column; gap:10px;'
-          },
-            h('div', null,
-              h('label', { style: 'display:block; font-weight:800; color:#065F46; margin-bottom:4px; font-size:13.5px;', text: '1. اختيار المجال البيداغوجي:' }),
-              domSelect
-            ),
-            h('div', null,
-              h('label', { style: 'display:block; font-weight:800; color:#065F46; margin-bottom:4px; font-size:13.5px;', text: '2. اختيار المهارة التابعة له (توزيع أفقي مريح):' }),
-              skillsGrid
-            ),
-            h('div', { style: 'font-weight:700; color:#047857; font-size:13px;', text: 'المهارة المختارة: ' + (selectedSkill || '—') })
-          ));
-
-        } else if (currentKind === 'manual') {
-          // الملء اليدوي الحر
-          var manualInp = h('textarea', {
+          var skillsList = lib[selectedDomain] || [];
+          var skillSelect = h('select', {
             class: 'input',
-            rows: 3,
-            placeholder: 'اكتب محتوى الخانة أو النشاط يدوياً...',
+            style: 'font-weight:700; width:100%;',
+            onchange: function (e) { selectedSkill = e.target.value; }
+          }, skillsList.map(function (sk) {
+            return h('option', { value: sk, selected: sk === selectedSkill ? 'selected' : null, text: sk });
+          }));
+
+          var libBox = h('div', { style: 'background:#F0FDF4; border:1px solid #BBF7D0; border-radius:12px; padding:16px; display:flex; flex-direction:column; gap:10px;' },
+            h('div', null,
+              h('label', { style: 'display:block; font-weight:800; color:#065F46; font-size:13.5px; margin-bottom:4px;', text: 'أولاً: المجال البيداغوجي:' }),
+              domainSelect
+            ),
+            h('div', null,
+              h('label', { style: 'display:block; font-weight:800; color:#065F46; font-size:13.5px; margin-bottom:4px;', text: 'ثانياً: المهارة التابعة للمجال:' }),
+              skillSelect
+            )
+          );
+          bodyWrap.appendChild(libBox);
+        } else if (currentKind === 'manual') {
+          var manualInp = h('input', {
+            class: 'input',
+            type: 'text',
+            placeholder: 'اكتب عنوان الحصة أو الهدف هنا...',
             value: manualText,
-            style: 'width:100%; font-size:14px; line-height:1.5;',
+            style: 'width:100%; font-size:14px; font-weight:700;',
             oninput: function (e) { manualText = e.target.value; }
           });
-
-          modalBox.appendChild(h('div', {
-            style: 'background:#EFF6FF; border:1px solid #BFDBFE; border-radius:12px; padding:16px;'
-          },
-            h('label', { style: 'display:block; font-weight:800; color:#1E3A8A; margin-bottom:6px; font-size:14px;', text: 'الملء اليدوي المستقل:' }),
-            manualInp,
-            h('p', { class: 'small muted', style: 'margin:6px 0 0;', text: 'الملء اليدوي مستقل عن المكتبة البيداغوجية ولا يغير تصنيفاتها.' })
-          ));
+          var manBox = h('div', { style: 'background:#EFF6FF; border:1px solid #BFDBFE; border-radius:12px; padding:16px;' },
+            h('label', { style: 'display:block; font-weight:800; color:#1E3A8A; font-size:13.5px; margin-bottom:6px;', text: 'نص الحصة المخصص:' }),
+            manualInp
+          );
+          bodyWrap.appendChild(manBox);
         }
 
-        // أزرار الحفظ والإجراءات على العرض
-        var footBar = h('div', {
-          style: 'display:flex; justify-content:space-between; align-items:center; border-top:1.5px solid #E2E8F0; padding-top:14px; flex-wrap:wrap; gap:10px;'
-        });
+        modalBox.appendChild(bodyWrap);
 
-        // زر إلغاء الدمج أو تفريغ الخانة
-        if (sessObj.rowspan > 1 || sessObj.colspan > 1) {
-          footBar.appendChild(h('button', {
+        var modalFooter = h('div', { style: 'display:flex; justify-content:space-between; align-items:center; border-top:1.5px solid #E2E8F0; padding-top:14px;' },
+          h('button', {
             type: 'button',
-            class: 'btn small light',
-            onclick: function () {
-              unmergeAnyCell(sessObj, dayIdx);
-              dlg.remove();
-              renderFullView();
-              toast('تم إلغاء دمج الخانة واستعادة الخلايا الأصلية.', 'ok');
-            }
-          }, makeSvgIcon('s-x-circle'), h('span', { text: 'إلغاء دمج الخانة' })));
-        } else if (sessObj.kind !== 'empty') {
-          footBar.appendChild(h('button', {
-            type: 'button',
-            class: 'btn small danger',
+            class: 'btn light danger',
+            style: 'font-weight:700;',
             onclick: function () {
               sessObj.kind = 'empty';
-              sessObj.domain = '';
-              sessObj.skill = '';
-              sessObj.title = '';
-              sessObj.manual_text = '';
-              sessObj.activity = '';
-              dlg.remove();
-              renderFullView();
-              toast('تم تفريغ الخانة.', 'ok');
+              delete sessObj.domain;
+              delete sessObj.skill;
+              delete sessObj.activity;
+              delete sessObj.manual_text;
+              delete sessObj.title;
+              closeModal();
+              renderProgramsDashboard();
+              toast('تم إفراغ الخانة.', 'ok');
             }
-          }, makeSvgIcon('s-trash'), h('span', { text: 'تفريغ الخانة' })));
-        } else {
-          footBar.appendChild(h('div'));
-        }
-
-        var saveCellBtn = h('button', {
-          type: 'button',
-          class: 'btn',
-          style: 'background:#14532D; color:#fff; font-weight:800; padding:10px 22px;',
-          onclick: function () {
-            if (currentKind === 'activity') {
-              sessObj.kind = 'activity';
-              sessObj.activity = selectedActivity;
-              sessObj.title = selectedActivity;
-            } else if (currentKind === 'library') {
-              if (!selectedSkill) return toast('اختر مهارة بيداغوجية.', 'bad');
-              sessObj.kind = 'library';
-              sessObj.domain = selectedDomain;
-              sessObj.skill = selectedSkill;
-              sessObj.title = selectedDomain + ' — ' + selectedSkill;
-            } else if (currentKind === 'manual') {
-              var txt = String(manualText || '').trim();
-              if (!txt) return toast('أدخل نصاً للخانة.', 'bad');
-              sessObj.kind = 'manual';
-              sessObj.manual_text = txt;
-              sessObj.title = txt;
-            }
-            dlg.remove();
-            renderFullView();
-            toast('تم حفظ وتحديث محتوى الخانة.', 'ok');
-          }
-        }, makeSvgIcon('s-check'), h('span', { text: 'تأكيد وحفظ الخانة' }));
-
-        footBar.appendChild(h('div', { style: 'display:flex; gap:8px;' },
-          h('button', { type: 'button', class: 'btn light', text: 'إلغاء', onclick: function () { dlg.remove(); } }),
-          saveCellBtn
-        ));
-
-        modalBox.appendChild(footBar);
+          }, h('span', { text: 'إفراغ الخانة' })),
+          h('div', { style: 'display:flex; gap:8px;' },
+            h('button', {
+              type: 'button',
+              class: 'btn light',
+              onclick: function () { closeModal(); }
+            }, h('span', { text: 'إلغاء' })),
+            h('button', {
+              type: 'button',
+              class: 'btn primary gold',
+              style: 'font-weight:800; min-width:110px;',
+              onclick: function () {
+                sessObj.kind = currentKind;
+                if (currentKind === 'activity') {
+                  sessObj.activity = selectedActivity;
+                  sessObj.title = selectedActivity;
+                  delete sessObj.domain;
+                  delete sessObj.skill;
+                  delete sessObj.manual_text;
+                } else if (currentKind === 'library') {
+                  sessObj.domain = selectedDomain;
+                  sessObj.skill = selectedSkill;
+                  sessObj.title = selectedDomain + ' — ' + selectedSkill;
+                  delete sessObj.activity;
+                  delete sessObj.manual_text;
+                } else if (currentKind === 'manual') {
+                  sessObj.manual_text = manualText || 'حصة خاصة';
+                  sessObj.title = sessObj.manual_text;
+                  delete sessObj.domain;
+                  delete sessObj.skill;
+                  delete sessObj.activity;
+                }
+                closeModal();
+                renderProgramsDashboard();
+                toast('تم حفظ الحصة في الجدول.', 'ok');
+              }
+            }, h('span', { text: 'تطبيق واعتماد الحصة' }))
+          )
+        );
+        modalBox.appendChild(modalFooter);
       }
 
       renderModalFields();
-      var dlg = h('div', { class: 'modal-back' }, modalBox);
-      document.body.appendChild(dlg);
+      openModal(modalBox);
     }
 
-    // 4. تنفيذ الدمج متعدد الاتجاهات (دمج أفقي في نفس اليوم أو رأسي بين الأيام لنفس التوقيت)
-    function executeMultiDirectionalMerge() {
-      var keys = Object.keys(mergeSelectedCells);
-      if (keys.length < 2) {
-        return toast('يرجى تحديد خانتين متجاورتين أو أكثر لدمجهما.', 'bad');
-      }
-
-      var dayIdxs = keys.map(function (k) { return mergeSelectedCells[k].dayIdx; }).sort(function (a, b) { return a - b; });
-      var slotIds = keys.map(function (k) { return mergeSelectedCells[k].slot_id; }).sort(function (a, b) { return a - b; });
-
-      var minDay = Math.min.apply(null, dayIdxs);
-      var maxDay = Math.max.apply(null, dayIdxs);
-      var minSlot = Math.min.apply(null, slotIds);
-      var maxSlot = Math.max.apply(null, slotIds);
-
-      var numDaysSpan = (maxDay - minDay + 1);
-      var numSlotsSpan = (maxSlot - minSlot + 1);
-
-      // تحقق من اكتمال المستطيل المحدد للدمج
-      var expectedCount = numDaysSpan * numSlotsSpan;
-      if (keys.length !== expectedCount) {
-        return toast('يجب أن تكون الخانات المحددة متجاورة هندسياً في شكل مستطيل أو خط متصل.', 'bad');
-      }
-
-      // الخلية الرئيسية الأولى (أعلى اليمين)
-      var targetDayObj = currentWeekState.days[minDay];
-      var targetSess = targetDayObj.sessions.filter(function (s) { return s.slot_id === minSlot; })[0];
-      if (!targetSess) return toast('تعذر تحديد الخلية الرئيسية للدمج.', 'bad');
-
-      targetSess.rowspan = numDaysSpan;
-      targetSess.colspan = numSlotsSpan;
-
-      var endSlotIdx = Math.min(currentWeekState.time_slots.length - 1, minSlot + numSlotsSpan - 1);
-      targetSess.end = currentWeekState.time_slots[endSlotIdx].end;
-
-      isMergeMode = false;
-      mergeSelectedCells = {};
-      renderFullView();
-      toast('تم دمج الخانات بنجاح (' + (numDaysSpan > 1 ? (numDaysSpan + ' أيام ') : '') + (numSlotsSpan > 1 ? (numSlotsSpan + ' حصص') : '') + ').', 'ok');
-    }
-
-    function unmergeAnyCell(sessObj, dayIdx) {
-      sessObj.rowspan = 1;
-      sessObj.colspan = 1;
-      var bs = currentWeekState.time_slots[sessObj.slot_id];
-      if (bs) sessObj.end = bs.end;
-    }
-
-    // 5. معاينة وطباعة الوثيقة الرسمية A4 أفقي Landscape مطابقة تماماً لـ 23499.jpg
+    // نافذة معاينة PDF A4
     function openPdfLandscapePreviewModal() {
-      var modalBox = h('div', {
-        class: 'modal card',
-        style: 'max-width:1040px; width:96%; background:#FFFFFF; padding:22px; border-radius:16px; box-shadow:0 25px 60px rgba(20,83,45,0.3); border:1.5px solid #14532D; max-height:92vh; overflow-y:auto; display:flex; flex-direction:column; gap:14px;'
+      if (!activeWeekState) return;
+      var secName = getSectionName(activeWeekState.section_id);
+      var m = h('div', {
+        class: 'modal card wk-pdf-preview-modal',
+        style: 'max-width:1180px; width:98%; background:#FFFFFF; padding:20px; border-radius:16px; box-shadow:0 25px 60px rgba(0,0,0,0.3); border:2px solid #14532D; max-height:94vh; overflow-y:auto;'
       });
 
-      var head = h('div', {
-        style: 'display:flex; justify-content:space-between; align-items:center; border-bottom:1.5px solid #E2E8F0; padding-bottom:10px;'
-      },
+      var mHdr = h('div', { style: 'display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #14532D; padding-bottom:10px; margin-bottom:14px;' },
         h('div', null,
-          h('h3', { style: 'margin:0; color:#14532D;', text: 'معاينة الوثيقة الرسمية — البرنامج المؤقت الأسبوعي (A4 أفقي)' }),
-          h('span', { class: 'small muted', text: 'مطابقة للنموذج المعتمد لمركز دار الإحسان (23499.jpg) مع الحجم الساعي والدمج بين الأيام' })
+          h('h3', { style: 'margin:0; color:#14532D; font-size:1.35rem; font-weight:900;', text: 'معاينة وثيقة البرنامج المؤقت الأسبوعي الرسمية (A4 أفقي)' }),
+          h('span', { class: 'small muted', text: 'الفوج: ' + secName + ' | الموسم: ' + (activeWeekState.academic_year || '2026/2027') })
         ),
         h('div', { style: 'display:flex; gap:8px;' },
           h('button', {
             type: 'button',
-            class: 'btn gold small',
+            class: 'btn primary gold',
+            style: 'font-weight:800;',
             onclick: async function () {
               try {
-                if (!window.DE_PDF || !window.DE_PDF.renderWeeklyProgramToPdf) throw new Error('مولد PDF غير متاح');
                 toast('جارٍ تحميل ملف PDF...', 'ok');
-                var bytes = await window.DE_PDF.renderWeeklyProgramToPdf(currentWeekState, getSecName());
-                window.DE_PDF.downloadPdf(bytes, 'البرنامج_المؤقت_الأسبوعي_' + String(getSecName()).replace(/\s+/g, '_') + '.pdf');
-              } catch (e) {
-                toast('تعذر تنزيل PDF: ' + e.message, 'bad');
-              }
+                var bytes = await window.DE_PDF.renderWeeklyProgramToPdf(activeWeekState, secName);
+                window.DE_PDF.downloadPdf(bytes, 'البرنامج_المؤقت_الأسبوعي_' + secName.replace(/\s+/g, '_') + '.pdf');
+              } catch (err) { toast('تعذر تحميل PDF: ' + err.message, 'bad'); }
             }
-          }, makeSvgIcon('s-download'), h('span', { text: 'تحميل PDF' })),
+          }, makeSvgIcon('s-file'), h('span', { text: 'تحميل PDF الآن' })),
           h('button', {
             type: 'button',
-            class: 'btn light small',
-            onclick: function () { window.print(); }
-          }, makeSvgIcon('s-print'), h('span', { text: 'طباعة' })),
-          h('button', { type: 'button', class: 'btn small light', text: '✕', onclick: function () { dlg.remove(); } })
+            class: 'btn light',
+            onclick: function () { closeModal(); }
+          }, h('span', { text: 'إغلاق' }))
         )
       );
-      modalBox.appendChild(head);
+      m.appendChild(mHdr);
 
-      var canvasMount = h('div', {
-        style: 'width:100%; background:#fff; border:1px solid #CBD5E1; border-radius:10px; overflow:hidden; padding:4px;'
-      }, h('p', { class: 'muted small', style: 'text-align:center; padding:30px;', text: 'جارٍ توليد المعاينة الرسمية المطابقة...' }));
-      modalBox.appendChild(canvasMount);
+      var previewHost = h('div', {
+        style: 'width:100%; background:#525659; padding:12px; border-radius:8px; display:flex; justify-content:center; align-items:center; min-height:450px;'
+      }, h('p', { style: 'color:#fff; font-size:14px;', text: 'جارٍ تجهيز المعاينة بدقة A4...' }));
+      m.appendChild(previewHost);
 
       if (window.DE_PDF && window.DE_PDF.renderWeeklyProgramCanvas) {
-        window.DE_PDF.renderWeeklyProgramCanvas(currentWeekState, getSecName()).then(function (cEl) {
-          canvasMount.textContent = '';
-          cEl.style.width = '100%';
+        window.DE_PDF.renderWeeklyProgramCanvas(activeWeekState, secName).then(function (cEl) {
+          previewHost.textContent = '';
+          cEl.style.maxWidth = '100%';
           cEl.style.height = 'auto';
-          cEl.style.display = 'block';
+          cEl.style.boxShadow = '0 8px 30px rgba(0,0,0,0.5)';
           cEl.style.borderRadius = '6px';
-          canvasMount.appendChild(cEl);
+          previewHost.appendChild(cEl);
         }).catch(function (err) {
-          canvasMount.textContent = 'تعذر رسم المعاينة: ' + err.message;
+          previewHost.textContent = 'تعذر تجهيز المعاينة: ' + err.message;
         });
       }
 
-      var dlg = h('div', { class: 'modal-back' }, modalBox);
-      document.body.appendChild(dlg);
+      openModal(m);
     }
 
-    // 6. حفظ البرنامج أو نشره للأولياء
+    // حفظ ونشر البرنامج
     async function saveProgramAction(publishNow) {
-      if (!currentWeekState.section_id) {
-        return toast('يرجى اختيار الفوج التربوي أولاً.', 'bad');
-      }
-
-      var secName = getSecName();
+      if (!activeWeekState) return;
+      var secName = getSectionName(activeWeekState.section_id);
       var nowIso = new Date().toISOString();
-      var wasPub = (currentWeekState.status === 'published' || currentWeekState.status === 'updated');
-      var nextStatus = publishNow ? (wasPub && currentWeekState.id ? 'updated' : 'published') : 'draft';
+      var wasPub = (activeWeekState.status === 'published' || activeWeekState.status === 'updated');
+      var nextStatus = publishNow ? (wasPub && activeWeekState.id ? 'updated' : 'published') : 'draft';
 
-      currentWeekState.status = nextStatus;
-      currentWeekState.updated_at = nowIso;
-      if (publishNow) currentWeekState.published_at = nowIso;
+      activeWeekState.status = nextStatus;
+      activeWeekState.updated_at = nowIso;
+      if (publishNow) activeWeekState.published_at = nowIso;
 
-      var schedulePayload = currentWeekState.days.map(function (dy) {
+      var schedulePayload = activeWeekState.days.map(function (dy) {
         return {
           day: dy.day,
           label: dy.label,
           section_name: secName,
-          academic_year: currentWeekState.academic_year || '2026/2027',
+          academic_year: activeWeekState.academic_year || '2026/2027',
           program_status: nextStatus,
-          day_start: currentWeekState.day_start || '08:00',
-          day_end: currentWeekState.day_end || '14:00',
-          educator_name: currentWeekState.educator_name || '',
-          supervisor_name: currentWeekState.supervisor_name || '',
-          director_name: currentWeekState.director_name || '',
-          prepared_date: currentWeekState.prepared_date || nowIso.slice(0, 10),
+          day_start: activeWeekState.day_start || '08:00',
+          day_end: activeWeekState.day_end || '14:00',
+          educator_name: activeWeekState.educator_name || '',
+          supervisor_name: activeWeekState.supervisor_name || '',
+          director_name: activeWeekState.director_name || '',
+          prepared_date: activeWeekState.prepared_date || nowIso.slice(0, 10),
           updated_at: nowIso,
-          published_at: currentWeekState.published_at,
-          time_slots: currentWeekState.time_slots,
+          published_at: activeWeekState.published_at,
+          time_slots: activeWeekState.time_slots,
           sessions: (dy.sessions || []).map(function (s) {
             return {
               slot_id: s.slot_id,
@@ -4089,9 +4169,9 @@
       });
 
       var body = {
-        section_id: currentWeekState.section_id,
+        section_id: activeWeekState.section_id,
         title: DE.clean('البرنامج المؤقت الأسبوعي — ' + secName, 155),
-        academic_year: currentWeekState.academic_year || '2026/2027',
+        academic_year: activeWeekState.academic_year || '2026/2027',
         description: DE.clean('البرنامج المؤقت الأسبوعي لفوج ' + secName, 1000),
         goals: DE.clean('الأنصبة والحصص التعليمية الأسبوعية لفوج ' + secName, 1000),
         schedule: schedulePayload,
@@ -4099,23 +4179,27 @@
         published_at: publishNow ? nowIso : null
       };
 
-      var savedId = currentWeekState.id || ('prog-' + Date.now());
+      var savedId = activeWeekState.id || ('prog-' + Date.now());
       try {
-        if (currentWeekState.id && !String(currentWeekState.id).startsWith('prog-')) {
-          await C.rest('PATCH', '/educational_programs?id=eq.' + uid(currentWeekState.id), body);
+        if (activeWeekState.id && !String(activeWeekState.id).startsWith('prog-')) {
+          await C.rest('PATCH', '/educational_programs?id=eq.' + uid(activeWeekState.id), body);
         } else {
           var res = await C.rest('POST', '/educational_programs', body);
           if (Array.isArray(res) && res[0] && res[0].id) savedId = res[0].id;
         }
       } catch (dbErr) {}
 
-      currentWeekState.id = savedId;
+      activeWeekState.id = savedId;
       var localRecord = Object.assign({ id: savedId, created_at: nowIso }, body);
       var sharedList = readSharedProgramsLocal();
       var exIdx = sharedList.findIndex(function (x) { return x && String(x.id) === String(savedId); });
       if (exIdx >= 0) sharedList[exIdx] = localRecord;
       else sharedList.unshift(localRecord);
       writeSharedProgramsLocal(sharedList);
+
+      var exRowIdx = rows.findIndex(function (r) { return r && String(r.id) === String(savedId); });
+      if (exRowIdx >= 0) rows[exRowIdx] = localRecord;
+      else rows.unshift(localRecord);
 
       if (publishNow) {
         try {
@@ -4133,12 +4217,12 @@
       }
 
       bust();
-      renderFullView();
+      renderProgramsDashboard();
     }
 
-    renderFullView();
+    // تشغيل العرض الأولي للوحة البرامج
+    renderProgramsDashboard();
   }
-
 /* =====================================================================
      5. قائمة إجراءات منبثقة (⋯)
      ===================================================================== */

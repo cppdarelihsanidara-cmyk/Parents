@@ -2290,47 +2290,48 @@
         var isMan = (sess.kind === 'manual' || (!isAct && !isLib && (sess.manual_text || sess.title)));
         var isFilled = (isAct || isLib || isMan);
 
-        // رسم جميع الخانات بيضاء ناصعة (#FFFFFF) بإطار أسود محكم (#1E293B) وكتابة سوداء (#000000)
+        // رسم جميع الخانات بيضاء ناصعة (#FFFFFF) بإطار أسود محكم (#1E293B) وكتابة سوداء مكبرة وعريضة (#000000)
         ctx.fillStyle = '#FFFFFF';
         ctx.fillRect(sx, ry, cellW, cellH);
         ctx.strokeStyle = '#1E293B';
-        ctx.lineWidth = 1.2;
+        ctx.lineWidth = 1.3;
         ctx.strokeRect(sx, ry, cellW, cellH);
 
         if (isAct) {
           ctx.fillStyle = '#000000';
-          ctx.font = (rowspan > 1 ? 'bold 22px ' : 'bold 16.5px ') + '"Cairo", "Tajawal", "IBM Plex Sans Arabic", sans-serif';
+          ctx.font = (rowspan > 1 ? 'bold 26px ' : 'bold 20px ') + '"Cairo", "Tajawal", "IBM Plex Sans Arabic", sans-serif';
           var actText = sess.activity || sess.title || 'نشاط يومي';
-          var actLines = wrapLines(ctx, actText, cellW - 12, 3);
-          var lineH = rowspan > 1 ? 26 : 22;
+          var actLines = wrapLines(ctx, actText, cellW - 14, 3);
+          var lineH = rowspan > 1 ? 30 : 25;
           var startActY = ry + (cellH - (actLines.length * lineH)) / 2 + lineH - 4;
           actLines.forEach(function (aln, lIdx) {
             ctx.fillText(aln, sx + cellW / 2, startActY + lIdx * lineH);
           });
         } else if (isLib) {
-          // اسم المجال بخط رمادي داكن أو بين قوسين في الأعلى
+          // اسم المجال بخط واضح وداكن في الأعلى
           var shortDom = String(sess.domain || 'مجال بيداغوجي').replace(/\s*\(.*?\)\s*/g, '').trim();
-          ctx.fillStyle = '#475569';
-          ctx.font = 'bold 12.5px "Cairo", "Tajawal", "IBM Plex Sans Arabic", sans-serif';
+          ctx.fillStyle = '#334155';
+          ctx.font = 'bold 14.5px "Cairo", "Tajawal", "IBM Plex Sans Arabic", sans-serif';
           var domWrap = wrapLines(ctx, '(' + shortDom + ')', cellW - 12, 1);
-          ctx.fillText(domWrap[0] || ('(' + shortDom + ')'), sx + cellW / 2, ry + 22);
+          ctx.fillText(domWrap[0] || ('(' + shortDom + ')'), sx + cellW / 2, ry + 25);
 
-          // اسم المهارة بخط أسود عريض وواضح جداً
+          // اسم المهارة بخط أسود عريض جداً ومكبر وواضح
           ctx.fillStyle = '#000000';
-          ctx.font = (rowspan > 1 ? 'bold 19px ' : 'bold 15px ') + '"Cairo", "Tajawal", "IBM Plex Sans Arabic", sans-serif';
+          ctx.font = (rowspan > 1 ? 'bold 22px ' : 'bold 18.5px ') + '"Cairo", "Tajawal", "IBM Plex Sans Arabic", sans-serif';
           var skText = sess.skill || sess.title || '';
-          var skLines = wrapLines(ctx, skText, cellW - 12, 3);
-          var skLineH = 20;
-          var startSkY = ry + 44 + (cellH - 44 - (skLines.length * skLineH)) / 2 + skLineH - 4;
+          var skLines = wrapLines(ctx, skText, cellW - 14, 3);
+          var skLineH = 23;
+          var availH = cellH - 44;
+          var startSkY = (ry + 44) + (availH - (skLines.length * skLineH)) / 2 + skLineH - 4;
           skLines.forEach(function (sln, lIdx) {
             ctx.fillText(sln, sx + cellW / 2, startSkY + lIdx * skLineH);
           });
         } else if (isMan) {
           ctx.fillStyle = '#000000';
-          ctx.font = (rowspan > 1 ? 'bold 20px ' : 'bold 15.5px ') + '"Cairo", "Tajawal", "IBM Plex Sans Arabic", sans-serif';
+          ctx.font = (rowspan > 1 ? 'bold 24px ' : 'bold 19px ') + '"Cairo", "Tajawal", "IBM Plex Sans Arabic", sans-serif';
           var manText = sess.manual_text || sess.title || '';
-          var manLines = wrapLines(ctx, manText, cellW - 12, 3);
-          var mLineH = 21;
+          var manLines = wrapLines(ctx, manText, cellW - 14, 3);
+          var mLineH = 24;
           var startManY = ry + (cellH - (manLines.length * mLineH)) / 2 + mLineH - 4;
           manLines.forEach(function (mln, lIdx) {
             ctx.fillText(mln, sx + cellW / 2, startManY + lIdx * mLineH);
@@ -2353,32 +2354,79 @@
     var supervisorName = (progState && progState.supervisor_name) || '';
     var directorName = (progState && progState.director_name) || '';
 
-    var signCols = [
-      { title: 'توقيع المربية', sub: educatorName || 'الاسم والإمضاء', x: W - tblX - signBoxW - 10 },
-      { title: 'المشرف البيداغوجي', sub: supervisorName || 'الاسم والتأشيرة', x: tblX + Math.floor((tblW - signBoxW) / 2) },
-      { title: 'توقيع وختم المدير', sub: directorName || 'التأشيرة والختم الرسمي', x: tblX + 10 }
-    ];
+    // تذييل التوقيعات الثلاثة مع ترك مساحة واسعة ومميزة للإمضاء والختم الرسمي في أسفل اليسار
+    var footBoxH = footerH - 10;
+    var footBoxY = footY + 5;
 
-    signCols.forEach(function (sc) {
-      ctx.fillStyle = '#FFFFFF';
-      roundRect(ctx, sc.x, footY + 8, signBoxW, footerH - 16, 6);
-      ctx.fill();
-      ctx.strokeStyle = '#E2E8F0';
-      ctx.lineWidth = 1;
-      ctx.stroke();
+    // 1. يمين: توقيع المربية
+    var educW = Math.floor(tblW * 0.30);
+    var educX = W - tblX - educW - 8;
+    ctx.fillStyle = '#FFFFFF';
+    roundRect(ctx, educX, footBoxY, educW, footBoxH, 6);
+    ctx.fill();
+    ctx.strokeStyle = '#CBD5E1';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.fillStyle = '#14532D';
+    ctx.textAlign = 'center';
+    ctx.font = 'bold 15px "Cairo", "Tajawal", sans-serif';
+    ctx.fillText('توقيع المربية', educX + educW / 2, footBoxY + 26);
+    ctx.fillStyle = '#475569';
+    ctx.font = '13px "Cairo", "Tajawal", sans-serif';
+    ctx.fillText(educatorName || 'الاسم والإمضاء', educX + educW / 2, footBoxY + 48);
+    ctx.fillStyle = '#94A3B8';
+    ctx.fillText('...........................................', educX + educW / 2, footBoxY + 68);
 
-      ctx.fillStyle = '#0F3D2E';
-      ctx.textAlign = 'center';
-      ctx.font = 'bold 15px "Cairo", "Tajawal", sans-serif';
-      ctx.fillText(sc.title, sc.x + signBoxW / 2, footY + 30);
+    // 2. وسط: المشرف البيداغوجي
+    var supW = Math.floor(tblW * 0.30);
+    var supX = tblX + Math.floor((tblW - supW) / 2);
+    ctx.fillStyle = '#FFFFFF';
+    roundRect(ctx, supX, footBoxY, supW, footBoxH, 6);
+    ctx.fill();
+    ctx.strokeStyle = '#CBD5E1';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.fillStyle = '#14532D';
+    ctx.textAlign = 'center';
+    ctx.font = 'bold 15px "Cairo", "Tajawal", sans-serif';
+    ctx.fillText('المشرف البيداغوجي', supX + supW / 2, footBoxY + 26);
+    ctx.fillStyle = '#475569';
+    ctx.font = '13px "Cairo", "Tajawal", sans-serif';
+    ctx.fillText(supervisorName || 'الاسم والتأشيرة', supX + supW / 2, footBoxY + 48);
+    ctx.fillStyle = '#94A3B8';
+    ctx.fillText('...........................................', supX + supW / 2, footBoxY + 68);
 
-      ctx.fillStyle = '#475569';
-      ctx.font = '13px "Cairo", "Tajawal", sans-serif';
-      ctx.fillText(sc.sub, sc.x + signBoxW / 2, footY + 52);
+    // 3. أسفل اليسار: توقيع وختم المدير مع مساحة واسعة للإمضاء وموضع الختم الرسمي
+    var dirW = Math.floor(tblW * 0.36);
+    var dirX = tblX + 8;
+    ctx.fillStyle = '#FFFFFF';
+    roundRect(ctx, dirX, footBoxY, dirW, footBoxH, 6);
+    ctx.fill();
+    ctx.strokeStyle = '#14532D';
+    ctx.lineWidth = 1.4;
+    ctx.stroke();
+    ctx.fillStyle = '#14532D';
+    ctx.textAlign = 'center';
+    ctx.font = 'bold 16px "Cairo", "Tajawal", sans-serif';
+    ctx.fillText('توقيع وختم المدير', dirX + dirW / 2, footBoxY + 24);
 
-      ctx.fillStyle = '#94A3B8';
-      ctx.fillText('..................................................', sc.x + signBoxW / 2, footY + 70);
-    });
+    // رسم موضع دائري مخصص للختم الرسمي والتأشيرة
+    ctx.save();
+    ctx.setLineDash([4, 3]);
+    ctx.strokeStyle = '#94A3B8';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(dirX + dirW / 2, footBoxY + 52, 22, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+
+    ctx.fillStyle = '#64748B';
+    ctx.font = 'bold 10px "Cairo", "Tajawal", sans-serif';
+    ctx.fillText('موضع الختم الرسمي', dirX + dirW / 2, footBoxY + 54);
+
+    ctx.fillStyle = '#475569';
+    ctx.font = '11.5px "Cairo", "Tajawal", sans-serif';
+    ctx.fillText(directorName || 'التأشيرة والختم الرسمي للإدارة', dirX + dirW / 2, footBoxY + 80);
   }
 
   async function renderWeeklyProgramCanvas(progState, secName) {

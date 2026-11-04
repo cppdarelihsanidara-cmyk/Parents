@@ -4880,3 +4880,40 @@ html, body {
     page-break-inside: avoid !important;
   }
 }
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   قواعد صارمة: خانات بيضاء ناصعة بالكامل وكتابة سوداء عريضة ومكبرة — دار الإحسان
+   ══════════════════════════════════════════════════════════════════════════════ */
+.wk-sheet-table,
+.wk-sheet-table table,
+.wk-interactive-sheet-paper table {
+  background-color: #FFFFFF !important;
+}
+.wk-sheet-table th[style*="background:#14532D"],
+.wk-sheet-table td[style*="background:#14532D"],
+.wk-sheet-table th[style*="background: #14532D"],
+.wk-sheet-table td[style*="background: #14532D"] {
+  background-color: #14532D !important;
+  color: #FFFFFF !important;
+}
+.wk-sheet-table td {
+  background-color: #FFFFFF !important;
+  background: #FFFFFF !important;
+  color: #000000 !important;
+  border: 1px solid #1E293B !important;
+}
+.wk-sheet-table td * {
+  color: #000000 !important;
+}
+.wk-sheet-table td strong {
+  font-size: 13.5px !important;
+  font-weight: 900 !important;
+  color: #000000 !important;
+  line-height: 1.25 !important;
+}
+.wk-sheet-table td span.wk-domain-tag {
+  font-size: 10px !important;
+  font-weight: 800 !important;
+  color: #334155 !important;
+  display: block !important;
+}

@@ -1841,16 +1841,16 @@
         var td = h('td', {
           colspan: colspan,
           rowspan: rowspan,
-          style: 'background:#FFFFFF; border:1px solid #1E293B; color:#000000; padding:2px 3px !important; height:38px !important; min-height:36px; max-height:44px; vertical-align:middle; text-align:center; box-sizing:border-box; overflow:hidden;'
+          style: 'background:#FFFFFF !important; border:1px solid #1E293B !important; color:#000000 !important; padding:3px 4px !important; height:40px !important; min-height:38px; vertical-align:middle; text-align:center; box-sizing:border-box; overflow:hidden;'
         });
 
         if (isLib) {
-          td.appendChild(h('div', { style: 'font-size:8.5px; font-weight:700; color:#334155; margin-bottom:0; letter-spacing:-0.2px;', text: sess.domain }));
-          td.appendChild(h('strong', { style: 'font-size:11px; font-weight:800; color:#000000; line-height:1.2; word-break:break-word;', text: sess.skill }));
+          td.appendChild(h('div', { class: 'wk-domain-tag', style: 'font-size:10px; font-weight:800; color:#334155 !important; margin-bottom:1px; letter-spacing:-0.2px;', text: sess.domain }));
+          td.appendChild(h('strong', { style: 'font-size:13px; font-weight:900; color:#000000 !important; line-height:1.25; word-break:break-word;', text: sess.skill }));
         } else if (isAct) {
-          td.appendChild(h('strong', { style: 'font-size:11px; font-weight:800; color:#000000; line-height:1.2; word-break:break-word;', text: sess.activity || sess.title }));
+          td.appendChild(h('strong', { style: 'font-size:13.5px; font-weight:900; color:#000000 !important; line-height:1.25; word-break:break-word;', text: sess.activity || sess.title }));
         } else if (isMan) {
-          td.appendChild(h('strong', { style: 'font-size:11px; font-weight:800; color:#000000; line-height:1.2; word-break:break-word;', text: sess.manual_text || sess.title }));
+          td.appendChild(h('strong', { style: 'font-size:13px; font-weight:900; color:#000000 !important; line-height:1.25; word-break:break-word;', text: sess.manual_text || sess.title }));
         } else {
           td.appendChild(h('span', { class: 'small muted', text: '—' }));
         }
