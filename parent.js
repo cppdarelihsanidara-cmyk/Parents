@@ -1753,24 +1753,31 @@
       onclick: function () { window.print(); }
     }, h('span', { text: '🖨 طباعة البرنامج الأسبوعي' }));
 
-    // جدول ملخص الحجم الساعي للأولياء (مطابق لـ 23499.jpg)
+    // جدول ملخص الحجم الساعي للأولياء (مطابق لـ 23499.jpg - مضغوط ومحكم)
     var loadTable = h('table', {
-      style: 'width:100%; border-collapse:collapse; border:1px solid #CBD5E1; margin-bottom:12px; text-align:center; font-size:11.5px;'
+      style: 'width:100%; min-width:700px; border-collapse:collapse; border:1.5px solid #14532D; text-align:center; font-size:10px; table-layout:fixed;'
     });
     var trLoad1 = h('tr', null,
-      h('th', { style: 'background:#14532D; color:#fff; padding:4px; border:1px solid #CBD5E1; width:80px;', text: 'الأنشطة' }),
+      h('th', { style: 'background:#14532D; color:#fff; padding:2px 1px; border:1px solid #CBD5E1; width:75px; font-size:10.5px; font-weight:800;', text: 'الأنشطة' }),
       OFFICIAL_LOAD_SUMMARY_PARENT.map(function (it) {
-        return h('td', { style: 'background:' + it.color + '; border:1px solid #CBD5E1; font-weight:800; padding:3px;', text: it.code });
+        return h('td', { style: 'background:' + it.color + '; border:1px solid #CBD5E1; font-weight:800; padding:2px 1px; font-size:10px; color:#0F172A;', text: it.code });
       })
     );
     var trLoad2 = h('tr', null,
-      h('th', { style: 'background:#F8FAF9; color:#1E293B; padding:4px; border:1px solid #CBD5E1;', text: 'الحجم' }),
+      h('th', { style: 'background:#F8FAF9; color:#1E293B; padding:2px 1px; border:1px solid #CBD5E1; font-size:9.5px; font-weight:700;', text: 'الحجم الساعي' }),
       OFFICIAL_LOAD_SUMMARY_PARENT.map(function (it) {
-        return h('td', { style: 'border:1px solid #CBD5E1; font-weight:700; padding:3px; font-size:11px;', text: it.duration });
+        return h('td', { style: 'border:1px solid #CBD5E1; font-weight:700; padding:2px 1px; font-size:9.5px; color:#334155;', text: it.duration });
+      })
+    );
+    var trLoad3 = h('tr', null,
+      h('th', { style: 'background:#F8FAF9; color:#1E293B; padding:2px 1px; border:1px solid #CBD5E1; font-size:9.5px; font-weight:700;', text: 'عدد الحصص' }),
+      OFFICIAL_LOAD_SUMMARY_PARENT.map(function (it) {
+        return h('td', { style: 'border:1px solid #CBD5E1; font-weight:800; padding:2px 1px; font-size:10px; color:#0F172A;', text: it.count });
       })
     );
     loadTable.appendChild(trLoad1);
     loadTable.appendChild(trLoad2);
+    loadTable.appendChild(trLoad3);
 
     // جدول الحصص الأسبوعي المطابق تماماً للورقة في فضاء الأولياء
     var morningSlots = st.time_slots.filter(function (s) { return s.period === 'morning'; });
@@ -1780,19 +1787,19 @@
 
     var tableEl = h('table', {
       class: 'wk-sheet-table',
-      style: 'width:100%; border-collapse:collapse; border:2px solid #14532D; text-align:center; min-width:820px;'
+      style: 'width:100%; border-collapse:collapse; border:2px solid #14532D; text-align:center; min-width:800px; table-layout:fixed;'
     });
 
     var theadEl = h('thead', null,
       h('tr', null,
-        h('th', { rowspan: 2, style: 'width:80px; background:#14532D; color:#fff; border:1.5px solid #0F3D2E; padding:8px;', text: 'اليوم' }),
-        h('th', { colspan: morningSlots.length, style: 'background:#ECFDF5; color:#064E3B; border:1.5px solid #10B981; padding:6px; font-weight:800; font-size:13.5px;', text: 'الفترة الصباحية  08:00 — 12:00' }),
-        h('th', { colspan: afternoonSlots.length, style: 'background:#FEF3C7; color:#92400E; border:1.5px solid #F59E0B; padding:6px; font-weight:800; font-size:13.5px;', text: 'الفترة المسائية  12:00 — 14:00' })
+        h('th', { rowspan: 2, style: 'width:75px; background:#14532D; color:#fff; border:1.5px solid #0F3D2E; padding:4px 2px; font-size:12.5px; font-weight:800; text-align:center;', text: 'اليوم' }),
+        h('th', { colspan: morningSlots.length, style: 'background:#ECFDF5; color:#064E3B; border:1.5px solid #10B981; padding:3px; font-weight:800; font-size:12px;', text: 'الفترة الصباحية (08:00 — 12:00)' }),
+        h('th', { colspan: afternoonSlots.length, style: 'background:#FEF3C7; color:#92400E; border:1.5px solid #F59E0B; padding:3px; font-weight:800; font-size:12px;', text: 'الفترة المسائية (12:00 — 14:00)' })
       ),
       h('tr', null,
         st.time_slots.map(function (slot) {
           return h('th', {
-            style: 'background:#F8FAF9; color:#1E293B; border:1px solid #CBD5E1; padding:5px 3px; font-size:11px; font-weight:700; direction:ltr;',
+            style: 'background:#F8FAF9; color:#0F172A; border:1px solid #CBD5E1; padding:2px 1px; font-size:10px; font-weight:700; direction:ltr; height:26px;',
             text: slot.start + ' - ' + slot.end
           });
         })
@@ -1805,7 +1812,7 @@
 
     st.days.forEach(function (dyObj, dayIdx) {
       var trDay = h('tr', null,
-        h('td', { style: 'background:#14532D; color:#fff; border:1.5px solid #0F3D2E; padding:8px 4px; font-weight:800; font-size:13px; width:80px;', text: dyObj.label })
+        h('td', { style: 'background:#14532D; color:#fff; border:1.5px solid #0F3D2E; padding:3px 2px; font-weight:800; font-size:12.5px; width:75px; text-align:center; vertical-align:middle;', text: dyObj.label })
       );
 
       (dyObj.sessions || []).forEach(function (sess) {
@@ -1828,25 +1835,22 @@
         var isMan = (sess.kind === 'manual' || (!isAct && !isLib && (sess.manual_text || sess.title)));
 
         var bg = '#FFFFFF';
-        var border = '1px solid #CBD5E1';
-        var color = '#1E293B';
-        if (isLib) { bg = '#F0FDF4'; border = '1.5px solid #10B981'; color = '#064E3B'; }
-        else if (isAct) { bg = '#FFFBEB'; border = '1.5px solid #F59E0B'; color = '#92400E'; }
-        else if (isMan) { bg = '#EFF6FF'; border = '1.5px solid #3B82F6'; color = '#1E3A8A'; }
+        var border = '1px solid #1E293B';
+        var color = '#000000';
 
         var td = h('td', {
           colspan: colspan,
           rowspan: rowspan,
-          style: 'background:' + bg + '; border:' + border + '; color:' + color + '; padding:6px 4px; height:50px; vertical-align:middle;'
+          style: 'background:#FFFFFF; border:1px solid #1E293B; color:#000000; padding:2px 3px !important; height:38px !important; min-height:36px; max-height:44px; vertical-align:middle; text-align:center; box-sizing:border-box; overflow:hidden;'
         });
 
         if (isLib) {
-          td.appendChild(h('div', { style: 'font-size:10px; font-weight:800; color:#059669;', text: sess.domain }));
-          td.appendChild(h('strong', { style: 'font-size:12px; color:#064E3B; line-height:1.25;', text: sess.skill }));
+          td.appendChild(h('div', { style: 'font-size:8.5px; font-weight:700; color:#334155; margin-bottom:0; letter-spacing:-0.2px;', text: sess.domain }));
+          td.appendChild(h('strong', { style: 'font-size:11px; font-weight:800; color:#000000; line-height:1.2; word-break:break-word;', text: sess.skill }));
         } else if (isAct) {
-          td.appendChild(h('strong', { style: 'font-size:12.5px; color:#78350F; line-height:1.25;', text: sess.activity || sess.title }));
+          td.appendChild(h('strong', { style: 'font-size:11px; font-weight:800; color:#000000; line-height:1.2; word-break:break-word;', text: sess.activity || sess.title }));
         } else if (isMan) {
-          td.appendChild(h('strong', { style: 'font-size:12px; color:#1E3A8A; line-height:1.25;', text: sess.manual_text || sess.title }));
+          td.appendChild(h('strong', { style: 'font-size:11px; font-weight:800; color:#000000; line-height:1.2; word-break:break-word;', text: sess.manual_text || sess.title }));
         } else {
           td.appendChild(h('span', { class: 'small muted', text: '—' }));
         }
@@ -1876,7 +1880,7 @@
     }
     setTimeout(renderPdfCanvasNow, 20);
 
-    return h('div', { class: 'card wk-parent-program-card', style: 'padding:18px;' },
+    return h('div', { class: 'card wk-parent-program-card wk-interactive-sheet-paper', style: 'max-width:1040px; margin:0 auto; padding:14px 18px; background:#FFFFFF; border:2px solid #14532D; border-radius:12px; box-shadow:0 4px 20px rgba(20,83,45,0.08); box-sizing:border-box;' },
       notifBanner,
       h('div', { class: 'bar-sub', style: 'margin-bottom:14px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;' },
         h('div', null,

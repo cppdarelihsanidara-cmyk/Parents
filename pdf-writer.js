@@ -2290,68 +2290,50 @@
         var isMan = (sess.kind === 'manual' || (!isAct && !isLib && (sess.manual_text || sess.title)));
         var isFilled = (isAct || isLib || isMan);
 
-        if (!isFilled) {
-          ctx.fillStyle = '#FFFFFF';
-          ctx.fillRect(sx, ry, cellW, cellH);
-          ctx.strokeStyle = '#CBD5E1';
-          ctx.lineWidth = 1;
-          ctx.strokeRect(sx, ry, cellW, cellH);
-        } else if (isAct) {
-          ctx.fillStyle = '#FFFBEB';
-          ctx.fillRect(sx, ry, cellW, cellH);
-          ctx.strokeStyle = '#F59E0B';
-          ctx.lineWidth = 1.4;
-          ctx.strokeRect(sx, ry, cellW, cellH);
+        // رسم جميع الخانات بيضاء ناصعة (#FFFFFF) بإطار أسود محكم (#1E293B) وكتابة سوداء (#000000)
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(sx, ry, cellW, cellH);
+        ctx.strokeStyle = '#1E293B';
+        ctx.lineWidth = 1.2;
+        ctx.strokeRect(sx, ry, cellW, cellH);
 
-          // كتابة اسم النشاط بنمط احترافي
-          ctx.fillStyle = '#78350F';
-          ctx.font = (rowspan > 1 ? 'bold 15px ' : 'bold 13px ') + '"Cairo", "Tajawal", sans-serif';
+        if (isAct) {
+          ctx.fillStyle = '#000000';
+          ctx.font = (rowspan > 1 ? 'bold 22px ' : 'bold 16.5px ') + '"Cairo", "Tajawal", "IBM Plex Sans Arabic", sans-serif';
           var actText = sess.activity || sess.title || 'نشاط يومي';
-          var actLines = wrapLines(ctx, actText, cellW - 10, 3);
-          var startActY = ry + (cellH - (actLines.length * 18)) / 2 + 14;
+          var actLines = wrapLines(ctx, actText, cellW - 12, 3);
+          var lineH = rowspan > 1 ? 26 : 22;
+          var startActY = ry + (cellH - (actLines.length * lineH)) / 2 + lineH - 4;
           actLines.forEach(function (aln, lIdx) {
-            ctx.fillText(aln, sx + cellW / 2, startActY + lIdx * 18);
+            ctx.fillText(aln, sx + cellW / 2, startActY + lIdx * lineH);
           });
         } else if (isLib) {
-          var pal = DOMAIN_PALETTE[hashDomainIdx(sess.domain)];
-          ctx.fillStyle = pal.bg;
-          ctx.fillRect(sx, ry, cellW, cellH);
-          ctx.strokeStyle = pal.border;
-          ctx.lineWidth = 1.4;
-          ctx.strokeRect(sx, ry, cellW, cellH);
-
-          // شارة المجال
-          ctx.fillStyle = pal.badgeBg;
-          roundRect(ctx, sx + 4, ry + 4, cellW - 8, 20, 3);
-          ctx.fill();
-          ctx.fillStyle = '#FFFFFF';
-          ctx.font = 'bold 10.5px "Cairo", "Tajawal", sans-serif';
+          // اسم المجال بخط رمادي داكن أو بين قوسين في الأعلى
           var shortDom = String(sess.domain || 'مجال بيداغوجي').replace(/\s*\(.*?\)\s*/g, '').trim();
-          var domWrap = wrapLines(ctx, shortDom, cellW - 10, 1);
-          ctx.fillText(domWrap[0] || shortDom, sx + cellW / 2, ry + 18);
+          ctx.fillStyle = '#475569';
+          ctx.font = 'bold 12.5px "Cairo", "Tajawal", "IBM Plex Sans Arabic", sans-serif';
+          var domWrap = wrapLines(ctx, '(' + shortDom + ')', cellW - 12, 1);
+          ctx.fillText(domWrap[0] || ('(' + shortDom + ')'), sx + cellW / 2, ry + 22);
 
-          // اسم المهارة
-          ctx.fillStyle = pal.text;
-          ctx.font = 'bold 11.5px "Cairo", "Tajawal", sans-serif';
+          // اسم المهارة بخط أسود عريض وواضح جداً
+          ctx.fillStyle = '#000000';
+          ctx.font = (rowspan > 1 ? 'bold 19px ' : 'bold 15px ') + '"Cairo", "Tajawal", "IBM Plex Sans Arabic", sans-serif';
           var skText = sess.skill || sess.title || '';
-          var skLines = wrapLines(ctx, skText, cellW - 8, 3);
+          var skLines = wrapLines(ctx, skText, cellW - 12, 3);
+          var skLineH = 20;
+          var startSkY = ry + 44 + (cellH - 44 - (skLines.length * skLineH)) / 2 + skLineH - 4;
           skLines.forEach(function (sln, lIdx) {
-            ctx.fillText(sln, sx + cellW / 2, ry + 40 + lIdx * 16);
+            ctx.fillText(sln, sx + cellW / 2, startSkY + lIdx * skLineH);
           });
         } else if (isMan) {
-          ctx.fillStyle = '#EFF6FF';
-          ctx.fillRect(sx, ry, cellW, cellH);
-          ctx.strokeStyle = '#3B82F6';
-          ctx.lineWidth = 1.4;
-          ctx.strokeRect(sx, ry, cellW, cellH);
-
-          ctx.fillStyle = '#1E3A8A';
-          ctx.font = 'bold 12px "Cairo", "Tajawal", sans-serif';
+          ctx.fillStyle = '#000000';
+          ctx.font = (rowspan > 1 ? 'bold 20px ' : 'bold 15.5px ') + '"Cairo", "Tajawal", "IBM Plex Sans Arabic", sans-serif';
           var manText = sess.manual_text || sess.title || '';
-          var manLines = wrapLines(ctx, manText, cellW - 8, 3);
-          var startManY = ry + (cellH - (manLines.length * 16)) / 2 + 12;
+          var manLines = wrapLines(ctx, manText, cellW - 12, 3);
+          var mLineH = 21;
+          var startManY = ry + (cellH - (manLines.length * mLineH)) / 2 + mLineH - 4;
           manLines.forEach(function (mln, lIdx) {
-            ctx.fillText(mln, sx + cellW / 2, startManY + lIdx * 16);
+            ctx.fillText(mln, sx + cellW / 2, startManY + lIdx * mLineH);
           });
         }
       });

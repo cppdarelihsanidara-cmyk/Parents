@@ -3540,3 +3540,72 @@ html, body {
   background: transparent !important;
   padding: 4px 0 !important;
 }
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   تنسيقات ورقة وجدول البرنامج الأسبوعي A4 المدمجة والاحترافية — دار الإحسان
+   ══════════════════════════════════════════════════════════════════════════════ */
+.wk-interactive-sheet-paper,
+.wk-parent-sheet-paper {
+  max-width: 1040px !important;
+  margin: 0 auto !important;
+  background: #FFFFFF !important;
+  border: 2px solid #14532D !important;
+  border-radius: 12px !important;
+  padding: 14px 18px !important;
+  box-shadow: 0 4px 20px rgba(20, 83, 45, 0.08) !important;
+  box-sizing: border-box !important;
+}
+
+.wk-sheet-table {
+  width: 100% !important;
+  table-layout: fixed !important;
+  border-collapse: collapse !important;
+  border: 2px solid #14532D !important;
+  text-align: center !important;
+  font-family: 'Cairo', 'Tajawal', 'IBM Plex Sans Arabic', system-ui, sans-serif !important;
+}
+
+.wk-sheet-table th,
+.wk-sheet-table td {
+  padding: 2px 3px !important;
+  height: 38px !important;
+  max-height: 44px !important;
+  box-sizing: border-box !important;
+  vertical-align: middle !important;
+  text-align: center !important;
+}
+
+.wk-sheet-table td strong {
+  font-weight: 800 !important;
+  line-height: 1.2 !important;
+}
+
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 6mm;
+  }
+  body {
+    background: #FFFFFF !important;
+  }
+  .no-print,
+  .btn,
+  button,
+  .sidebar,
+  .top-bar,
+  header,
+  nav,
+  .bar-sub {
+    display: none !important;
+  }
+  .wk-interactive-sheet-paper,
+  .wk-parent-sheet-paper {
+    border: 2px solid #14532D !important;
+    box-shadow: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 6px !important;
+    page-break-inside: avoid !important;
+  }
+}

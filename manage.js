@@ -3398,69 +3398,75 @@
         mainContainer.appendChild(mergeBanner);
       }
 
-      // 2. بطاقة ورقة البرنامج الأسبوعي المطابقة تماماً للورقة الأصلية 23499.jpg
+      // 2. بطاقة ورقة البرنامج الأسبوعي المطابقة تماماً للورقة الأصلية 23499.jpg (أبعاد A4 أفقية مدمجة)
       var sheetPaperCard = h('div', {
         class: 'card wk-interactive-sheet-paper',
-        style: 'padding:22px; background:#FFFFFF; border:2px solid #14532D; border-radius:16px; box-shadow:0 8px 30px rgba(20,83,45,0.06); overflow-x:auto;'
+        style: 'max-width:1040px; margin:0 auto; padding:14px 18px; background:#FFFFFF; border:2px solid #14532D; border-radius:12px; box-shadow:0 4px 20px rgba(20,83,45,0.08); overflow-x:auto; box-sizing:border-box; font-family:"Cairo","Tajawal","IBM Plex Sans Arabic",system-ui,sans-serif;'
       });
 
       // أ) ترويسة الورقة الرسمية (الجمعية - المركز - اسم الوثيقة - الفوج - الموسم)
       var sheetHeader = h('div', {
-        style: 'display:grid; grid-template-columns:1fr 2fr 1fr; align-items:center; gap:12px; padding-bottom:14px; margin-bottom:14px; border-bottom:2px solid #14532D;'
+        class: 'wk-sheet-header-grid',
+        style: 'display:grid; grid-template-columns:1fr 2fr 1fr; align-items:center; gap:8px; padding-bottom:8px; margin-bottom:8px; border-bottom:1.5px solid #14532D;'
       },
         h('div', { style: 'text-align:right;' },
-          h('h4', { style: 'margin:0 0 2px; color:#14532D; font-size:15px;', text: 'جمعية أولياء الأطفال المعاقين ذهنيًا' }),
-          h('h5', { style: 'margin:0 0 2px; color:#064E3B; font-size:13.5px;', text: 'المركز النفسي البيداغوجي دار الإحسان' }),
-          h('span', { class: 'small muted', text: 'العطف — غرداية' })
+          h('h4', { style: 'margin:0 0 1px; color:#14532D; font-size:13px; font-weight:800;', text: 'جمعية أولياء الأطفال المعاقين ذهنيًا' }),
+          h('h5', { style: 'margin:0 0 1px; color:#064E3B; font-size:12px; font-weight:700;', text: 'المركز النفسي البيداغوجي دار الإحسان' }),
+          h('span', { class: 'small muted', style: 'font-size:10.5px;', text: 'العطف — غرداية' })
         ),
         h('div', { style: 'text-align:center;' },
           h('h2', {
-            style: 'margin:0 0 4px; color:#14532D; font-size:1.6rem; letter-spacing:0.5px; font-weight:900;',
+            style: 'margin:0 0 2px; color:#14532D; font-size:1.3rem; letter-spacing:0.5px; font-weight:900;',
             text: 'البرنامج المؤقت الأسبوعي'
           }),
           h('div', {
-            style: 'display:inline-block; background:#FEF3C7; color:#92400E; border:1px solid #F59E0B; padding:3px 18px; border-radius:20px; font-weight:800; font-size:14px;',
+            style: 'display:inline-block; background:#FEF3C7; color:#92400E; border:1px solid #F59E0B; padding:2px 14px; border-radius:14px; font-weight:800; font-size:12px;',
             text: 'الفوج: ' + getSecName()
           })
         ),
         h('div', { style: 'text-align:left;' },
-          h('div', { style: 'font-weight:700; color:#14532D; font-size:13.5px;', text: 'الموسم الدراسي: ' + (currentWeekState.academic_year || '2026/2027') }),
-          h('div', { class: 'small muted', text: 'التوقيت: ' + (currentWeekState.day_start || '08:00') + ' إلى ' + (currentWeekState.day_end || '14:00') })
+          h('div', { style: 'font-weight:700; color:#14532D; font-size:12px;', text: 'الموسم الدراسي: ' + (currentWeekState.academic_year || '2026/2027') }),
+          h('div', { class: 'small muted', style: 'font-size:10.5px;', text: 'التوقيت: ' + (currentWeekState.day_start || '08:00') + ' إلى ' + (currentWeekState.day_end || '14:00') })
         )
       );
       sheetPaperCard.appendChild(sheetHeader);
 
-      // ب) جدول ملخص الأنشطة والأنصبة الأسبوعية في أعلى الورقة (مطابق لـ 23499.jpg)
+      // ب) جدول ملخص الأنشطة والأنصبة الأسبوعية في أعلى الورقة (مطابق لـ 23499.jpg - مضغوط ومحكم)
       var loadTable = h('table', {
-        style: 'width:100%; border-collapse:collapse; border:1px solid #CBD5E1; margin-bottom:14px; text-align:center; font-size:12px;'
+        style: 'width:100%; min-width:700px; border-collapse:collapse; border:1.5px solid #14532D; text-align:center; font-size:10px; table-layout:fixed;'
       });
       var trLoad1 = h('tr', null,
-        h('th', { style: 'background:#14532D; color:#fff; padding:5px; border:1px solid #CBD5E1; width:90px;', text: 'الأنشطة التعليمية' }),
+        h('th', { style: 'background:#14532D; color:#fff; padding:2px 1px; border:1px solid #CBD5E1; width:75px; font-size:10.5px; font-weight:800;', text: 'الأنشطة' }),
         OFFICIAL_LOAD_SUMMARY.map(function (it) {
-          return h('td', { style: 'background:' + it.color + '; border:1px solid #CBD5E1; font-weight:800; padding:4px;', text: it.code });
+          return h('td', { style: 'background:' + it.color + '; border:1px solid #CBD5E1; font-weight:800; padding:2px 1px; font-size:10px; color:#0F172A;', text: it.code });
         })
       );
       var trLoad2 = h('tr', null,
-        h('th', { style: 'background:#F8FAF9; color:#1E293B; padding:5px; border:1px solid #CBD5E1;', text: 'الحجم الساعي' }),
+        h('th', { style: 'background:#F8FAF9; color:#1E293B; padding:2px 1px; border:1px solid #CBD5E1; font-size:9.5px; font-weight:700;', text: 'الحجم الساعي' }),
         OFFICIAL_LOAD_SUMMARY.map(function (it) {
-          return h('td', { style: 'border:1px solid #CBD5E1; font-weight:700; padding:3px; font-size:11px;', text: it.duration });
+          return h('td', { style: 'border:1px solid #CBD5E1; font-weight:700; padding:2px 1px; font-size:9.5px; color:#334155;', text: it.duration });
         })
       );
       var trLoad3 = h('tr', null,
-        h('th', { style: 'background:#F8FAF9; color:#1E293B; padding:5px; border:1px solid #CBD5E1;', text: 'عدد الحصص' }),
+        h('th', { style: 'background:#F8FAF9; color:#1E293B; padding:2px 1px; border:1px solid #CBD5E1; font-size:9.5px; font-weight:700;', text: 'عدد الحصص' }),
         OFFICIAL_LOAD_SUMMARY.map(function (it) {
-          return h('td', { style: 'border:1px solid #CBD5E1; font-weight:700; padding:3px;', text: it.count });
+          return h('td', { style: 'border:1px solid #CBD5E1; font-weight:800; padding:2px 1px; font-size:10px; color:#0F172A;', text: it.count });
         })
       );
       loadTable.appendChild(trLoad1);
       loadTable.appendChild(trLoad2);
       loadTable.appendChild(trLoad3);
-      sheetPaperCard.appendChild(loadTable);
 
-      // ج) جدول الحصص الأسبوعي الرئيسي
+      var mobileHint = h('div', { class: 'wk-mobile-scroll-hint' }, h('span', { text: '↔ اسحب الجدول يميناً ويساراً للاطلاع على كامل البرنامج' }));
+      sheetPaperCard.appendChild(mobileHint);
+
+      var loadWrap = h('div', { class: 'wk-table-scroll-wrap', style: 'width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch; margin-bottom:8px;' }, loadTable);
+      sheetPaperCard.appendChild(loadWrap);
+
+      // ج) جدول الحصص الأسبوعي الرئيسي (خانات مصغرة ومحكمة ومتناسقة)
       var tableEl = h('table', {
         class: 'wk-sheet-table',
-        style: 'width:100%; border-collapse:collapse; border:2px solid #14532D; text-align:center; min-width:860px;'
+        style: 'width:100%; border-collapse:collapse; border:2px solid #14532D; text-align:center; min-width:800px; table-layout:fixed;'
       });
 
       var morningSlots = currentWeekState.time_slots.filter(function (s) { return s.period === 'morning'; });
@@ -3474,35 +3480,34 @@
       var trPeriods = h('tr', null,
         h('th', {
           rowspan: 2,
-          style: 'width:90px; background:#14532D; color:#FFFFFF; border:1.5px solid #0F3D2E; padding:10px 4px; font-size:14px; font-weight:800;',
+          style: 'width:75px; background:#14532D; color:#FFFFFF; border:1.5px solid #0F3D2E; padding:4px 2px; font-size:12.5px; font-weight:800; text-align:center;',
           text: 'اليوم'
         }),
         h('th', {
           colspan: morningSlots.length,
-          style: 'background:#ECFDF5; color:#064E3B; border:1.5px solid #10B981; padding:7px; font-size:14px; font-weight:800;',
+          style: 'background:#ECFDF5; color:#064E3B; border:1.5px solid #10B981; padding:3px; font-size:12px; font-weight:800;',
           text: 'الفترة الصباحية (08:00 — 12:00)'
         }),
         h('th', {
           colspan: afternoonSlots.length,
-          style: 'background:#FEF3C7; color:#92400E; border:1.5px solid #F59E0B; padding:7px; font-size:14px; font-weight:800;',
+          style: 'background:#FEF3C7; color:#92400E; border:1.5px solid #F59E0B; padding:3px; font-size:12px; font-weight:800;',
           text: 'الفترة المسائية (12:00 — 14:00)'
         })
       );
       theadEl.appendChild(trPeriods);
 
-      // 2. صف التوقيتات في مكانه مباشرة (Inline Editing — تعديل في مكانه دون نوافذ منبثقة)
+      // 2. صف التوقيتات في مكانه مباشرة (Inline Editing — محكم ومضغوط دون تمدد غير مرغوب)
       var trTimes = h('tr', null,
         currentWeekState.time_slots.map(function (slot, slotIdx) {
-          // خلايا التوقيت في مكانها مباشرة: تظهر كنص أنيق وقابلة للتعديل عند النقر أو عبر مدخلات مدمجة
           var timeBox = h('div', {
-            style: 'display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; padding:3px 2px;'
+            style: 'display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px; padding:1px 0;'
           },
-            h('div', { style: 'display:flex; align-items:center; justify-content:center; gap:2px; direction:ltr;' },
+            h('div', { style: 'display:flex; align-items:center; justify-content:center; gap:1px; direction:ltr;' },
               h('input', {
                 type: 'time',
                 value: slot.start,
-                title: 'تعديل وقت البداية في مكانه',
-                style: 'border:1px solid #CBD5E1; border-radius:4px; padding:2px 3px; font-size:11.5px; font-weight:700; width:68px; text-align:center; background:#FFFFFF; font-family:inherit;',
+                title: 'تعديل وقت البداية',
+                style: 'border:1px solid #CBD5E1; border-radius:3px; padding:1px; font-size:10px; font-weight:700; width:48px; text-align:center; background:#FFFFFF; font-family:inherit; color:#0F172A;',
                 onchange: function (e) {
                   slot.start = e.target.value;
                   slot.duration = calcDurationMins(slot.start, slot.end);
@@ -3510,12 +3515,12 @@
                   toast('تم تحديث التوقيت في مكانه.', 'ok');
                 }
               }),
-              h('span', { style: 'font-weight:bold; color:#64748B; font-size:11px;', text: '-' }),
+              h('span', { style: 'font-weight:bold; color:#64748B; font-size:9.5px;', text: '-' }),
               h('input', {
                 type: 'time',
                 value: slot.end,
-                title: 'تعديل وقت النهاية في مكانه',
-                style: 'border:1px solid #CBD5E1; border-radius:4px; padding:2px 3px; font-size:11.5px; font-weight:700; width:68px; text-align:center; background:#FFFFFF; font-family:inherit;',
+                title: 'تعديل وقت النهاية',
+                style: 'border:1px solid #CBD5E1; border-radius:3px; padding:1px; font-size:10px; font-weight:700; width:48px; text-align:center; background:#FFFFFF; font-family:inherit; color:#0F172A;',
                 onchange: function (e) {
                   slot.end = e.target.value;
                   slot.duration = calcDurationMins(slot.start, slot.end);
@@ -3524,11 +3529,11 @@
                 }
               })
             ),
-            h('span', { style: 'font-size:10px; color:#64748B; font-weight:600;', text: slot.duration ? (slot.duration + ' د') : '' })
+            h('span', { style: 'font-size:8.5px; color:#64748B; font-weight:700;', text: slot.duration ? (slot.duration + ' د') : '' })
           );
 
           return h('th', {
-            style: 'background:#F8FAF9; border:1.5px solid #CBD5E1; padding:4px 2px; vertical-align:middle;'
+            style: 'background:#F8FAF9; border:1px solid #CBD5E1; padding:2px 1px; vertical-align:middle; height:26px;'
           }, timeBox);
         })
       );
@@ -3558,7 +3563,7 @@
       currentWeekState.days.forEach(function (dayObj, dayIdx) {
         var trDay = h('tr', null,
           h('td', {
-            style: 'background:#14532D; color:#FFFFFF; border:1.5px solid #0F3D2E; padding:10px 4px; font-weight:800; font-size:14px; width:90px;',
+            style: 'background:#14532D; color:#FFFFFF; border:1.5px solid #0F3D2E; padding:3px 2px; font-weight:800; font-size:12.5px; width:75px; text-align:center; vertical-align:middle;',
             text: dayObj.label
           })
         );
@@ -3586,56 +3591,48 @@
           var cellKey = dayObj.day + ':' + sess.slot_id;
           var isSelected = !!mergeSelectedCells[cellKey];
 
-          // تصميم واحترافية الخانة: ألوان متناسقة وخفيفة، محتوى بحجم متناسب تماماً
+          // تصميم واحترافية الخانة الرسمية: خانات بيضاء نقية وكتابة سوداء عريضة ومحكمة (مطابق لطلب الإدارة)
           var bg = '#FFFFFF';
-          var border = '1px solid #CBD5E1';
-          var textClr = '#1E293B';
+          var border = '1px solid #1E293B';
+          var textClr = '#000000';
           var isFilled = (sess.kind && sess.kind !== 'empty');
 
           if (isSelected) {
-            bg = '#FEF3C7';
-            border = '2px dashed #D97706';
-          } else if (sess.kind === 'activity') {
-            bg = '#FFFBEB';
-            border = '1.5px solid #F59E0B';
-            textClr = '#92400E';
-          } else if (sess.kind === 'library') {
-            bg = '#F0FDF4';
-            border = '1.5px solid #10B981';
-            textClr = '#064E3B';
-          } else if (sess.kind === 'manual') {
-            bg = '#EFF6FF';
-            border = '1.5px solid #3B82F6';
-            textClr = '#1E3A8A';
+            bg = '#F1F5F9';
+            border = '2px dashed #000000';
+          } else {
+            bg = '#FFFFFF';
+            border = '1px solid #1E293B';
+            textClr = '#000000';
           }
 
           var td = h('td', {
             colspan: colspan,
             rowspan: rowspan,
-            style: 'background:' + bg + '; border:' + border + '; color:' + textClr + '; padding:6px 4px; vertical-align:middle; cursor:pointer; height:54px; transition:all 0.15s ease;'
+            style: 'background:' + bg + '; border:' + border + '; color:' + textClr + '; padding:2px 3px !important; vertical-align:middle; text-align:center; cursor:pointer; height:38px !important; min-height:36px; max-height:44px; box-sizing:border-box; overflow:hidden; transition:all 0.15s ease;'
           });
 
           if (!isFilled) {
             td.appendChild(h('span', {
-              style: 'color:#94A3B8; font-size:11px; font-weight:600; display:block; border:1px dashed #E2E8F0; padding:4px 2px; border-radius:4px;',
-              text: isMergeMode ? (isSelected ? '✓ محددة' : 'اضغط للتحديد') : '+ تعبئة'
+              style: 'color:#94A3B8; font-size:9px; font-weight:600; display:block; border:1px dashed #CBD5E1; padding:2px 1px; border-radius:3px;',
+              text: isMergeMode ? (isSelected ? '✓ محددة' : 'حدد') : '+ تعبئة'
             }));
           } else {
-            var contentWrap = h('div', { style: 'display:flex; flex-direction:column; gap:2px; justify-content:center; align-items:center;' });
+            var contentWrap = h('div', { style: 'display:flex; flex-direction:column; gap:1px; justify-content:center; align-items:center; line-height:1.2; width:100%;' });
             if (rowspan > 1 || colspan > 1) {
               var spanTag = (rowspan > 1 && colspan > 1) ? ('مدمجة ' + rowspan + '×' + colspan) : (rowspan > 1 ? ('ممتدة ' + rowspan + ' أيام') : ('مدمجة ' + colspan + ' حصص'));
               contentWrap.appendChild(h('span', {
-                style: 'font-size:9.5px; background:#FEF3C7; color:#B45309; padding:1px 5px; border-radius:3px; font-weight:800;',
+                style: 'font-size:7.5px; background:#F1F5F9; color:#0F172A; border:1px solid #CBD5E1; padding:0 3px; border-radius:2px; font-weight:800;',
                 text: spanTag
               }));
             }
             if (sess.kind === 'activity') {
-              contentWrap.appendChild(h('strong', { style: 'font-size:12.5px; color:#78350F; line-height:1.25;', text: sess.activity || sess.title }));
+              contentWrap.appendChild(h('strong', { style: 'font-size:11px; font-weight:800; color:#000000; line-height:1.2; word-break:break-word; text-align:center;', text: sess.activity || sess.title }));
             } else if (sess.kind === 'library') {
-              contentWrap.appendChild(h('span', { style: 'font-size:10px; font-weight:800; color:#059669;', text: sess.domain }));
-              contentWrap.appendChild(h('strong', { style: 'font-size:12px; color:#064E3B; line-height:1.25;', text: sess.skill }));
+              contentWrap.appendChild(h('span', { style: 'font-size:8.5px; font-weight:700; color:#334155; margin-bottom:0; letter-spacing:-0.2px; text-align:center;', text: sess.domain }));
+              contentWrap.appendChild(h('strong', { style: 'font-size:11px; font-weight:800; color:#000000; line-height:1.2; word-break:break-word; text-align:center;', text: sess.skill }));
             } else if (sess.kind === 'manual') {
-              contentWrap.appendChild(h('strong', { style: 'font-size:12px; color:#1E3A8A; line-height:1.25;', text: sess.manual_text || sess.title }));
+              contentWrap.appendChild(h('strong', { style: 'font-size:11px; font-weight:800; color:#000000; line-height:1.2; word-break:break-word; text-align:center;', text: sess.manual_text || sess.title }));
             }
             td.appendChild(contentWrap);
           }
@@ -3660,47 +3657,48 @@
       });
 
       tableEl.appendChild(tbodyEl);
-      sheetPaperCard.appendChild(tableEl);
+      var tableWrap = h('div', { class: 'wk-table-scroll-wrap', style: 'width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch; margin-bottom:8px;' }, tableEl);
+      sheetPaperCard.appendChild(tableWrap);
 
-      // د) تذييل التوقيعات الثلاثة للورقة الرسمية
+      // د) تذييل التوقيعات الثلاثة للورقة الرسمية (مضغوط ومحدد المقاس)
       var sheetFooter = h('div', {
-        style: 'display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin-top:20px; padding-top:16px; border-top:1.5px solid #14532D; text-align:center;'
+        style: 'display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-top:10px; padding-top:8px; border-top:1.5px solid #14532D; text-align:center;'
       },
-        h('div', { style: 'background:#F8FAF9; padding:10px; border-radius:10px; border:1px solid #E2E8F0;' },
-          h('strong', { style: 'display:block; color:#14532D; font-size:13.5px; margin-bottom:4px;', text: 'توقيع المربية' }),
+        h('div', { style: 'background:#F8FAF9; padding:6px 8px; border-radius:8px; border:1px solid #E2E8F0;' },
+          h('strong', { style: 'display:block; color:#14532D; font-size:11.5px; margin-bottom:2px; font-weight:800;', text: 'توقيع المربية' }),
           h('input', {
             class: 'input small',
             type: 'text',
             placeholder: 'اسم المربية...',
             value: currentWeekState.educator_name || '',
-            style: 'text-align:center; font-size:12px; margin-bottom:4px;',
+            style: 'text-align:center; font-size:10.5px; margin-bottom:2px; padding:2px 4px;',
             onchange: function (e) { currentWeekState.educator_name = e.target.value; }
           }),
-          h('span', { class: 'small muted', text: 'الإمضاء والتأشيرة' })
+          h('span', { class: 'small muted', style: 'font-size:9.5px;', text: 'الإمضاء والتأشيرة' })
         ),
-        h('div', { style: 'background:#F8FAF9; padding:10px; border-radius:10px; border:1px solid #E2E8F0;' },
-          h('strong', { style: 'display:block; color:#14532D; font-size:13.5px; margin-bottom:4px;', text: 'المشرف البيداغوجي' }),
+        h('div', { style: 'background:#F8FAF9; padding:6px 8px; border-radius:8px; border:1px solid #E2E8F0;' },
+          h('strong', { style: 'display:block; color:#14532D; font-size:11.5px; margin-bottom:2px; font-weight:800;', text: 'المشرف البيداغوجي' }),
           h('input', {
             class: 'input small',
             type: 'text',
             placeholder: 'اسم المشرف البيداغوجي...',
             value: currentWeekState.supervisor_name || '',
-            style: 'text-align:center; font-size:12px; margin-bottom:4px;',
+            style: 'text-align:center; font-size:10.5px; margin-bottom:2px; padding:2px 4px;',
             onchange: function (e) { currentWeekState.supervisor_name = e.target.value; }
           }),
-          h('span', { class: 'small muted', text: 'الإمضاء والتأشيرة' })
+          h('span', { class: 'small muted', style: 'font-size:9.5px;', text: 'الإمضاء والتأشيرة' })
         ),
-        h('div', { style: 'background:#F8FAF9; padding:10px; border-radius:10px; border:1px solid #E2E8F0;' },
-          h('strong', { style: 'display:block; color:#14532D; font-size:13.5px; margin-bottom:4px;', text: 'توقيع وختم المدير' }),
+        h('div', { style: 'background:#F8FAF9; padding:6px 8px; border-radius:8px; border:1px solid #E2E8F0;' },
+          h('strong', { style: 'display:block; color:#14532D; font-size:11.5px; margin-bottom:2px; font-weight:800;', text: 'توقيع وختم المدير' }),
           h('input', {
             class: 'input small',
             type: 'text',
             placeholder: 'اسم المدير...',
             value: currentWeekState.director_name || '',
-            style: 'text-align:center; font-size:12px; margin-bottom:4px;',
+            style: 'text-align:center; font-size:10.5px; margin-bottom:2px; padding:2px 4px;',
             onchange: function (e) { currentWeekState.director_name = e.target.value; }
           }),
-          h('span', { class: 'small muted', text: 'التأشيرة والختم الرسمي' })
+          h('span', { class: 'small muted', style: 'font-size:9.5px;', text: 'التأشيرة والختم الرسمي' })
         )
       );
       sheetPaperCard.appendChild(sheetFooter);
