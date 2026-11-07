@@ -4917,3 +4917,46 @@ html, body {
   color: #334155 !important;
   display: block !important;
 }
+
+
+/* =====================================================================
+   DAR EL IHSAN — 3 NEW EVALUATION SHEETS & A4 PRINT STYLES
+   ===================================================================== */
+.reinforcers-sheet, .interview-sheet, .annual-sheet {
+  background: #FFFFFF !important;
+  color: #0F172A !important;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+}
+
+.reinforcers-sheet table th, .reinforcers-sheet table td,
+.interview-sheet table th, .interview-sheet table td,
+.annual-sheet table th, .annual-sheet table td {
+  border-color: #000000 !important;
+}
+
+.ratio-option-box:hover {
+  border-color: #14532D !important;
+  background: #F0FDF4 !important;
+}
+
+@media print {
+  body {
+    background: #FFFFFF !important;
+    color: #000000 !important;
+  }
+  .no-print, .bar-sub, .form-actions, header, nav, .sidebar {
+    display: none !important;
+  }
+  .wk-modal-print, .reinforcers-sheet, .interview-sheet, .annual-sheet {
+    box-shadow: none !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  @page {
+    size: A4 portrait;
+    margin: 10mm;
+  }
+}
