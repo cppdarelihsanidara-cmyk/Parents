@@ -2533,34 +2533,140 @@ function generateWordDocObservation(rep, child, secName, brName) {
   
   /* ورقات التقييم الثلاثة الجديدة في فضاء الأولياء */
   var REINFORCERS_CATALOG = [
-    { cat: 'المعززات الغذائية', items: ['فواكه', 'شيكولاتة', 'خضار خيار', 'بسكويت', 'عيش', 'ماء', 'مشروبات غازية', 'لبن', 'عصير', 'قهوة', 'أخرى (غذائية)'] },
-    { cat: 'المعززات الإجتماعية', items: ['الإبتسام', 'الكلمات التشجيعية', 'الثناء', 'الانتباه', 'أخرى (اجتماعية)'] },
-    { cat: 'المعززات المادية', items: ['قطار', 'حافلة', 'مكعبات', 'هواتف', 'أخرى (مادية)'] },
-    { cat: 'المعززات الرمزية', items: ['النقاط', 'النجوم', 'الكوبانات', 'أخرى (رمزية)'] },
-    { cat: 'المعززات النشاطية', items: ['برنامج تلفزيونى مفضل', 'اللعب بالكرة', 'الخروج مع الأصدقاء', 'الزيارات', 'الرحلات', 'الرسم', 'السباحة', 'الجرى'] },
-    { cat: 'معززات جسدية', items: ['الأحضان', 'القبلات', 'الربت على الكتف', 'السلام باليد (Give me five)', 'الدغدغة باليد'] }
+    {
+      cat: 'المعززات الغذائية',
+      items: ['فواكه', 'شيكولاتة', 'خضار خيار', 'بسكويت', 'عيش', 'ماء', 'مشروبات غازية', 'لبن', 'عصير', 'قهوة', 'أخرى (غذائية)']
+    },
+    {
+      cat: 'المعززات الإجتماعية',
+      items: ['الإبتسام', 'الكلمات التشجيعية', 'الثناء', 'الانتباه', 'أخرى (اجتماعية)']
+    },
+    {
+      cat: 'المعززات المادية',
+      items: ['قطار', 'حافلة', 'مكعبات', 'هواتف', 'أخرى (مادية)']
+    },
+    {
+      cat: 'المعززات الرمزية',
+      items: ['النقاط', 'النجوم', 'الكوبانات', 'أو أى اشياء أخر قابلة للإستبدال بمعززات أخرى فى وقت أخر', 'أخرى (رمزية)']
+    },
+    {
+      cat: 'المعززات النشاطية',
+      items: ['برنامج تلفزيونى مفضل', 'اللعب بالكرة', 'الخروج مع الأصدقاء', 'الزيارات', 'الرحلات', 'الرسم', 'السباحة', 'الجرى', 'أخرى (نشاطية)']
+    },
+    {
+      cat: 'معززات جسدية',
+      items: ['الأحضان', 'القبلات', 'الربت على الكتف', 'السلام باليد فى مواجهة اليد (GIVE me five)', 'الدغدغة باليد على جسم الطفل', 'أخرى (جسدية)']
+    }
   ];
 
+  /* مساعدات عناصر الواجهة الاحترافية (Modern UI Helpers) */
+  function makeRatingSegment(curVal, onChange) {
+    var wrap = h('div', { class: 'segmented-rating-wrap', style: 'display:flex; gap:6px; background:#F1F5F9; padding:4px; border-radius:10px; border:1.5px solid #CBD5E1;' });
+    var opts = [
+      { val: 'ضعيف', bg: '#EF4444' },
+      { val: 'متوسط', bg: '#F59E0B' },
+      { val: 'جيد', bg: '#10B981' }
+    ];
+    var btns = [];
+    opts.forEach(function (opt) {
+      var isSel = (curVal === opt.val);
+      var b = h('button', {
+        type: 'button',
+        style: 'flex:1; padding:7px 12px; border:none; border-radius:8px; font-size:13px; font-weight:800; cursor:pointer; transition:all 0.15s ease; ' +
+               (isSel ? ('background:' + opt.bg + '; color:#FFF; box-shadow:0 2px 6px rgba(0,0,0,0.15);') : 'background:transparent; color:#475569;')
+      }, h('span', { text: opt.val }));
+
+      b.onclick = function () {
+        curVal = opt.val;
+        btns.forEach(function (btnObj) {
+          var active = (btnObj.val === curVal);
+          btnObj.el.style.background = active ? btnObj.bg : 'transparent';
+          btnObj.el.style.color = active ? '#FFF' : '#475569';
+          btnObj.el.style.boxShadow = active ? '0 2px 6px rgba(0,0,0,0.15)' : 'none';
+        });
+        if (typeof onChange === 'function') onChange(curVal);
+      };
+      btns.push({ el: b, val: opt.val, bg: opt.bg });
+      wrap.appendChild(b);
+    });
+    wrap.getVal = function () { return curVal; };
+    wrap.setVal = function (v) {
+      curVal = v;
+      btns.forEach(function (btnObj) {
+        var active = (btnObj.val === curVal);
+        btnObj.el.style.background = active ? btnObj.bg : 'transparent';
+        btnObj.el.style.color = active ? '#FFF' : '#475569';
+        btnObj.el.style.boxShadow = active ? '0 2px 6px rgba(0,0,0,0.15)' : 'none';
+      });
+    };
+    return wrap;
+  }
+
+  function makeModernYesNoSegment(name, curVal) {
+    var wrap = h('div', { style: 'display:flex; gap:6px; background:#F1F5F9; padding:3px; border-radius:8px; border:1px solid #CBD5E1; min-width:140px;' });
+    var val = curVal || 'لا';
+    var bYes = h('button', {
+      type: 'button',
+      style: 'flex:1; padding:5px 12px; border:none; border-radius:6px; font-size:12.5px; font-weight:800; cursor:pointer; transition:all 0.15s ease; ' +
+             (val === 'نعم' ? 'background:#10B981; color:#FFF; box-shadow:0 2px 4px rgba(16,185,129,0.25);' : 'background:transparent; color:#475569;')
+    }, h('span', { text: '✔ نعم' }));
+
+    var bNo = h('button', {
+      type: 'button',
+      style: 'flex:1; padding:5px 12px; border:none; border-radius:6px; font-size:12.5px; font-weight:800; cursor:pointer; transition:all 0.15s ease; ' +
+             (val !== 'نعم' ? 'background:#64748B; color:#FFF; box-shadow:0 2px 4px rgba(100,116,139,0.25);' : 'background:transparent; color:#475569;')
+    }, h('span', { text: '✕ لا' }));
+
+    bYes.onclick = function () {
+      val = 'نعم';
+      bYes.style.background = '#10B981'; bYes.style.color = '#FFF'; bYes.style.boxShadow = '0 2px 4px rgba(16,185,129,0.25)';
+      bNo.style.background = 'transparent'; bNo.style.color = '#475569'; bNo.style.boxShadow = 'none';
+    };
+    bNo.onclick = function () {
+      val = 'لا';
+      bNo.style.background = '#64748B'; bNo.style.color = '#FFF'; bNo.style.boxShadow = '0 2px 4px rgba(100,116,139,0.25)';
+      bYes.style.background = 'transparent'; bYes.style.color = '#475569'; bYes.style.boxShadow = 'none';
+    };
+
+    wrap.appendChild(bYes);
+    wrap.appendChild(bNo);
+    wrap.getVal = function () { return val; };
+    return wrap;
+  }
+
+  
+
+  /* 5. عرض ورقة استبانة المعززات الرسمية مع كامل الملاحظات ومبدأ بريماك ولوغو المركز */
   function renderReinforcersSheetView(r, childFullName, secName, kd) {
     var ev = parseEvaluationReport(r);
-    var rf = ev.reinforcers || {};
+    var rf = (ev.reinforcers) || {};
     var items = rf.items || {};
     var custom = rf.custom_items || {};
 
-    var wrap = h('div', { class: 'oep-sheet-container reinforcers-sheet', style: 'background:#FFF; padding:24px; border:2px solid #14532D; font-family:"Cairo", "IBM Plex Sans Arabic", sans-serif; direction:rtl;' });
+    var wrap = h('div', { class: 'oep-sheet-container reinforcers-sheet', style: 'background:#FFF; padding:28px 32px; border:2px solid #14532D; font-family:"Cairo", "IBM Plex Sans Arabic", sans-serif; direction:rtl;' });
 
-    wrap.appendChild(h('div', { style: 'text-align:center; border-bottom:2px solid #14532D; padding-bottom:12px; margin-bottom:16px;' },
-      h('h3', { style: 'margin:0 0 4px; color:#14532D; font-size:16px; font-weight:800;', text: 'جمعية أولياء الأطفال المعاقين ذهنيًا — دار الإحسان' }),
-      h('h2', { style: 'margin:0 0 4px; color:#0F172A; font-size:18px; font-weight:900; text-decoration:underline;', text: 'استبانة لتحديد المعززات التي يرغب فيها الشخص' }),
-      h('div', { style: 'display:flex; justify-content:space-around; font-size:13px; font-weight:700; margin-top:8px; background:#F8FAF9; padding:8px; border-radius:6px;' },
-        h('span', { text: 'اسم المفحوص: ' + (childFullName || '—') }),
-        h('span', { text: 'تاريخ الميلاد: ' + (rf.dob ? fmt(rf.dob) : (kd && kd.dob ? fmt(kd.dob) : '—')) }),
-        h('span', { text: 'القائم بالمقابلة: ' + (rf.interviewer || 'مدير المركز') }),
-        h('span', { text: 'تاريخ المقابلة: ' + fmt(rf.interview_date || ev.report_date) })
-      )
+    // ترويسة الوثيقة الرسمية مع الشعار الرسمي لدار الإحسان
+    wrap.appendChild(h('div', { style: 'display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #14532D; padding-bottom:12px; margin-bottom:16px;' },
+      h('div', { style: 'text-align:right;' },
+        h('h3', { style: 'margin:0 0 4px; color:#14532D; font-size:16px; font-weight:900;', text: 'جمعية أولياء الأطفال المعاقين ذهنيًا دار الإحسان' }),
+        h('div', { style: 'font-size:13px; color:#475569; font-weight:700;', text: 'المركز النفسي البيداغوجي — العطف غرداية' })
+      ),
+      h('div', { style: 'text-align:center;' },
+        h('h2', { style: 'margin:0; color:#0F172A; font-size:18px; font-weight:900; text-decoration:underline;', text: 'استبانة لتحديد المعززات التي يرغب فيها الشخص' })
+      ),
+      h('img', { src: 'logo-sq.png', alt: 'دار الإحسان', style: 'width:62px; height:62px; object-fit:contain;' })
     ));
 
-    var tbl = h('table', { style: 'width:100%; border-collapse:collapse; text-align:center; border:1.5px solid #14532D; font-size:12px; margin-bottom:16px;' });
+    // معلومات المفحوص
+    wrap.appendChild(h('div', { style: 'display:grid; grid-template-columns:repeat(4, 1fr); gap:8px; font-size:12.5px; font-weight:700; margin-bottom:14px; background:#F8FAFC; padding:10px 14px; border-radius:8px; border:1px solid #CBD5E1;' },
+      h('span', { text: 'اسم المفحوص: ' + (childFullName || '—') }),
+      h('span', { text: 'تاريخ الميلاد: ' + (rf.dob ? fmt(rf.dob) : (kd && kd.dob ? fmt(kd.dob) : '—')) }),
+      h('span', { text: 'القائم بالمقابلة: ' + (rf.interviewer || 'مدير المركز') }),
+      h('span', { text: 'تاريخ المقابلة: ' + fmt(rf.interview_date || ev.report_date) })
+    ));
+
+    // جدول المعززات مع 3 خيارات وعلامة ✔
+    var tbl = h('table', { style: 'width:100%; border-collapse:collapse; text-align:center; border:1.5px solid #14532D; font-size:11.5px; margin-bottom:16px;' });
     tbl.appendChild(h('thead', null,
       h('tr', { style: 'background:#14532D; color:#FFF; font-weight:800;' },
         h('th', { style: 'padding:6px; border:1px solid #14532D; text-align:right; width:45%;' }, 'المعزز المطلوب تقييمه'),
@@ -2573,7 +2679,7 @@ function generateWordDocObservation(rep, child, secName, brName) {
     var tb = h('tbody', null);
     REINFORCERS_CATALOG.forEach(function (catObj, cIdx) {
       tb.appendChild(h('tr', { style: 'background:#DCFCE7; font-weight:800;' },
-        h('td', { colspan: 4, style: 'padding:6px 10px; text-align:right; border:1px solid #CBD5E1; color:#14532D;', text: '● ' + catObj.cat })
+        h('td', { colspan: 4, style: 'padding:5px 10px; text-align:right; border:1px solid #CBD5E1; color:#14532D;', text: '● ' + catObj.cat })
       ));
       catObj.items.forEach(function (itemLabel, iIdx) {
         var key = cIdx + '_' + iIdx;
@@ -2582,46 +2688,85 @@ function generateWordDocObservation(rep, child, secName, brName) {
         var displayLabel = isOther && custom[key] ? (itemLabel + ': ' + custom[key]) : itemLabel;
 
         tb.appendChild(h('tr', { style: 'border:1px solid #CBD5E1;' },
-          h('td', { style: 'padding:5px 10px; border:1px solid #CBD5E1; text-align:right; font-weight:600;' }, displayLabel),
-          h('td', { style: 'padding:5px; border:1px solid #CBD5E1; font-weight:900; color:#059669; font-size:14px;' }, chosen === 'شديدة' ? '✔' : ''),
-          h('td', { style: 'padding:5px; border:1px solid #CBD5E1; font-weight:900; color:#D97706; font-size:14px;' }, chosen === 'متوسطة' ? '✔' : ''),
-          h('td', { style: 'padding:5px; border:1px solid #CBD5E1; font-weight:900; color:#64748B; font-size:14px;' }, chosen === 'قليلة' ? '✔' : '')
+          h('td', { style: 'padding:4px 10px; border:1px solid #CBD5E1; text-align:right; font-weight:600;' }, displayLabel),
+          h('td', { style: 'padding:4px; border:1px solid #CBD5E1; font-weight:900; color:#059669; font-size:13px;' }, chosen === 'شديدة' ? '✔' : ''),
+          h('td', { style: 'padding:4px; border:1px solid #CBD5E1; font-weight:900; color:#D97706; font-size:13px;' }, chosen === 'متوسطة' ? '✔' : ''),
+          h('td', { style: 'padding:4px; border:1px solid #CBD5E1; font-weight:900; color:#64748B; font-size:13px;' }, chosen === 'قليلة' ? '✔' : '')
         ));
       });
     });
     tbl.appendChild(tb);
     wrap.appendChild(tbl);
 
-    wrap.appendChild(h('div', { style: 'display:flex; justify-content:space-between; align-items:center; margin-top:20px; border-top:1.5px solid #14532D; padding-top:12px;' },
-      h('div', { style: 'font-size:11px; color:#475569; max-width:65%;' },
-        h('strong', { text: 'ملاحظة: ' }),
-        h('span', { text: 'يتم التقييم من خلال الملاحظة المباشرة وسؤال الفرد والوالدين، مع مراعاة فورية وتنوع التعزيز ومستوى الحرمان منه.' })
+    // الملاحظات الكاملة ومواصفات المعزز الفعال ومبدأ بريماك (المطابقة للوثيقة الأصلية)
+    var notesBox = h('div', { style: 'background:#F8FAFC; border:1.5px solid #CBD5E1; border-radius:10px; padding:16px; margin-bottom:16px; font-size:11.5px; line-height:1.7; color:#1E293B;' },
+      h('strong', { style: 'display:block; color:#14532D; font-size:13px; font-weight:900; margin-bottom:6px;', text: 'ويتم التقييم للمعززات من خلال الآتي:' }),
+      h('div', { style: 'margin-bottom:8px; padding-right:12px;' },
+        h('div', { text: '1- من خلال الملاحظة المباشرة للفرد يمكن أن نحدد النشاطات المحببة له.' }),
+        h('div', { text: '2- من خلال المقابلة مع الوالدين وذلك بسؤالهم لتحديد المعززات المحتملة.' }),
+        h('div', { text: '3- سؤال الفرد نفسه.' })
       ),
-      h('div', { style: 'text-align:center; font-weight:700; font-size:13px;' },
-        h('div', { text: 'توقيع وختم المركز' }),
-        h('div', { style: 'height:40px;' })
+      h('strong', { style: 'display:block; color:#14532D; font-size:13px; font-weight:900; margin-bottom:6px;', text: 'مواصفات المعزز الفعال:' }),
+      h('div', { style: 'display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px; padding-right:12px;' },
+        h('div', null,
+          h('b', { text: '1- فورية التعزيز: ' }), h('span', { text: 'الذي يحدث بعد السلوك مباشرة أكثر فاعلية من المؤجل.' }),
+          h('br'),
+          h('b', { text: '2- تنويع التعزيز: ' }), h('span', { text: 'استخدام معززات متنوعة يؤدي لفاعلية أكبر ولا يؤدي للإشباع أو الملل.' }),
+          h('br'),
+          h('b', { text: '3- جدول التعزيز: ' }), h('span', { text: 'يكون متواصلاً في المراحل الأولى ومتقطعاً في المراحل الأخيرة.' }),
+          h('br'),
+          h('b', { text: '4- مستوى الحرمان: ' }), h('span', { text: 'يكون المعزز أكثر أثراً إذا كان الفرد ممنوعاً منه.' })
+        ),
+        h('div', null,
+          h('b', { text: '5- نوعية التعزيز: ' }), h('span', { text: 'التعزيز الطبيعي (كالمدح) أكثر فاعلية من الصناعي (كالكوبونات).' }),
+          h('br'),
+          h('b', { text: '6- طريقة التقديم: ' }), h('span', { text: 'يجب أن يخلو التعزيز من التكلف.' }),
+          h('br'),
+          h('b', { text: '7- كمية التعزيز: ' }), h('span', { text: 'التعزيز الفعال الذي يتناسب مع صعوبة السلوك المطلوب.' })
+        )
+      ),
+      h('strong', { style: 'display:block; color:#14532D; font-size:13px; font-weight:900; margin-bottom:4px;', text: 'ملاحظات على أنواع المعززات ومبدأ بريماك:' }),
+      h('p', { style: 'margin:0; padding-right:12px;', text: 'المعززات النشاطية تعد من أفضل أنواع المعززات وأكثرها قبولاً لأن الإشباع نادراً ما يحدث فيها، وتستند دائماً لمبدأ بريماك (Premack Principle) الذي نستخدم فيه سلوكاً محبباً للفرد في تعزيز سلوك نادراً ما يقوم به (مثل: مشاهدة التلفزيون بعد إنجاز الواجب والمهام المطلوبة).' })
+    );
+    wrap.appendChild(notesBox);
+
+    // توقيع وختم مدير المركز فقط
+    wrap.appendChild(h('div', { style: 'display:flex; justify-content:center; align-items:center; margin-top:20px; border-top:1.5px solid #14532D; padding-top:14px;' },
+      h('div', { style: 'text-align:center; padding:12px 32px; border:1.5px solid #14532D; border-radius:10px; background:#F8FAFC; min-width:280px;' },
+        h('strong', { style: 'color:#14532D; font-size:15px; font-weight:900; display:block; margin-bottom:4px;', text: 'توقيع وختم مدير المركز' }),
+        h('div', { style: 'height:50px;' }),
+        h('span', { class: 'small muted', style: 'font-size:11.5px; color:#64748B;', text: 'التأشيرة والختم الرسمي لدار الإحسان' })
       )
     ));
 
     return wrap;
   }
 
+  /* 6. عرض ورقة شبكة المقابلة والفحص الرسمية مع لوغو المركز وإمضاء المدير فقط */
   function renderInterviewDiagnosticSheetView(r, childFullName, secName, kd) {
     var ev = parseEvaluationReport(r);
-    var iv = ev.interview || {};
+    var iv = (ev.interview) || {};
 
-    var wrap = h('div', { class: 'oep-sheet-container interview-sheet', style: 'background:#FFF; padding:24px; border:2px solid #14532D; font-family:"Cairo", "IBM Plex Sans Arabic", sans-serif; direction:rtl;' });
+    var wrap = h('div', { class: 'oep-sheet-container interview-sheet', style: 'background:#FFF; padding:28px 32px; border:2px solid #14532D; font-family:"Cairo", "IBM Plex Sans Arabic", sans-serif; direction:rtl;' });
 
-    wrap.appendChild(h('div', { style: 'text-align:center; border-bottom:2px solid #14532D; padding-bottom:10px; margin-bottom:14px;' },
-      h('h3', { style: 'margin:0 0 2px; color:#14532D; font-size:15px; font-weight:800;', text: 'المركز النفسي البيداغوجي دار الإحسان — العطف غرداية' }),
-      h('h2', { style: 'margin:0 0 4px; color:#0F172A; font-size:18px; font-weight:900; text-decoration:underline;', text: 'شبكة المقابلة والفحص' }),
-      h('div', { style: 'font-size:13px; font-weight:700; color:#475569;', text: 'تاريخ الفحص: ' + fmt(iv.exam_date || ev.report_date) })
+    // ترويسة الوثيقة مع الشعار
+    wrap.appendChild(h('div', { style: 'display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #14532D; padding-bottom:12px; margin-bottom:14px;' },
+      h('div', { style: 'text-align:right;' },
+        h('h3', { style: 'margin:0 0 2px; color:#14532D; font-size:15px; font-weight:900;', text: 'جمعية أولياء الأطفال المعاقين ذهنيًا دار الإحسان' }),
+        h('div', { style: 'font-size:12.5px; color:#475569; font-weight:700;', text: 'المركز النفسي البيداغوجي — العطف غرداية' })
+      ),
+      h('div', { style: 'text-align:center;' },
+        h('h2', { style: 'margin:0 0 4px; color:#0F172A; font-size:18px; font-weight:900; text-decoration:underline;', text: 'شبكة المقابلة والفحص البيداغوجي والنفسي' }),
+        h('div', { style: 'font-size:12.5px; font-weight:700; color:#475569;', text: 'تاريخ الفحص: ' + fmt(iv.exam_date || ev.report_date) })
+      ),
+      h('img', { src: 'logo-sq.png', alt: 'دار الإحسان', style: 'width:60px; height:60px; object-fit:contain;' })
     ));
 
     function makeH(num, title) {
-      return h('div', { style: 'background:#14532D; color:#FFF; padding:5px 10px; font-weight:800; font-size:13px; margin:10px 0 6px; border-radius:4px;' }, num + '- ' + title);
+      return h('div', { style: 'background:#14532D; color:#FFF; padding:6px 12px; font-weight:800; font-size:13px; margin:12px 0 6px; border-radius:6px;' }, num + '- ' + title);
     }
 
+    // 1- تقديم الحالة
     wrap.appendChild(makeH('1', 'تقديم الحالة:'));
     var t1 = h('table', { style: 'width:100%; border-collapse:collapse; font-size:12px; margin-bottom:8px; border:1px solid #CBD5E1;' });
     var t1Rows = [
@@ -2641,34 +2786,37 @@ function generateWordDocObservation(rep, child, secName, brName) {
     });
     wrap.appendChild(t1);
 
+    // 2- دوافع الفحص
     wrap.appendChild(makeH('2', 'دوافع الفحص:'));
-    wrap.appendChild(h('div', { style: 'font-size:12.5px; padding:6px 12px; background:#F8FAF9; border:1px solid #CBD5E1; display:flex; gap:20px;' },
+    wrap.appendChild(h('div', { style: 'font-size:12.5px; padding:8px 14px; background:#F8FAF9; border:1px solid #CBD5E1; border-radius:6px; display:flex; gap:24px; font-weight:700;' },
       h('span', { text: '- من الذي طلب إجراء الفحص؟' }),
       h('span', { text: (iv.motive_doctor ? '[✔] ' : '[ ] ') + 'الطبيب' }),
       h('span', { text: (iv.motive_case ? '[✔] ' : '[ ] ') + 'الحالة' }),
       h('span', { text: (iv.motive_family ? '[✔] ' : '[ ] ') + 'الأسرة' })
     ));
 
+    // 3 و 4 - السوابق
     wrap.appendChild(makeH('3 & 4', 'السوابق المرضية الشخصية والعائلية:'));
     var t3 = h('table', { style: 'width:100%; border-collapse:collapse; font-size:12px; border:1px solid #CBD5E1;' });
     t3.appendChild(h('tr', null,
       h('td', { style: 'padding:5px 8px; border:1px solid #CBD5E1; width:75%;' }, 'هل تعرضت الحالة لصدمة دماغية؟'),
-      h('td', { style: 'padding:5px 8px; border:1px solid #CBD5E1; text-align:center; font-weight:700;' }, iv.past_stroke || 'لا')
+      h('td', { style: 'padding:5px 8px; border:1px solid #CBD5E1; text-align:center; font-weight:800;' }, iv.past_stroke || 'لا')
     ));
     t3.appendChild(h('tr', null,
       h('td', { style: 'padding:5px 8px; border:1px solid #CBD5E1;' }, 'هل للحالة سوابق عقلية؟'),
-      h('td', { style: 'padding:5px 8px; border:1px solid #CBD5E1; text-align:center; font-weight:700;' }, iv.past_mental || 'لا')
+      h('td', { style: 'padding:5px 8px; border:1px solid #CBD5E1; text-align:center; font-weight:800;' }, iv.past_mental || 'لا')
     ));
     t3.appendChild(h('tr', null,
       h('td', { style: 'padding:5px 8px; border:1px solid #CBD5E1;' }, 'هل تعاني الحالة من أمراض معينة؟ ' + (iv.past_diseases_text ? ('(' + iv.past_diseases_text + ')') : '')),
-      h('td', { style: 'padding:5px 8px; border:1px solid #CBD5E1; text-align:center; font-weight:700;' }, iv.past_diseases || 'لا')
+      h('td', { style: 'padding:5px 8px; border:1px solid #CBD5E1; text-align:center; font-weight:800;' }, iv.past_diseases || 'لا')
     ));
     t3.appendChild(h('tr', null,
       h('td', { style: 'padding:5px 8px; border:1px solid #CBD5E1;' }, 'هل أصيب أحد الأقارب بالخرف؟ (السوابق العائلية)'),
-      h('td', { style: 'padding:5px 8px; border:1px solid #CBD5E1; text-align:center; font-weight:700;' }, iv.family_dementia || 'لا')
+      h('td', { style: 'padding:5px 8px; border:1px solid #CBD5E1; text-align:center; font-weight:800;' }, iv.family_dementia || 'لا')
     ));
     wrap.appendChild(t3);
 
+    // 5 و 6 - نتائج الفحوصات وتاريخ المرض
     wrap.appendChild(makeH('5 & 6', 'نتائج الفحوصات وتاريخ المرض:'));
     var t5 = h('table', { style: 'width:100%; border-collapse:collapse; font-size:12px; border:1px solid #CBD5E1;' });
     t5.appendChild(h('tr', null,
@@ -2685,6 +2833,7 @@ function generateWordDocObservation(rep, child, secName, brName) {
     ));
     wrap.appendChild(t5);
 
+    // 7- تاريخ الاضطرابات المعرفية والنفسية
     wrap.appendChild(makeH('7', 'تاريخ الاضطرابات المعرفية والنفسية:'));
     var t7 = h('table', { style: 'width:100%; border-collapse:collapse; font-size:11.5px; border:1px solid #CBD5E1;' });
     var items7 = [
@@ -2702,47 +2851,62 @@ function generateWordDocObservation(rep, child, secName, brName) {
     });
     wrap.appendChild(t7);
 
-    wrap.appendChild(h('div', { style: 'margin-top:10px; background:#F8FAF9; border:1px solid #CBD5E1; padding:8px 12px; border-radius:6px;' },
-      h('strong', { style: 'display:block; margin-bottom:2px;', text: 'تعليق المختص العام:' }),
-      h('p', { style: 'margin:0; font-size:12px;', text: iv.expert_comment || 'الحالة تظهر مؤشرات إيجابية للاستجابة للمرافقة والتأهيل المتخصص.' })
+    wrap.appendChild(h('div', { style: 'margin-top:10px; background:#F8FAF9; border:1px solid #CBD5E1; padding:10px 14px; border-radius:8px;' },
+      h('strong', { style: 'display:block; margin-bottom:3px; color:#14532D;', text: 'تعليق مدير المركز والمختصين:' }),
+      h('p', { style: 'margin:0; font-size:12px; line-height:1.6;', text: iv.expert_comment || 'الحالة تظهر مؤشرات إيجابية للاستجابة للمرافقة والتأهيل المستمر.' })
     ));
 
-    wrap.appendChild(h('div', { style: 'display:flex; justify-content:space-between; align-items:center; margin-top:16px; border-top:1.5px solid #14532D; padding-top:10px;' },
-      h('div', { style: 'font-size:12px; font-weight:700;' }, 'حرر بدار الإحسان في: ' + fmt(iv.exam_date || ev.report_date)),
-      h('div', { style: 'text-align:center; font-weight:700; font-size:13px;' },
-        h('div', { text: 'ختم المركز وتوقيع الأخصائي' }),
-        h('div', { style: 'height:35px;' })
+    // توقيع وختم مدير المركز فقط
+    wrap.appendChild(h('div', { style: 'display:flex; justify-content:center; align-items:center; margin-top:20px; border-top:1.5px solid #14532D; padding-top:14px;' },
+      h('div', { style: 'text-align:center; padding:12px 32px; border:1.5px solid #14532D; border-radius:10px; background:#F8FAFC; min-width:280px;' },
+        h('strong', { style: 'color:#14532D; font-size:15px; font-weight:900; display:block; margin-bottom:4px;', text: 'توقيع وختم مدير المركز' }),
+        h('div', { style: 'height:50px;' }),
+        h('span', { class: 'small muted', style: 'font-size:11.5px; color:#64748B;', text: 'التأشيرة والختم الرسمي لدار الإحسان' })
       )
     ));
 
     return wrap;
   }
 
+  /* 7. عرض ورقة التقرير النهائي لمتابعة الطالب مع لوغو المركز وإمضاء المدير فقط وخيارات ضعيف/متوسط/جيد */
   function renderAnnualFinalSheetView(r, childFullName, secName, kd) {
     var ev = parseEvaluationReport(r);
-    var af = ev.annual_final || {};
+    var af = (ev.annual_final) || {};
 
-    var wrap = h('div', { class: 'oep-sheet-container annual-sheet', style: 'background:#FFF; padding:32px 36px; border:2px solid #000; font-family:"Cairo", "IBM Plex Sans Arabic", sans-serif; direction:rtl; max-width:850px; margin:0 auto; line-height:1.6;' });
+    var wrap = h('div', { class: 'oep-sheet-container annual-sheet', style: 'background:#FFF; padding:32px 36px; border:2.5px solid #000; font-family:"Cairo", "IBM Plex Sans Arabic", sans-serif; direction:rtl; max-width:850px; margin:0 auto; line-height:1.6;' });
 
-    wrap.appendChild(h('div', { style: 'text-align:center; margin-bottom:24px;' },
-      h('h2', { style: 'margin:0; font-size:20px; font-weight:900; text-decoration:underline; font-style:italic;', text: 'التقرير النهائي لمتابعة الطالب ' + (childFullName || 'عبد الرزاق') + ' حفظه الله' })
+    // ترويسة مع الشعار الرسمي لدار الإحسان
+    wrap.appendChild(h('div', { style: 'display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #000; padding-bottom:12px; margin-bottom:16px;' },
+      h('div', { style: 'text-align:right;' },
+        h('div', { style: 'font-size:12.5px; font-weight:700;', text: 'الجمهورية الجزائرية الديمقراطية الشعبية' }),
+        h('div', { style: 'font-size:14px; font-weight:900; color:#14532D;', text: 'جمعية أولياء الأطفال المعاقين ذهنياً دار الإحسان' }),
+        h('div', { style: 'font-size:12px; color:#475569; font-weight:700;', text: 'المركز النفسي البيداغوجي — العطف غرداية' })
+      ),
+      h('div', { style: 'text-align:center;' },
+        h('h2', { style: 'margin:0; font-size:19px; font-weight:900; text-decoration:underline; font-style:italic;', text: 'التقرير النهائي لمتابعة الطالب ' + (childFullName || 'عبد الرزاق') + ' حفظه الله' })
+      ),
+      h('img', { src: 'logo-sq.png', alt: 'دار الإحسان', style: 'width:62px; height:62px; object-fit:contain;' })
     ));
 
-    wrap.appendChild(h('div', { style: 'text-align:center; margin-bottom:16px;' },
-      h('div', { style: 'font-size:16px; font-weight:800;', text: 'المكرم ولي أمر / الطالب' }),
-      h('div', { style: 'font-size:15px; font-weight:800; margin-top:2px;', text: af.parent_name || 'مصطفى' })
+    // المخاطبة
+    wrap.appendChild(h('div', { style: 'text-align:center; margin-bottom:14px;' },
+      h('div', { style: 'font-size:15.5px; font-weight:900;', text: 'المكرم ولي أمر / الطالب' }),
+      h('div', { style: 'font-size:15px; font-weight:800; margin-top:2px; color:#14532D;', text: af.parent_name || 'مصطفى' })
     ));
 
-    wrap.appendChild(h('div', { style: 'text-align:center; margin-bottom:14px; font-size:15px; font-weight:800;', text: 'السلام عليكم ورحمة الله وبركاته' }));
+    // السلام عليكم والنص التمهيدي
+    wrap.appendChild(h('div', { style: 'text-align:center; margin-bottom:12px; font-size:15px; font-weight:900;', text: 'السلام عليكم ورحمة الله وبركاته' }));
     wrap.appendChild(h('div', { style: 'text-align:justify; font-size:13.5px; margin-bottom:16px;' },
       'في إطار متابعة المسار التربوي لأبنائكم، نحيطكم علما بأنه تم حصر مختلف المهارات التي تم تدريب ابنكم عليها خلال الموسم الدراسي ' +
       h('strong', null, af.school_year || '2025/2026').outerHTML +
       '، وذلك لتمكينكم من الاطلاع عليها وتعزيز متابعتها خلال العطلة الصيفية. ويأتي هذا في سياق التعاون المستمر بين الأسرة والمركز، وحرصا على المحافظة على المكتسبات وضمان استمرارية البرنامج التربوي، بما يساهم في تحقيق الأهداف المسطرة ودعم تطور الطفل بشكل أفضل.'
     ));
 
+    // • الحالة الانضباطية
     wrap.appendChild(h('div', { style: 'font-size:15px; font-weight:900; margin-bottom:6px;', text: '• الحالة الانضباطية:' }));
     wrap.appendChild(h('div', { style: 'font-size:13.5px; font-weight:800; margin-bottom:8px;', text: 'نظام الحصص في الأسبوع للحالة:' }));
 
+    // مربعات نظام الحصص (1/5 إلى 5/5)
     var ratioBox = h('div', { style: 'display:flex; justify-content:space-between; margin-bottom:14px; font-size:13px; font-weight:800;' });
     var curRatio = af.weekly_ratio || '3/5';
     var ratios = ['1/5', '2/5', '3/5', '4/5', '5/5'];
@@ -2755,6 +2919,7 @@ function generateWordDocObservation(rep, child, secName, brName) {
     });
     wrap.appendChild(ratioBox);
 
+    // جدول الحصص والأحجام الساعية
     var tbl = h('table', { style: 'width:100%; border-collapse:collapse; text-align:center; border:2px solid #000; font-size:13px; margin-bottom:18px;' });
     tbl.appendChild(h('thead', null,
       h('tr', { style: 'font-weight:800; background:#F8FAF9;' },
@@ -2762,7 +2927,7 @@ function generateWordDocObservation(rep, child, secName, brName) {
         h('th', { style: 'border:1.5px solid #000; padding:6px;' }, 'الحجم الساعي السنوي المقابل'),
         h('th', { style: 'border:1.5px solid #000; padding:6px;' }, 'الحصص الفردية المستغلة'),
         h('th', { style: 'border:1.5px solid #000; padding:6px;' }, 'الحجم الساعي المقابل'),
-        h('th', { style: 'border:1.5px solid #000; padding:6px;' }, 'الحجم الساعي السنوي غير المستغل')
+        h('th', { style: 'border:1.5px solid #000; padding:6px; color:#DC2626;' }, 'الحجم الساعي السنوي غير المستغل')
       )
     ));
     tbl.appendChild(h('tbody', null,
@@ -2776,19 +2941,22 @@ function generateWordDocObservation(rep, child, secName, brName) {
     ));
     wrap.appendChild(tbl);
 
+    // • ملاحظات (مظللة بالأصفر الفاقع)
     wrap.appendChild(h('div', { style: 'font-size:15px; font-weight:900; margin-bottom:4px;', text: '• ملاحظات:' }));
     wrap.appendChild(h('div', { style: 'background:#FEF08A; padding:8px 12px; font-size:13.5px; font-weight:800; color:#000; border-radius:4px; margin-bottom:14px;' },
       af.pedagogical_notes || 'الحالة تستجيب للتدريب وتظهر قابلية للتحسن التدريجي، خاصة عند توفير بيئة تربوية منظمة، دعم مستمر، وتعاون فعال بين الأسرة والمختصين وأعانكم الله.'
     ));
 
+    // • ملاحظات الإدارة (مع خيارات ضعيف / متوسط / جيد والغياب مثلما في الجدول)
     wrap.appendChild(h('div', { style: 'font-size:15px; font-weight:900; margin-bottom:4px;', text: '• ملاحظات الإدارة:' }));
-    wrap.appendChild(h('div', { style: 'display:flex; justify-content:space-between; font-size:13px; font-weight:700; margin-bottom:16px;' },
-      h('span', { text: '*الغياب: ' + (af.admin_absence || '02 يوم') }),
-      h('span', { text: '*النظافة العامة: ' + (af.admin_hygiene || 'جيدة') }),
+    wrap.appendChild(h('div', { style: 'display:flex; justify-content:space-between; font-size:13px; font-weight:800; margin-bottom:16px; background:#F8FAFC; padding:10px 14px; border:1px solid #CBD5E1; border-radius:8px;' },
+      h('span', { text: '*الغياب: ' + (af.admin_absence || ((af.absent_days != null ? String(af.absent_days).padStart(2, '0') : '02') + ' يوم')) }),
+      h('span', { text: '*النظافة العامة: ' + (af.admin_hygiene || 'جيد') }),
       h('span', { text: '*التواصل مع المركز: ' + (af.admin_contact || 'جيد') }),
       h('span', { text: '*الاستجابة إلى الدعوات: ' + (af.admin_response || 'جيد') })
     ));
 
+    // • التذكير ببعض الالتزامات منها
     wrap.appendChild(h('div', { style: 'font-size:14px; font-weight:900; margin-bottom:4px;', text: '• التذكير ببعض الالتزامات منها:' }));
     var ul = h('ul', { style: 'margin:0 0 16px; padding-right:20px; font-size:12.5px; line-height:1.6;' },
       h('li', { text: 'احترام النظام الداخلي لتعهد الولي كاملا والعمل به.' }),
@@ -2802,15 +2970,19 @@ function generateWordDocObservation(rep, child, secName, brName) {
     );
     wrap.appendChild(ul);
 
+    // التعهد
     wrap.appendChild(h('div', { style: 'display:flex; justify-content:space-between; font-size:13px; font-weight:800; margin-bottom:16px;' },
       h('span', { text: 'ألتزم بما اطلعت عليه للموسم الدراسي المقبل ' + (af.school_year || '2025/2026') }),
       h('span', { text: 'الاسم اللقب: ....................................................' })
     ));
 
-    wrap.appendChild(h('div', { style: 'display:flex; justify-content:space-around; text-align:center; font-size:13.5px; font-weight:900; margin-top:20px;' },
-      h('div', null, h('span', { style: 'text-decoration:underline;', text: 'رئيس الجمعية' }), h('div', { style: 'height:45px;' })),
-      h('div', null, h('span', { style: 'text-decoration:underline;', text: 'ختم المركز وتوقيع المدير' }), h('div', { style: 'height:45px;' })),
-      h('div', null, h('span', { style: 'text-decoration:underline;', text: 'الإمضاء' }), h('div', { style: 'height:45px;' }))
+    // توقيع وختم مدير المركز فقط (مع نزع غيره)
+    wrap.appendChild(h('div', { style: 'display:flex; justify-content:center; text-align:center; margin-top:22px;' },
+      h('div', { style: 'min-width:280px; padding:12px 24px; border:2px solid #000; border-radius:8px;' },
+        h('span', { style: 'font-size:16px; font-weight:900; text-decoration:underline; display:block;', text: 'توقيع وختم مدير المركز' }),
+        h('div', { style: 'height:50px;' }),
+        h('span', { style: 'font-size:11.5px; color:#475569;', text: 'التأشيرة والختم الرسمي لدار الإحسان' })
+      )
     ));
 
     return wrap;

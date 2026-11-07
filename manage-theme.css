@@ -4960,3 +4960,32 @@ html, body {
     margin: 10mm;
   }
 }
+
+
+/* Modern UI additions for Evaluations & Weekly Program */
+.segmented-rating-wrap button:hover {
+  filter: brightness(0.95);
+}
+
+.ratio-option-box:hover {
+  border-color: #14532D !important;
+  background: #F0FDF4 !important;
+}
+
+.reinforcers-sheet table td, .reinforcers-sheet table th {
+  border: 1px solid #14532D !important;
+}
+
+.interview-sheet table td, .interview-sheet table th {
+  border: 1px solid #14532D !important;
+}
+
+.annual-sheet table td, .annual-sheet table th {
+  border: 1.5px solid #000000 !important;
+}
+
+.modern-eval-grid input:focus, .modern-eval-grid select:focus, .modern-eval-grid textarea:focus {
+  border-color: #14532D !important;
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(20,83,45,0.12) !important;
+}

@@ -1455,10 +1455,13 @@
     ctx.lineTo(W - M, footY);
     ctx.stroke();
 
-    ctx.fillStyle = '#475569';
-    ctx.font = '13px "IBM Plex Sans Arabic", "Cairo", sans-serif';
+    ctx.fillStyle = '#1E293B';
+    ctx.font = 'bold 13px "IBM Plex Sans Arabic", "Cairo", sans-serif';
     ctx.textAlign = 'right';
-    ctx.fillText('ملاحظة: يتم التقييم بالملاحظة المباشرة والمقابلة وسؤال الفرد مع مراعاة فورية وتنوع التعزيز.', W - M - 10, footY + 28);
+    ctx.fillText('• يتم التقييم للمعززات من خلال: 1- الملاحظة المباشرة  2- المقابلة مع الوالدين  3- سؤال الفرد نفسه.', W - M - 10, footY - 30);
+    ctx.fillText('• مواصفات المعزز الفعال: فورية وتنوع التعزيز، جدول التعزيز، مستوى الحرمان، والتعزيز الطبيعي أفضل من الصناعي.', W - M - 10, footY - 10);
+    ctx.font = '12px "IBM Plex Sans Arabic", "Cairo", sans-serif';
+    ctx.fillText('• ملاحظات: المعززات النشاطية تستند لمبدأ بريماك باستخدام سلوك محبب في تعزيز سلوك نادراً ما يقوم به الطفل.', W - M - 10, footY + 10);
 
     ctx.fillStyle = '#0F172A';
     ctx.font = 'bold 16px "IBM Plex Sans Arabic", "Cairo", sans-serif';
@@ -1631,6 +1634,11 @@
     ctx.fillStyle = '#000000';
     ctx.font = 'bold 24px "IBM Plex Sans Arabic", "Cairo", sans-serif';
     ctx.textAlign = 'center';
+    // رسم شعار المركز أعلى التقرير
+    var logoImg = await loadLogoImage();
+    if (logoImg && logoImg.width) {
+      ctx.drawImage(logoImg, W - M - 70, y - 20, 65, 65);
+    }
     var mainTitle = 'التقرير النهائي لمتابعة الطالب ' + chName + ' حفظه الله';
     ctx.fillText(mainTitle, W / 2, y);
     var textMetrics = ctx.measureText(mainTitle);
@@ -1793,12 +1801,17 @@
 
     y += 45;
 
-    // التوقيعات الثلاثة
+    // توقيع وختم مدير المركز فقط
     ctx.textAlign = 'center';
-    ctx.font = 'bold 17px "IBM Plex Sans Arabic", "Cairo", sans-serif';
-    ctx.fillText('رئيس الجمعية', W - M - CW * 0.16, y);
-    ctx.fillText('ختم المركز وتوقيع المدير', W / 2, y);
-    ctx.fillText('الإمضاء', M + CW * 0.16, y);
+    ctx.font = 'bold 18px "IBM Plex Sans Arabic", "Cairo", sans-serif';
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 1.5;
+    var sBoxW = 280, sBoxH = 75;
+    ctx.strokeRect(W / 2 - sBoxW / 2, y - 25, sBoxW, sBoxH);
+    ctx.fillText('توقيع وختم مدير المركز', W / 2, y + 2);
+    ctx.font = '13px "IBM Plex Sans Arabic", "Cairo", sans-serif';
+    ctx.fillStyle = '#475569';
+    ctx.fillText('التأشيرة والختم الرسمي لدار الإحسان', W / 2, y + 36);
 
     var jpg = await canvasToJpegBytes(c, 0.95);
     return buildPdfBinary([{ data: jpg, width: W, height: H }]);
@@ -2681,15 +2694,14 @@
     var timeSlots = (progState && Array.isArray(progState.time_slots) && progState.time_slots.length)
       ? progState.time_slots
       : [
-          { id: 0, start: '08:00', end: '08:30', period: 'morning' },
-          { id: 1, start: '08:30', end: '09:00', period: 'morning' },
-          { id: 2, start: '09:00', end: '09:45', period: 'morning' },
-          { id: 3, start: '09:45', end: '10:30', period: 'morning' },
-          { id: 4, start: '10:30', end: '11:00', period: 'morning' },
-          { id: 5, start: '11:00', end: '12:00', period: 'morning' },
-          { id: 6, start: '12:00', end: '12:45', period: 'afternoon' },
-          { id: 7, start: '12:45', end: '13:40', period: 'afternoon' },
-          { id: 8, start: '13:40', end: '14:00', period: 'afternoon' }
+          { id: 0, start: '08:00', end: '09:00', period: 'morning' },
+          { id: 1, start: '09:00', end: '09:45', period: 'morning' },
+          { id: 2, start: '09:45', end: '10:30', period: 'morning' },
+          { id: 3, start: '10:30', end: '11:00', period: 'morning' },
+          { id: 4, start: '11:00', end: '12:00', period: 'morning' },
+          { id: 5, start: '12:00', end: '12:45', period: 'afternoon' },
+          { id: 6, start: '12:45', end: '13:40', period: 'afternoon' },
+          { id: 7, start: '13:40', end: '14:00', period: 'afternoon' }
         ];
 
     var morningSlots = timeSlots.filter(function (s) { return s.period === 'morning'; });
@@ -2854,7 +2866,7 @@
       });
     });
 
-    // 4. تذييل التوقيعات الثلاثة الرسمي المطابق لـ 23499.jpg
+    // 4. تذييل توقيع وختم مدير المركز فقط
     var footY = H - M - footerH;
     ctx.fillStyle = '#F8FAF9';
     roundRect(ctx, tblX, footY, tblW, footerH, 8);
@@ -2863,84 +2875,25 @@
     ctx.lineWidth = 1;
     ctx.stroke();
 
-    var signBoxW = Math.floor((tblW - 40) / 3);
-    var educatorName = (progState && progState.educator_name) || '';
-    var supervisorName = (progState && progState.supervisor_name) || '';
-    var directorName = (progState && progState.director_name) || '';
-
-    // تذييل التوقيعات الثلاثة مع ترك مساحة واسعة ومميزة للإمضاء والختم الرسمي في أسفل اليسار
+    var dirBoxW = Math.floor(tblW * 0.40);
+    var dirBoxX = W / 2 - dirBoxW / 2;
     var footBoxH = footerH - 10;
     var footBoxY = footY + 5;
 
-    // 1. يمين: توقيع المربية
-    var educW = Math.floor(tblW * 0.30);
-    var educX = W - tblX - educW - 8;
     ctx.fillStyle = '#FFFFFF';
-    roundRect(ctx, educX, footBoxY, educW, footBoxH, 6);
-    ctx.fill();
-    ctx.strokeStyle = '#CBD5E1';
-    ctx.lineWidth = 1;
-    ctx.stroke();
-    ctx.fillStyle = '#14532D';
-    ctx.textAlign = 'center';
-    ctx.font = 'bold 15px "Cairo", "Tajawal", sans-serif';
-    ctx.fillText('توقيع المربية', educX + educW / 2, footBoxY + 26);
-    ctx.fillStyle = '#475569';
-    ctx.font = '13px "Cairo", "Tajawal", sans-serif';
-    ctx.fillText(educatorName || 'الاسم والإمضاء', educX + educW / 2, footBoxY + 48);
-    ctx.fillStyle = '#94A3B8';
-    ctx.fillText('...........................................', educX + educW / 2, footBoxY + 68);
-
-    // 2. وسط: المشرف البيداغوجي
-    var supW = Math.floor(tblW * 0.30);
-    var supX = tblX + Math.floor((tblW - supW) / 2);
-    ctx.fillStyle = '#FFFFFF';
-    roundRect(ctx, supX, footBoxY, supW, footBoxH, 6);
-    ctx.fill();
-    ctx.strokeStyle = '#CBD5E1';
-    ctx.lineWidth = 1;
-    ctx.stroke();
-    ctx.fillStyle = '#14532D';
-    ctx.textAlign = 'center';
-    ctx.font = 'bold 15px "Cairo", "Tajawal", sans-serif';
-    ctx.fillText('المشرف البيداغوجي', supX + supW / 2, footBoxY + 26);
-    ctx.fillStyle = '#475569';
-    ctx.font = '13px "Cairo", "Tajawal", sans-serif';
-    ctx.fillText(supervisorName || 'الاسم والتأشيرة', supX + supW / 2, footBoxY + 48);
-    ctx.fillStyle = '#94A3B8';
-    ctx.fillText('...........................................', supX + supW / 2, footBoxY + 68);
-
-    // 3. أسفل اليسار: توقيع وختم المدير مع مساحة واسعة للإمضاء وموضع الختم الرسمي
-    var dirW = Math.floor(tblW * 0.36);
-    var dirX = tblX + 8;
-    ctx.fillStyle = '#FFFFFF';
-    roundRect(ctx, dirX, footBoxY, dirW, footBoxH, 6);
+    roundRect(ctx, dirBoxX, footBoxY, dirBoxW, footBoxH, 6);
     ctx.fill();
     ctx.strokeStyle = '#14532D';
-    ctx.lineWidth = 1.4;
+    ctx.lineWidth = 1.5;
     ctx.stroke();
+
     ctx.fillStyle = '#14532D';
     ctx.textAlign = 'center';
     ctx.font = 'bold 16px "Cairo", "Tajawal", sans-serif';
-    ctx.fillText('توقيع وختم المدير', dirX + dirW / 2, footBoxY + 24);
-
-    // رسم موضع دائري مخصص للختم الرسمي والتأشيرة
-    ctx.save();
-    ctx.setLineDash([4, 3]);
-    ctx.strokeStyle = '#94A3B8';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.arc(dirX + dirW / 2, footBoxY + 52, 22, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.restore();
-
+    ctx.fillText('توقيع وختم مدير المركز', dirBoxX + dirBoxW / 2, footBoxY + 28);
     ctx.fillStyle = '#64748B';
-    ctx.font = 'bold 10px "Cairo", "Tajawal", sans-serif';
-    ctx.fillText('موضع الختم الرسمي', dirX + dirW / 2, footBoxY + 54);
-
-    ctx.fillStyle = '#475569';
-    ctx.font = '11.5px "Cairo", "Tajawal", sans-serif';
-    ctx.fillText(directorName || 'التأشيرة والختم الرسمي للإدارة', dirX + dirW / 2, footBoxY + 80);
+    ctx.font = '12px "Cairo", "Tajawal", sans-serif';
+    ctx.fillText('التأشيرة والختم الرسمي لدار الإحسان', dirBoxX + dirBoxW / 2, footBoxY + footBoxH - 12);
   }
 
   async function renderWeeklyProgramCanvas(progState, secName) {
