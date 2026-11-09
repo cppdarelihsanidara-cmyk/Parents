@@ -1,34 +1,34 @@
 /* ══════════════════════════════════════════════════════════════════════════════
    DAR EL IHSAN — FOREST GREEN PREMIUM PARENTS PORTAL THEME (v22.0)
    الهوية البصرية المؤسسية لجمعية دار الإحسان:
-   - Primary Forest: #174D3C
-   - Secondary Green: #26745A
-   - Accent Mint: #DCECE4
+   - Primary Forest: #163B65
+   - Secondary Green: #2563EB
+   - Accent Mint: #EAF4FF
    - Background: #F5F7F4
    - Surface: #FFFFFF
    - Gold Accent: #D6B779
-   - Main Text: #24332C
+   - Main Text: #0F172A
    - Secondary Text: #75847B
    - Border: #E5EBE6
    ══════════════════════════════════════════════════════════════════════════════ */
 
 :root {
-  --primary-forest: #174D3C;
-  --secondary-green: #26745A;
-  --accent-mint: #DCECE4;
+  --primary-forest: #163B65;
+  --secondary-green: #2563EB;
+  --accent-mint: #EAF4FF;
   --bg: #F5F7F4;
   --surface: #FFFFFF;
   --surface-glass: rgba(255, 255, 255, 0.85);
   --surface-elevated: #FFFFFF;
   --gold-accent: #D6B779;
-  --main-text: #24332C;
+  --main-text: #0F172A;
   --secondary-text: #75847B;
   --border: #E5EBE6;
   --border-glass: rgba(229, 235, 230, 0.85);
 
-  --shadow-sm: 0 2px 8px rgba(23, 77, 60, 0.05);
-  --shadow-md: 0 6px 20px rgba(23, 77, 60, 0.08);
-  --shadow-lg: 0 14px 36px rgba(23, 77, 60, 0.12);
+  --shadow-sm: 0 2px 8px rgba(22, 59, 101, 0.05);
+  --shadow-md: 0 6px 20px rgba(22, 59, 101, 0.08);
+  --shadow-lg: 0 14px 36px rgba(22, 59, 101, 0.12);
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 18px;
@@ -36,7 +36,7 @@
   --backdrop-blur: blur(14px);
 
   --de-primary: var(--primary-forest);
-  --de-primary-dark: #113B2E;
+  --de-primary-dark: #163B65;
   --de-primary-light: var(--secondary-green);
   --de-secondary: var(--secondary-green);
   --de-accent-gold: var(--gold-accent);
@@ -376,7 +376,7 @@ body {
 .oep-skills-table th { background: #F8FAFC; font-weight: 700; color: #334155; }
 .oep-skills-table td.score-col { text-align: center; font-weight: 700; width: 80px; }
 .oep-score-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.78rem; }
-.oep-score-badge.c3 { background: #DCFCE7; color: #15803D; }
+.oep-score-badge.c3 { background: #DCFCE7; color: #1D4ED8; }
 .oep-score-badge.c2 { background: #FEF3C7; color: #B45309; }
 .oep-score-badge.c1 { background: #FEE2E2; color: #B91C1C; }
 .oep-score-badge.c0 { background: #F1F5F9; color: #64748B; }
@@ -422,12 +422,12 @@ body {
   background: #B4873A; color: #FFFFFF; padding: 4px 12px; border-radius: 20px; font-size: 1.05rem;
 }
 .eval-live-score-banner {
-  background: #F0FDF4; border: 1.5px solid #22C55E; border-radius: 8px;
+  background: #EAF4FF; border: 1.5px solid #2563EB; border-radius: 8px;
   padding: 12px 16px; margin-bottom: 14px; display: flex; justify-content: space-between;
   align-items: center; flex-wrap: wrap; gap: 10px;
 }
-.eval-live-score-title { font-weight: 800; color: #166534; font-size: 0.95rem; }
-.eval-live-score-val { font-weight: 800; color: #15803D; font-size: 1.15rem; }
+.eval-live-score-title { font-weight: 800; color: #163B65; font-size: 0.95rem; }
+.eval-live-score-val { font-weight: 800; color: #1D4ED8; font-size: 1.15rem; }
 
 /* ---------- DAR EL IHSAN: 3 EVALUATION TYPES & ATTENDANCE REPLIES STYLES ---------- */
 .eval-type-select-card:hover {
@@ -657,7 +657,7 @@ body {
 .oep-ab-hdr-2 { background-color: #F472B6 !important; }
 .oep-ab-hdr-3 { background-color: #60A5FA !important; }
 .oep-ab-hdr-4 { background-color: #FBBF24 !important; }
-.oep-ab-hdr-5 { background-color: #4ADE80 !important; }
+.oep-ab-hdr-5 { background-color: #60A5FA !important; }
 .oep-ab-hdr-6 { background-color: #2DD4BF !important; }
 
 .oep-ab-content {
@@ -668,8 +668,8 @@ body {
 }
 
 .oep-summary-banner {
-  background-color: #86EFAC !important;
-  color: #064E3B !important;
+  background-color: #60A5FA !important;
+  color: #163B65 !important;
   font-size: 1.02rem !important;
   font-weight: 800 !important;
   text-align: center !important;
@@ -769,21 +769,21 @@ body {
 
 .pm-contact-hero-banner {
   background: #FFFFFF !important;
-  border: 1.5px solid #DCECE4 !important;
+  border: 1.5px solid #EAF4FF !important;
   border-radius: 20px !important;
   padding: 24px 26px !important;
   display: flex;
   align-items: center;
   gap: 18px;
-  box-shadow: 0 4px 18px rgba(23, 77, 60, 0.05) !important;
+  box-shadow: 0 4px 18px rgba(22, 59, 101, 0.05) !important;
 }
 
 .pm-ch-icon-wrap {
   width: 52px;
   height: 52px;
   border-radius: 14px;
-  background: #DCECE4;
-  color: #174D3C;
+  background: #EAF4FF;
+  color: #163B65;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -794,7 +794,7 @@ body {
   font-family: "IBM Plex Sans Arabic", sans-serif;
   font-size: clamp(1.25rem, 2.2vw, 1.65rem);
   font-weight: 800;
-  color: #174D3C !important;
+  color: #163B65 !important;
   margin: 0 0 4px;
 }
 
@@ -816,7 +816,7 @@ body {
   border: 1px solid #E5EBE6 !important;
   border-radius: 16px !important;
   padding: 20px 22px !important;
-  box-shadow: 0 2px 12px rgba(23, 77, 60, 0.04) !important;
+  box-shadow: 0 2px 12px rgba(22, 59, 101, 0.04) !important;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -825,7 +825,7 @@ body {
 
 .pm-c-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(23, 77, 60, 0.08) !important;
+  box-shadow: 0 8px 24px rgba(22, 59, 101, 0.08) !important;
 }
 
 .pm-c-card-hdr {
@@ -840,7 +840,7 @@ body {
 .pm-c-card-hdr h3 {
   font-size: 15.5px;
   font-weight: 800;
-  color: #174D3C !important;
+  color: #163B65 !important;
   margin: 0;
 }
 
@@ -848,15 +848,15 @@ body {
   width: 40px;
   height: 40px;
   border-radius: 10px;
-  background: #DCECE4;
-  color: #174D3C;
+  background: #EAF4FF;
+  color: #163B65;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
 }
 .pm-c-icon.gold { background: #FEF3C7; color: #D97706; }
-.pm-c-icon.ok { background: #ECFDF5; color: #059669; }
+.pm-c-icon.ok { background: #EAF4FF; color: #2563EB; }
 .pm-c-icon.info { background: #E0F2FE; color: #0284C7; }
 
 .pm-c-phone-list {
@@ -892,7 +892,7 @@ body {
   font-family: monospace, sans-serif;
   font-size: 15px;
   font-weight: 800;
-  color: #174D3C;
+  color: #163B65;
   direction: ltr !important;
   unicode-bidi: isolate;
   letter-spacing: 0.5px;
@@ -917,11 +917,11 @@ body {
 }
 
 .pm-c-btn-call {
-  background: #174D3C;
+  background: #163B65;
   color: #FFFFFF !important;
 }
 .pm-c-btn-call:hover {
-  background: #26745A;
+  background: #2563EB;
 }
 
 .pm-c-btn-wa {
@@ -941,7 +941,7 @@ body {
   font-family: monospace, sans-serif;
   font-size: 15px;
   font-weight: 700;
-  color: #174D3C;
+  color: #163B65;
   background: #F8FAFC;
   padding: 10px 14px;
   border-radius: 10px;
@@ -954,7 +954,7 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: #174D3C !important;
+  background: #163B65 !important;
   color: #FFFFFF !important;
   padding: 10px 18px;
   border-radius: 10px;
@@ -964,13 +964,13 @@ body {
   transition: all 0.2s ease;
 }
 .pm-btn-primary-action:hover {
-  background: #26745A !important;
+  background: #2563EB !important;
 }
 
 .pm-c-badge-pill {
   display: inline-block;
-  background: #DCECE4;
-  color: #174D3C;
+  background: #EAF4FF;
+  color: #163B65;
   padding: 6px 12px;
   border-radius: 8px;
   font-size: 12.5px;
@@ -997,12 +997,12 @@ body {
 }
 
 .pm-c-social-btn.wa {
-  background: #ECFDF5;
-  color: #059669 !important;
-  border: 1px solid #A7F3D0;
+  background: #EAF4FF;
+  color: #2563EB !important;
+  border: 1px solid #BFDBFE;
 }
 .pm-c-social-btn.wa:hover {
-  background: #059669;
+  background: #2563EB;
   color: #FFFFFF !important;
 }
 
@@ -1018,11 +1018,11 @@ body {
 
 .pm-c-social-btn.web {
   background: #F8FAFC;
-  color: #174D3C !important;
+  color: #163B65 !important;
   border: 1px solid #E2E8F0;
 }
 .pm-c-social-btn.web:hover {
-  background: #174D3C;
+  background: #163B65;
   color: #FFFFFF !important;
 }
 

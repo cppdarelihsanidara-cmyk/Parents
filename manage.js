@@ -1859,9 +1859,9 @@
       var printBtn = h('button', { class: 'btn', type: 'button', text: 'طباعة البطاقة', disabled: true });
       var openLink = h('a', { class: 'btn light', target: '_blank', rel: 'noopener', text: 'فتح فضاء الأولياء للطفل' });
       var warn = !child.membership_no ? h('p', { class: 'err small', text: 'تنبيه: لا يوجد رقم قيد رسمي لهذا الطفل؛ أكمله في ملف الطفل قبل طباعة البطاقة.' }) : null;
-      var credsBox = h('div', { style: 'background:#F0FDF4;border:1px solid #BBF7D0;border-radius:10px;padding:10px 14px;margin-bottom:10px;font-size:0.9rem;color:#065F46;display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;align-items:center;' },
-        h('div', null, h('strong', { text: 'اسم المستخدم في فضاء الأولياء: ' }), h('code', { dir: 'ltr', style: 'font-weight:800;font-size:0.95rem;background:#FFFFFF;padding:2px 8px;border-radius:6px;border:1px solid #86EFAC;', text: uname || '—' })),
-        h('div', null, h('strong', { text: 'كلمة المرور: ' }), h('code', { dir: 'ltr', style: 'font-weight:800;font-size:0.95rem;background:#FFFFFF;padding:2px 8px;border-radius:6px;border:1px solid #86EFAC;', text: parentPw }))
+      var credsBox = h('div', { style: 'background:#EAF4FF;border:1px solid #BFDBFE;border-radius:10px;padding:10px 14px;margin-bottom:10px;font-size:0.9rem;color:#065F46;display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;align-items:center;' },
+        h('div', null, h('strong', { text: 'اسم المستخدم في فضاء الأولياء: ' }), h('code', { dir: 'ltr', style: 'font-weight:800;font-size:0.95rem;background:#FFFFFF;padding:2px 8px;border-radius:6px;border:1px solid #60A5FA;', text: uname || '—' })),
+        h('div', null, h('strong', { text: 'كلمة المرور: ' }), h('code', { dir: 'ltr', style: 'font-weight:800;font-size:0.95rem;background:#FFFFFF;padding:2px 8px;border-radius:6px;border:1px solid #60A5FA;', text: parentPw }))
       );
 
       openModal(h('div', { class: 'modal-body card-modal' },
@@ -3326,14 +3326,14 @@
 
       var heroCard = h('div', {
         class: 'card wk-programs-hero-card',
-        style: 'display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px; padding:20px 24px; background:linear-gradient(135deg, #F0FDF4 0%, #FFFFFF 100%); border:1.5px solid #10B981; border-radius:16px; box-shadow:0 6px 24px rgba(16,185,129,0.08);'
+        style: 'display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px; padding:20px 24px; background:linear-gradient(135deg, #EAF4FF 0%, #FFFFFF 100%); border:1.5px solid #2563EB; border-radius:16px; box-shadow:0 6px 24px rgba(37, 99, 235,0.08);'
       },
         h('div', { style: 'display:flex; align-items:center; gap:14px;' },
-          h('div', { style: 'background:#DCFCE7; color:#15803D; width:52px; height:52px; border-radius:14px; display:flex; align-items:center; justify-content:center; flex-shrink:0;' },
+          h('div', { style: 'background:#DCFCE7; color:#1D4ED8; width:52px; height:52px; border-radius:14px; display:flex; align-items:center; justify-content:center; flex-shrink:0;' },
             makeSvgIcon('s-cal')
           ),
           h('div', null,
-            h('h2', { style: 'margin:0 0 4px; color:#14532D; font-size:1.4rem; font-weight:900;', text: 'البرامج الأسبوعية للأفواج' }),
+            h('h2', { style: 'margin:0 0 4px; color:#163B65; font-size:1.4rem; font-weight:900;', text: 'البرامج الأسبوعية للأفواج' }),
             h('p', { class: 'small muted', style: 'margin:0; font-size:13px; color:#475569;', text: 'إعداد وإدارة واعتماد البرامج الأسبوعية المعتمدة لكل فوج تربوي، ونشرها في فضاء الأولياء بصيغة A4' })
           )
         ),
@@ -3345,7 +3345,7 @@
 
       // 2. قائمة بطاقات البرامج حسب القسم
       var listHeader = h('div', { style: 'display:flex; justify-content:space-between; align-items:center; margin-top:4px;' },
-        h('h3', { style: 'margin:0; color:#14532D; font-size:1.15rem; font-weight:800; display:flex; align-items:center; gap:8px;' },
+        h('h3', { style: 'margin:0; color:#163B65; font-size:1.15rem; font-weight:800; display:flex; align-items:center; gap:8px;' },
           makeSvgIcon('s-users'),
           h('span', { text: 'قائمة الأفواج والبرامج المعتمدة (' + sections.length + ' أفواج)' })
         ),
@@ -3361,14 +3361,14 @@
 
         var secCard = h('div', {
           class: 'card wk-section-program-card',
-          style: 'background:#FFFFFF; border:1.5px solid ' + (isExpanded ? '#14532D' : '#E2E8F0') + '; border-radius:14px; padding:16px 20px; box-shadow:' + (isExpanded ? '0 8px 30px rgba(20,83,45,0.1)' : '0 2px 10px rgba(0,0,0,0.03)') + '; transition:all 0.2s ease;'
+          style: 'background:#FFFFFF; border:1.5px solid ' + (isExpanded ? '#163B65' : '#E2E8F0') + '; border-radius:14px; padding:16px 20px; box-shadow:' + (isExpanded ? '0 8px 30px rgba(22, 59, 101,0.1)' : '0 2px 10px rgba(0,0,0,0.03)') + '; transition:all 0.2s ease;'
         });
 
         // الصف العلوي لبطاقة القسم
         var topRow = h('div', { style: 'display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;' },
           // يمين: اسم الفوج والحالة والمعلومات
           h('div', { style: 'display:flex; align-items:center; gap:12px; flex-wrap:wrap;' },
-            h('div', { style: 'background:' + (prog ? '#ECFDF5' : '#F1F5F9') + '; color:' + (prog ? '#064E3B' : '#64748B') + '; width:42px; height:42px; border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0;' },
+            h('div', { style: 'background:' + (prog ? '#EAF4FF' : '#F1F5F9') + '; color:' + (prog ? '#163B65' : '#64748B') + '; width:42px; height:42px; border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0;' },
               makeSvgIcon('s-users')
             ),
             h('div', null,
@@ -3376,7 +3376,7 @@
                 h('h3', { style: 'margin:0; color:#0F172A; font-size:1.15rem; font-weight:800;', text: sec.name }),
                 prog ? (
                   (prog.status === 'published' || prog.status === 'updated')
-                    ? h('span', { style: 'background:#DCFCE7; color:#166534; border:1px solid #86EFAC; font-weight:800; font-size:11.5px; padding:2px 10px; border-radius:12px;', text: '✓ معتمد ومنشور للأولياء' })
+                    ? h('span', { style: 'background:#DCFCE7; color:#163B65; border:1px solid #60A5FA; font-weight:800; font-size:11.5px; padding:2px 10px; border-radius:12px;', text: '✓ معتمد ومنشور للأولياء' })
                     : h('span', { style: 'background:#FEF3C7; color:#92400E; border:1px solid #FCD34D; font-weight:800; font-size:11.5px; padding:2px 10px; border-radius:12px;', text: '📝 مسودة برنامج أسبوعي' })
                 ) : h('span', { style: 'background:#F1F5F9; color:#64748B; border:1px solid #CBD5E1; font-weight:700; font-size:11.5px; padding:2px 10px; border-radius:12px;', text: '⚪ لا يوجد برنامج بعد' })
               ),
@@ -3462,7 +3462,7 @@
 
         // إذا كان هذا القسم مفتوحاً بالتفاصيل، نعرض الورقة الكاملة تحته مباشرة
         if (isExpanded && activeWeekState) {
-          var detailsDivider = h('div', { style: 'margin:16px 0 14px 0; border-top:1.5px dashed #10B981;' });
+          var detailsDivider = h('div', { style: 'margin:16px 0 14px 0; border-top:1.5px dashed #2563EB;' });
           secCard.appendChild(detailsDivider);
 
           var detailsSheetWrap = renderProgramSheetDetails(activeWeekState, sec.name, sec.id);
@@ -3479,12 +3479,12 @@
     function openAddProgramModal() {
       var modalWrap = h('div', {
         class: 'modal card',
-        style: 'max-width:540px; width:95%; background:#FFFFFF; padding:24px; border-radius:18px; box-shadow:0 25px 60px rgba(0,0,0,0.3); border:2px solid #14532D;'
+        style: 'max-width:540px; width:95%; background:#FFFFFF; padding:24px; border-radius:18px; box-shadow:0 25px 60px rgba(0,0,0,0.3); border:2px solid #163B65;'
       });
 
       modalWrap.appendChild(h('div', { style: 'display:flex; justify-content:space-between; align-items:center; border-bottom:1.5px solid #E2E8F0; padding-bottom:12px; margin-bottom:16px;' },
         h('div', null,
-          h('h3', { style: 'margin:0 0 4px; color:#14532D; font-size:1.3rem; font-weight:900;', text: 'إضافة برنامج أسبوعي جديد' }),
+          h('h3', { style: 'margin:0 0 4px; color:#163B65; font-size:1.3rem; font-weight:900;', text: 'إضافة برنامج أسبوعي جديد' }),
           h('p', { class: 'small muted', style: 'margin:0;', text: 'اختر الفوج التربوي واكتب السداسي والموسم لبدء تحرير البرنامج فوراً' })
         ),
         h('button', { type: 'button', class: 'icon-btn', style: 'font-size:18px;', onclick: closeModal }, h('span', { text: '✕' }))
@@ -3562,6 +3562,73 @@
     }
 
     // دالة بناء ورقة البرنامج الأسبوعي التفاعلية مع الخانات البيضاء والكتابة السوداء الكبيرة ومكان الإمضاء
+    
+  function executeCellsMerge(weekState, selectedMap) {
+    var items = [];
+    Object.keys(selectedMap).forEach(function (k) {
+      items.push(selectedMap[k]);
+    });
+    if (items.length < 2) return;
+
+    var dayIndices = items.map(function (x) { return x.dayIdx; });
+    var slotIndices = items.map(function (x) { return x.slot_id; });
+    var minDay = Math.min.apply(null, dayIndices);
+    var maxDay = Math.max.apply(null, dayIndices);
+    var minSlot = Math.min.apply(null, slotIndices);
+    var maxSlot = Math.max.apply(null, slotIndices);
+
+    var isHorizontal = (minDay === maxDay);
+
+    if (isHorizontal) {
+      var dayObj = weekState.days[minDay];
+      if (!dayObj) return;
+      var targetSess = dayObj.sessions.find(function (s) { return s.slot_id === minSlot; });
+      if (!targetSess) return;
+      var totalSpan = maxSlot - minSlot + 1;
+      targetSess.colspan = totalSpan;
+      for (var s = minSlot + 1; s <= maxSlot; s++) {
+        var otherSess = dayObj.sessions.find(function (x) { return x.slot_id === s; });
+        if (otherSess) {
+          otherSess.kind = 'empty';
+          otherSess.colspan = 1;
+          otherSess.rowspan = 1;
+        }
+      }
+    } else {
+      var totalRowspan = maxDay - minDay + 1;
+      var topDay = weekState.days[minDay];
+      if (!topDay) return;
+      var topSess = topDay.sessions.find(function (s) { return s.slot_id === minSlot; });
+      if (!topSess) return;
+      topSess.rowspan = totalRowspan;
+      for (var d = minDay + 1; d <= maxDay; d++) {
+        var dObj = weekState.days[d];
+        if (dObj) {
+          var lowerSess = dObj.sessions.find(function (x) { return x.slot_id === minSlot; });
+          if (lowerSess) {
+            lowerSess.kind = 'empty';
+            lowerSess.colspan = 1;
+            lowerSess.rowspan = 1;
+          }
+        }
+      }
+    }
+  }
+
+  function executeCellsUnmerge(weekState, selectedMap) {
+    Object.keys(selectedMap).forEach(function (k) {
+      var item = selectedMap[k];
+      var dayObj = weekState.days[item.dayIdx];
+      if (dayObj) {
+        var sess = dayObj.sessions.find(function (s) { return s.slot_id === item.slot_id; });
+        if (sess) {
+          sess.colspan = 1;
+          sess.rowspan = 1;
+        }
+      }
+    });
+  }
+
     function renderProgramSheetDetails(currentWeekState, secName, secId) {
       var detailsContainer = h('div', { class: 'wk-program-expanded-details', style: 'display:flex; flex-direction:column; gap:14px;' });
 
@@ -3613,7 +3680,7 @@
       var sheetActionsBar = h('div', {
         style: 'display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; padding:10px 14px; background:#F8FAF9; border:1px solid #CBD5E1; border-radius:10px;'
       },
-        h('div', { style: 'font-weight:800; color:#14532D; font-size:13.5px; display:flex; align-items:center; gap:8px;' },
+        h('div', { style: 'font-weight:800; color:#163B65; font-size:13.5px; display:flex; align-items:center; gap:8px;' },
           makeSvgIcon('s-book'),
           h('span', { text: 'تحرير ورقة البرنامج الأسبوعي — ' + secName })
         ),
@@ -3627,25 +3694,75 @@
       );
       detailsContainer.appendChild(sheetActionsBar);
 
+      if (isMergeMode) {
+        var selKeys = Object.keys(mergeSelectedCells);
+        var hasMerged = selKeys.some(function (k) { var it = mergeSelectedCells[k]; return it && (it.colspan > 1 || it.rowspan > 1); });
+        var mergeBar = h('div', {
+          class: 'card',
+          style: 'max-width:1040px; margin:0 auto; padding:12px 18px; background:#EAF4FF; border:2px solid #2563EB; border-radius:10px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;'
+        },
+          h('div', { style: 'font-weight:900; color:#163B65; font-size:14px; display:flex; align-items:center; gap:8px;' },
+            makeSvgIcon('s-merge'),
+            h('span', { text: selKeys.length ? ('تم تحديد ' + selKeys.length + ' خانة لدمجها — انقر الزر الأزرق لتنفيذ الدمج:') : 'وضع الدمج مفعّل: انقر على الخانات في الجدول أدناه لتحديدها ثم اضغط دمج.' })
+          ),
+          h('div', { style: 'display:flex; align-items:center; gap:8px; flex-wrap:wrap;' },
+            selKeys.length >= 2 ? h('button', {
+              type: 'button',
+              class: 'btn primary',
+              style: 'background:#2563EB; color:#FFF; font-weight:900; padding:8px 16px; border-radius:8px; font-size:13.5px; box-shadow:0 2px 6px rgba(37,99,235,0.3);',
+              onclick: function () {
+                executeCellsMerge(currentWeekState, mergeSelectedCells);
+                mergeSelectedCells = {};
+                renderProgramsDashboard();
+                toast('تم دمج الخانات المحددة بنجاح ✓', 'ok');
+              }
+            }, makeSvgIcon('s-merge'), h('span', { text: 'دمج الخانات المحددة (' + selKeys.length + ')' })) : null,
+
+            hasMerged ? h('button', {
+              type: 'button',
+              class: 'btn danger',
+              style: 'font-weight:800; padding:8px 14px; border-radius:8px;',
+              onclick: function () {
+                executeCellsUnmerge(currentWeekState, mergeSelectedCells);
+                mergeSelectedCells = {};
+                renderProgramsDashboard();
+                toast('تم فك دمج الخانات المحددة بنجاح ✓', 'ok');
+              }
+            }, h('span', { text: 'فك الدمج' })) : null,
+
+            selKeys.length > 0 ? h('button', {
+              type: 'button',
+              class: 'btn light',
+              style: 'font-size:12px;',
+              onclick: function () {
+                mergeSelectedCells = {};
+                renderProgramsDashboard();
+              }
+            }, h('span', { text: 'إلغاء التحديد' })) : null
+          )
+        );
+        detailsContainer.appendChild(mergeBar);
+      }
+
       // ب) بطاقة ورقة البرنامج الأسبوعي المطابقة تماماً للورقة الرسمية A4
       var sheetPaperCard = h('div', {
         class: 'card wk-interactive-sheet-paper',
-        style: 'max-width:1040px; margin:0 auto; padding:14px 18px; background:#FFFFFF; border:2px solid #14532D; border-radius:12px; box-shadow:0 4px 20px rgba(20,83,45,0.08); overflow-x:auto; box-sizing:border-box; font-family:"Cairo","Tajawal","IBM Plex Sans Arabic",system-ui,sans-serif;'
+        style: 'max-width:1040px; margin:0 auto; padding:14px 18px; background:#FFFFFF; border:2px solid #163B65; border-radius:12px; box-shadow:0 4px 20px rgba(22, 59, 101,0.08); overflow-x:auto; box-sizing:border-box; font-family:"Cairo","Tajawal","IBM Plex Sans Arabic",system-ui,sans-serif;'
       });
 
       // 1. ترويسة الورقة الرسمية
       var sheetHeader = h('div', {
         class: 'wk-sheet-header-grid',
-        style: 'display:grid; grid-template-columns:1fr 2fr 1fr; align-items:center; gap:8px; padding-bottom:8px; margin-bottom:8px; border-bottom:1.5px solid #14532D;'
+        style: 'display:grid; grid-template-columns:1fr 2fr 1fr; align-items:center; gap:8px; padding-bottom:8px; margin-bottom:8px; border-bottom:1.5px solid #163B65;'
       },
         h('div', { style: 'text-align:right;' },
-          h('h4', { style: 'margin:0 0 1px; color:#14532D; font-size:13px; font-weight:800;', text: 'جمعية أولياء الأطفال المعاقين ذهنيًا' }),
-          h('h5', { style: 'margin:0 0 1px; color:#064E3B; font-size:12px; font-weight:700;', text: 'المركز النفسي البيداغوجي دار الإحسان' }),
+          h('h4', { style: 'margin:0 0 1px; color:#163B65; font-size:13px; font-weight:800;', text: 'جمعية أولياء الأطفال المعاقين ذهنيًا' }),
+          h('h5', { style: 'margin:0 0 1px; color:#163B65; font-size:12px; font-weight:700;', text: 'المركز النفسي البيداغوجي دار الإحسان' }),
           h('span', { class: 'small muted', style: 'font-size:10.5px;', text: 'العطف — غرداية' })
         ),
         h('div', { style: 'text-align:center;' },
           h('h2', {
-            style: 'margin:0 0 2px; color:#14532D; font-size:1.35rem; letter-spacing:0.5px; font-weight:900;',
+            style: 'margin:0 0 2px; color:#163B65; font-size:1.35rem; letter-spacing:0.5px; font-weight:900;',
             text: 'البرنامج المؤقت الأسبوعي'
           }),
           h('div', {
@@ -3654,7 +3771,7 @@
           })
         ),
         h('div', { style: 'text-align:left;' },
-          h('div', { style: 'font-weight:700; color:#14532D; font-size:12px;', text: 'الموسم الدراسي: ' + (currentWeekState.academic_year || '2026/2027') }),
+          h('div', { style: 'font-weight:700; color:#163B65; font-size:12px;', text: 'الموسم الدراسي: ' + (currentWeekState.academic_year || '2026/2027') }),
           h('div', { class: 'small muted', style: 'font-size:10.5px;', text: 'التوقيت: ' + (currentWeekState.day_start || '08:00') + ' إلى ' + (currentWeekState.day_end || '14:00') })
         )
       );
@@ -3671,18 +3788,37 @@
       var activeLoadList = currentWeekState.load_summary;
 
       var loadTable = h('table', {
-        style: 'width:100%; min-width:700px; border-collapse:collapse; border:2px solid #14532D; text-align:center; font-size:10.5px; table-layout:fixed; box-shadow:0 2px 8px rgba(0,0,0,0.04);'
+        style: 'width:100%; min-width:700px; border-collapse:collapse; border:2px solid #163B65; text-align:center; font-size:10.5px; table-layout:fixed; box-shadow:0 2px 8px rgba(0,0,0,0.04);'
       });
+      var allActCodes = OFFICIAL_LOAD_SUMMARY.map(function (x) { return x.code; });
       var trLoad1 = h('tr', null,
-        h('th', { style: 'background:#14532D; color:#fff; padding:4px 2px; border:1px solid #CBD5E1; width:80px; font-size:11px; font-weight:900;', text: 'الأنشطة التعليمية' }),
-        activeLoadList.map(function (it) {
+        h('th', { style: 'background:#163B65; color:#fff; padding:4px 2px; border:1px solid #CBD5E1; width:80px; font-size:11px; font-weight:900;', text: 'الأنشطة التعليمية' }),
+        activeLoadList.map(function (it, idx) {
+          var dListId = 'act_opts_dl_' + idx;
+          var optItems = allActCodes.map(function (c) { return h('option', { value: c }); });
+          var dlEl = h('datalist', { id: dListId }, optItems);
+
+          var actInput = h('input', {
+            type: 'text',
+            value: it.code,
+            style: 'width:100%; border:none; background:transparent; font-weight:900; font-size:11px; color:#0F172A; text-align:center; padding:2px 0; cursor:text;',
+            title: 'انقر للكتابة مباشرة أو اختر من القائمة',
+            onchange: function (e) {
+              it.code = e.target.value;
+              var matchPreset = OFFICIAL_LOAD_SUMMARY.find(function (p) { return p.code === it.code; });
+              if (matchPreset) {
+                it.name = matchPreset.name;
+                it.color = matchPreset.color;
+              }
+              toast('تم تحديث النشاط: ' + it.code, 'ok');
+            }
+          });
+          actInput.setAttribute('list', dListId);
+
           var tdBadge = h('td', {
-            style: 'background:' + it.color + '; border:1px solid #CBD5E1; font-weight:900; padding:4px 2px; font-size:11px; color:#0F172A; cursor:pointer;',
-            title: 'انقر لنسخ اسم النشاط'
-          }, h('span', { text: it.code }));
-          tdBadge.onclick = function () {
-            toast('النشاط المختار: ' + it.code + ' (' + it.name + ')', 'ok');
-          };
+            style: 'background:' + (it.color || '#EAF4FF') + '; border:1px solid #CBD5E1; padding:1px 2px; font-size:11px; color:#0F172A;'
+          }, dlEl, actInput);
+
           return tdBadge;
         })
       );
@@ -3703,13 +3839,15 @@
         h('th', { style: 'background:#F8FAF9; color:#1E293B; padding:3px 2px; border:1px solid #CBD5E1; font-size:10px; font-weight:800;', text: 'عدد الحصص' }),
         activeLoadList.map(function (it) {
           var cntInp = h('input', {
-            type: 'text',
+            type: 'number',
+            min: 0,
+            max: 50,
             value: it.count,
-            style: 'width:100%; border:none; background:transparent; text-align:center; font-size:10.5px; font-weight:900; color:#0F172A; padding:2px 0;',
-            title: 'انقر لتعديل عدد الحصص يدوياً',
-            onchange: function (e) { it.count = e.target.value; }
+            style: 'width:100%; border:1px solid #CBD5E1; border-radius:4px; background:#FFF; text-align:center; font-size:11px; font-weight:900; color:#163B65; padding:2px 0;',
+            title: 'تعديل عدد الحصص يدوياً',
+            onchange: function (e) { it.count = parseInt(e.target.value, 10) || 0; }
           });
-          return h('td', { style: 'border:1px solid #CBD5E1; padding:1px; background:#FFF;' }, cntInp);
+          return h('td', { style: 'border:1px solid #CBD5E1; padding:2px; background:#FFF;' }, cntInp);
         })
       );
       loadTable.appendChild(trLoad1);
@@ -3722,7 +3860,7 @@
       // 3. جدول الحصص الأسبوعي الرئيسي (خانات بيضاء نقية وكتابة سوداء مكبرة)
       var tableEl = h('table', {
         class: 'wk-sheet-table',
-        style: 'width:100%; border-collapse:collapse; border:2px solid #14532D; text-align:center; min-width:800px; table-layout:fixed;'
+        style: 'width:100%; border-collapse:collapse; border:2px solid #163B65; text-align:center; min-width:800px; table-layout:fixed;'
       });
 
       var morningSlots = currentWeekState.time_slots.filter(function (s) { return s.period === 'morning'; });
@@ -3735,12 +3873,12 @@
       var trPeriods = h('tr', null,
         h('th', {
           rowspan: 2,
-          style: 'width:75px; background:#14532D; color:#FFFFFF; border:1.5px solid #0F3D2E; padding:4px 2px; font-size:13.5px; font-weight:900; text-align:center;',
+          style: 'width:75px; background:#163B65; color:#FFFFFF; border:1.5px solid #163B65; padding:4px 2px; font-size:13.5px; font-weight:900; text-align:center;',
           text: 'اليوم'
         }),
         h('th', {
           colspan: morningSlots.length,
-          style: 'background:#ECFDF5; color:#064E3B; border:1.5px solid #10B981; padding:3px; font-size:12.5px; font-weight:800;',
+          style: 'background:#EAF4FF; color:#163B65; border:1.5px solid #2563EB; padding:3px; font-size:12.5px; font-weight:800;',
           text: 'الفترة الصباحية (08:00 — 12:00)'
         }),
         h('th', {
@@ -3754,40 +3892,40 @@
       var trTimes = h('tr', null,
         currentWeekState.time_slots.map(function (slot, slotIdx) {
           var timeBox = h('div', {
-            style: 'display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px; padding:1px 0;'
+            style: 'display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; padding:2px 1px; min-width:85px;'
           },
-            h('div', { style: 'display:flex; align-items:center; justify-content:center; gap:1px; direction:ltr;' },
+            h('div', { style: 'display:flex; align-items:center; justify-content:center; gap:2px; direction:ltr;' },
               h('input', {
-                type: 'time',
+                type: 'text',
                 value: slot.start,
-                title: 'تعديل وقت البداية',
-                style: 'border:1px solid #CBD5E1; border-radius:3px; padding:1px; font-size:10px; font-weight:700; width:48px; text-align:center; background:#FFFFFF; font-family:inherit; color:#0F172A;',
+                title: 'تعديل وقت البداية (مثال: 08:00)',
+                style: 'border:1px solid #CBD5E1; border-radius:4px; padding:2px 3px; font-size:11px; font-weight:800; width:45px; text-align:center; background:#FFFFFF; color:#0F172A;',
                 onchange: function (e) {
                   slot.start = e.target.value;
                   slot.duration = calcDurationMins(slot.start, slot.end);
                   syncDaySessionTimes();
-                  toast('تم تحديث التوقيت في مكانه.', 'ok');
+                  toast('تم تحديث التوقيت.', 'ok');
                 }
               }),
-              h('span', { style: 'font-weight:bold; color:#64748B; font-size:9.5px;', text: '-' }),
+              h('span', { style: 'font-weight:900; color:#64748B; font-size:10px;', text: '-' }),
               h('input', {
-                type: 'time',
+                type: 'text',
                 value: slot.end,
-                title: 'تعديل وقت النهاية',
-                style: 'border:1px solid #CBD5E1; border-radius:3px; padding:1px; font-size:10px; font-weight:700; width:48px; text-align:center; background:#FFFFFF; font-family:inherit; color:#0F172A;',
+                title: 'تعديل وقت النهاية (مثال: 08:45)',
+                style: 'border:1px solid #CBD5E1; border-radius:4px; padding:2px 3px; font-size:11px; font-weight:800; width:45px; text-align:center; background:#FFFFFF; color:#0F172A;',
                 onchange: function (e) {
                   slot.end = e.target.value;
                   slot.duration = calcDurationMins(slot.start, slot.end);
                   syncDaySessionTimes();
-                  toast('تم تحديث التوقيت في مكانه.', 'ok');
+                  toast('تم تحديث التوقيت.', 'ok');
                 }
               })
             ),
-            h('span', { style: 'font-size:9px; color:#64748B; font-weight:700;', text: slot.duration ? (slot.duration + ' د') : '' })
+            h('span', { style: 'font-size:9.5px; color:#2563EB; font-weight:800;', text: slot.duration ? (slot.duration + ' د') : '' })
           );
 
           return h('th', {
-            style: 'background:#F8FAF9; border:1px solid #CBD5E1; padding:2px 1px; vertical-align:middle; height:26px;'
+            style: 'background:#F8FAF9; border:1px solid #CBD5E1; padding:2px 1px; vertical-align:middle;'
           }, timeBox);
         })
       );
@@ -3813,7 +3951,7 @@
       currentWeekState.days.forEach(function (dayObj, dayIdx) {
         var trDay = h('tr', null,
           h('td', {
-            style: 'background:#14532D; color:#FFFFFF; border:1.5px solid #0F3D2E; padding:3px 2px; font-weight:900; font-size:13.5px; width:75px; text-align:center; vertical-align:middle;',
+            style: 'background:#163B65; color:#FFFFFF; border:1.5px solid #163B65; padding:3px 2px; font-weight:900; font-size:13.5px; width:75px; text-align:center; vertical-align:middle;',
             text: dayObj.label
           })
         );
@@ -3845,7 +3983,7 @@
           var td = h('td', {
             colspan: colspan,
             rowspan: rowspan,
-            style: 'background:' + bg + ' !important; border:' + border + ' !important; color:#000000 !important; padding:3px 4px !important; vertical-align:middle; text-align:center; cursor:pointer; height:40px !important; min-height:38px; box-sizing:border-box; overflow:hidden; transition:all 0.15s ease;'
+            style: 'background:' + bg + ' !important; border:' + border + ' !important; color:#000000 !important; padding:3px 4px !important; vertical-align:middle; text-align:center; cursor:pointer; min-height:22px !important; height:auto !important; padding:6px 4px !important; box-sizing:border-box; overflow:hidden; transition:all 0.15s ease;'
           });
 
           if (!isFilled) {
@@ -3903,14 +4041,13 @@
       // 4. تذييل التوقيعات الثلاثة مع ترك مساحة واسعة ومميزة للإمضاء والختم في أسفل اليسار
       var sheetFooter = h('div', {
         class: 'wk-program-signatures',
-        style: 'display:flex; justify-content:center; align-items:center; margin-top:20px; padding-top:14px; border-top:1.5px solid #14532D;'
+        style: 'display:flex; justify-content:center; align-items:center; margin-top:20px; padding-top:14px; border-top:1.5px solid #163B65;'
       },
         h('div', {
-          style: 'background:#F8FAF9; padding:12px 36px; border-radius:12px; border:2px solid #14532D; text-align:center; min-width:320px; box-shadow:0 2px 10px rgba(0,0,0,0.04);'
+          style: 'text-align:center; min-width:220px; padding:8px;'
         },
-          h('strong', { style: 'display:block; color:#14532D; font-size:15px; font-weight:900; margin-bottom:4px;', text: 'توقيع وختم مدير المركز' }),
-          h('div', { style: 'height:50px; border-bottom:1.5px dashed #CBD5E1; margin-bottom:6px;' }),
-          h('span', { class: 'small muted', style: 'font-size:11.5px; color:#64748B;', text: 'التأشيرة والختم الرسمي لدار الإحسان' })
+          h('strong', { style: 'display:block; color:#163B65; font-size:15px; font-weight:900; margin-bottom:6px;', text: 'إمضاء المدير' }),
+          h('div', { style: 'height:60px;' })
         )
       );
       sheetPaperCard.appendChild(sheetFooter);
@@ -3933,7 +4070,7 @@
 
       var modalBox = h('div', {
         class: 'modal card wk-horizontal-fill-modal',
-        style: 'max-width:880px; width:95%; background:#FFFFFF; padding:24px; border-radius:16px; box-shadow:0 20px 50px rgba(20,83,45,0.25); border:1.5px solid #14532D; max-height:90vh; overflow-y:auto; display:flex; flex-direction:column; gap:16px;'
+        style: 'max-width:880px; width:95%; background:#FFFFFF; padding:24px; border-radius:16px; box-shadow:0 20px 50px rgba(22, 59, 101,0.25); border:1.5px solid #163B65; max-height:90vh; overflow-y:auto; display:flex; flex-direction:column; gap:16px;'
       });
 
       function renderModalFields() {
@@ -3941,7 +4078,7 @@
 
         var modalHdr = h('div', { style: 'display:flex; justify-content:space-between; align-items:center; border-bottom:1.5px solid #E2E8F0; padding-bottom:12px;' },
           h('div', null,
-            h('h3', { style: 'margin:0 0 2px; color:#14532D; font-size:1.3rem; font-weight:900;', text: 'تعبئة حصة ' + dayObj.label + ' (' + (sessObj.start || '') + ' - ' + (sessObj.end || '') + ')' }),
+            h('h3', { style: 'margin:0 0 2px; color:#163B65; font-size:1.3rem; font-weight:900;', text: 'تعبئة حصة ' + dayObj.label + ' (' + (sessObj.start || '') + ' - ' + (sessObj.end || '') + ')' }),
             h('p', { class: 'small muted', style: 'margin:0;', text: 'اختر نوع الحصة وحدد المجال والمهارة أو النشاط اليومي' })
           ),
           h('button', {
@@ -3987,7 +4124,7 @@
           }));
 
           var actBox = h('div', { style: 'background:#F8FAF9; border:1px solid #CBD5E1; border-radius:12px; padding:16px;' },
-            h('label', { style: 'display:block; font-weight:800; color:#14532D; font-size:13.5px; margin-bottom:6px;', text: 'اختر النشاط اليومي:' }),
+            h('label', { style: 'display:block; font-weight:800; color:#163B65; font-size:13.5px; margin-bottom:6px;', text: 'اختر النشاط اليومي:' }),
             actSelect
           );
           bodyWrap.appendChild(actBox);
@@ -4013,7 +4150,7 @@
             return h('option', { value: sk, selected: sk === selectedSkill ? 'selected' : null, text: sk });
           }));
 
-          var libBox = h('div', { style: 'background:#F0FDF4; border:1px solid #BBF7D0; border-radius:12px; padding:16px; display:flex; flex-direction:column; gap:10px;' },
+          var libBox = h('div', { style: 'background:#EAF4FF; border:1px solid #BFDBFE; border-radius:12px; padding:16px; display:flex; flex-direction:column; gap:10px;' },
             h('div', null,
               h('label', { style: 'display:block; font-weight:800; color:#065F46; font-size:13.5px; margin-bottom:4px;', text: 'أولاً: المجال البيداغوجي:' }),
               domainSelect
@@ -4110,12 +4247,12 @@
       var secName = getSectionName(activeWeekState.section_id);
       var m = h('div', {
         class: 'modal card wk-pdf-preview-modal',
-        style: 'max-width:1180px; width:98%; background:#FFFFFF; padding:20px; border-radius:16px; box-shadow:0 25px 60px rgba(0,0,0,0.3); border:2px solid #14532D; max-height:94vh; overflow-y:auto;'
+        style: 'max-width:1180px; width:98%; background:#FFFFFF; padding:20px; border-radius:16px; box-shadow:0 25px 60px rgba(0,0,0,0.3); border:2px solid #163B65; max-height:94vh; overflow-y:auto;'
       });
 
-      var mHdr = h('div', { style: 'display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #14532D; padding-bottom:10px; margin-bottom:14px;' },
+      var mHdr = h('div', { style: 'display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #163B65; padding-bottom:10px; margin-bottom:14px;' },
         h('div', null,
-          h('h3', { style: 'margin:0; color:#14532D; font-size:1.35rem; font-weight:900;', text: 'معاينة وثيقة البرنامج المؤقت الأسبوعي الرسمية (A4 أفقي)' }),
+          h('h3', { style: 'margin:0; color:#163B65; font-size:1.35rem; font-weight:900;', text: 'معاينة وثيقة البرنامج المؤقت الأسبوعي الرسمية (A4 أفقي)' }),
           h('span', { class: 'small muted', text: 'الفوج: ' + secName + ' | الموسم: ' + (activeWeekState.academic_year || '2026/2027') })
         ),
         h('div', { style: 'display:flex; gap:8px;' },
@@ -4314,7 +4451,36 @@
   function isEvaluationReport(r) {
     if (!r) return false;
     return (typeof r.activities === 'string' && r.activities.indexOf(EVAL_MARKER) === 0)
-      || (typeof r.title === 'string' && (r.title.indexOf('استمارة تقييم') >= 0 || r.title.indexOf('تقرير اللجنة البيداغوجية') >= 0));
+      || (typeof r.title === 'string' && (r.title.indexOf('استمارة تقييم') >= 0 || r.title.indexOf('تقرير اللجنة البيداغوجية') >= 0 || r.title.indexOf('ملاحظة سلوك') >= 0 || r.title.indexOf('التقرير النهائي') >= 0 || r.title.indexOf('التقرير النوعي') >= 0 || r.title.indexOf('التقرير الكمي') >= 0));
+  }
+
+  function getReportSubCategory(r) {
+    if (!r) return 'periodic';
+    var t = String(r.title || '');
+    if (typeof r.activities === 'string' && r.activities.indexOf(EVAL_MARKER) === 0) {
+      try {
+        var p = JSON.parse(r.activities.slice(EVAL_MARKER.length));
+        if (p && p.eval_type) return p.eval_type;
+      } catch (e) {}
+    }
+    if (t.indexOf('التقرير النهائي') >= 0) return 'annual_final';
+    if (t.indexOf('النوعي') >= 0 || t.indexOf('تقرير الملاحظات') >= 0) return 'qualitative';
+    if (t.indexOf('الكمي') >= 0) return 'quantitative';
+    if (t.indexOf('ملاحظة سلوك') >= 0 || t.indexOf('استمارة ملاحظة') >= 0) return 'behavior_observation';
+    if (t.indexOf('المعززات') >= 0) return 'reinforcers';
+    if (t.indexOf('شبكة المقابلة') >= 0 || t.indexOf('الفحص') >= 0) return 'interview_diagnostic';
+    if (t.indexOf('أداء السلوك الحالي') >= 0 || t.indexOf('استمارة تقييم') >= 0 || t.indexOf('تقرير اللجنة') >= 0) return 'current_behavior';
+    return 'periodic';
+  }
+
+  function isSectionReport(r) {
+    var cat = getReportSubCategory(r);
+    return cat === 'periodic' || cat === 'annual_final' || cat === 'qualitative' || cat === 'quantitative';
+  }
+
+  function isSectionEvaluation(r) {
+    var cat = getReportSubCategory(r);
+    return cat === 'current_behavior' || cat === 'behavior_observation' || cat === 'reinforcers' || cat === 'interview_diagnostic' || (isEvaluationReport(r) && !isSectionReport(r));
   }
 
   function extractEvalStatus(r) {
@@ -4480,7 +4646,7 @@
     var opts = [
       { val: 'ضعيف', bg: '#EF4444' },
       { val: 'متوسط', bg: '#F59E0B' },
-      { val: 'جيد', bg: '#10B981' }
+      { val: 'جيد', bg: '#2563EB' }
     ];
     var btns = [];
     opts.forEach(function (opt) {
@@ -4523,7 +4689,7 @@
     var bYes = h('button', {
       type: 'button',
       style: 'flex:1; padding:5px 12px; border:none; border-radius:6px; font-size:12.5px; font-weight:800; cursor:pointer; transition:all 0.15s ease; ' +
-             (val === 'نعم' ? 'background:#10B981; color:#FFF; box-shadow:0 2px 4px rgba(16,185,129,0.25);' : 'background:transparent; color:#475569;')
+             (val === 'نعم' ? 'background:#2563EB; color:#FFF; box-shadow:0 2px 4px rgba(37, 99, 235,0.25);' : 'background:transparent; color:#475569;')
     }, h('span', { text: '✔ نعم' }));
 
     var bNo = h('button', {
@@ -4534,7 +4700,7 @@
 
     bYes.onclick = function () {
       val = 'نعم';
-      bYes.style.background = '#10B981'; bYes.style.color = '#FFF'; bYes.style.boxShadow = '0 2px 4px rgba(16,185,129,0.25)';
+      bYes.style.background = '#2563EB'; bYes.style.color = '#FFF'; bYes.style.boxShadow = '0 2px 4px rgba(37, 99, 235,0.25)';
       bNo.style.background = 'transparent'; bNo.style.color = '#475569'; bNo.style.boxShadow = 'none';
     };
     bNo.onclick = function () {
@@ -4553,43 +4719,43 @@
   function openChooseEvaluationTypeModal(onSelectType) {
     var modal = h('div', {
       class: 'modal card',
-      style: 'max-width:640px; width:95%; background:#FFFFFF; padding:24px; border-radius:18px; box-shadow:0 25px 60px rgba(0,0,0,0.3); border:2px solid #14532D;'
+      style: 'max-width:640px; width:95%; background:#FFFFFF; padding:24px; border-radius:18px; box-shadow:0 25px 60px rgba(0,0,0,0.3); border:2px solid #163B65;'
     });
 
     var types = [
       {
+        id: 'current_behavior',
+        icon: '📊',
+        title: '1. تقييم أداء السلوك الحالي (المجالات والمهارات)',
+        badge: 'احتساب كمي آلي',
+        desc: 'تقييم مهارات ومجالات السلوك الحالي للطفل وفق معيار الاكتساب (4/5 فما فوق)، مع التوليد والربط التلقائي للتقرير الكمي.'
+      },
+      {
+        id: 'behavior_observation',
+        icon: '📋',
+        title: '2. استمارة ملاحظة السلوك (16 مؤشر سلوكي احترافي)',
+        badge: 'أيقونات احترافية + A4',
+        desc: 'استمارة رصد وملاحظة السلوك داخل القسم، التواصل اللفظي وغير اللفظي، الاستقلالية، الانتباه، السلوكيات النمطية، مع أيقونات احترافية وتوقيع المدير.'
+      },
+      {
         id: 'reinforcers',
         icon: '⭐',
-        title: '1. استبانة لتحديد المعززات التي يرغب فيها الشخص',
+        title: '3. استبانة لتحديد المعززات التي يرغب فيها الشخص',
         badge: '3 خيارات (شديدة / متوسطة / قليلة)',
         desc: 'تحديد رغبة الطالب في المعززات وفق النموذج الرسمي المعتمد، مع إظهار كامل الإرشادات ومواصفات المعزز الفعال ومبدأ بريماك عند المعاينة.'
       },
       {
         id: 'interview_diagnostic',
-        icon: '📋',
-        title: '2. شبكة المقابلة والفحص البيداغوجي والنفسي',
+        icon: '📝',
+        title: '4. شبكة المقابلة والفحص البيداغوجي والنفسي',
         badge: '7 أقسام فحص شاملة',
         desc: 'شبكة المقابلة والفحص الأولي بتصميم عصري متناسق (تقديم الحالة، دوافع الفحص، السوابق، نتائج الفحوصات، وتاريخ الاضطرابات وتعليق المدير).'
-      },
-      {
-        id: 'annual_final',
-        icon: '🎓',
-        title: '3. التقرير النهائي لمتابعة الطالب (الحصص والغياب والتعهد)',
-        badge: 'تفعيل الوضع التلقائي (5 س/يوم)',
-        desc: 'نظام الحصص (1/5 إلى 5/5)، تفعيل احتساب الغياب آلياً (كل يوم غياب يعادل إنقاص 5 ساعات)، خيارات الملاحظات (ضعيف/متوسط/جيد)، وتوقيع وختم المدير فقط.'
-      },
-      {
-        id: 'pedagogical',
-        icon: '📊',
-        title: '4. التقرير البيداغوجي الفصلي (الملاحظات والنتائج الكمية)',
-        badge: 'مخططات الأعمدة والدائرة',
-        desc: 'تقرير الملاحظات والتوجيهات والنتائج الكمية البيانية لمهارات ومجالات البرنامج البيداغوجي الفصلي.'
       }
     ];
 
     modal.appendChild(h('div', { style: 'display:flex; justify-content:space-between; align-items:center; border-bottom:1.5px solid #E2E8F0; padding-bottom:12px; margin-bottom:16px;' },
       h('div', null,
-        h('h3', { style: 'margin:0 0 4px; color:#14532D; font-size:1.35rem; font-weight:900;', text: 'اختر نوع التقييم المراد إنشاؤه' }),
+        h('h3', { style: 'margin:0 0 4px; color:#163B65; font-size:1.35rem; font-weight:900;', text: 'اختر نوع التقييم المراد إنشاؤه' }),
         h('p', { class: 'small muted', style: 'margin:0;', text: 'حدد نوع الاستمارة للبدء في تعبئة البيانات يدوياً وتصديرها بصيغة A4' })
       ),
       h('button', { type: 'button', class: 'icon-btn', style: 'font-size:18px;', onclick: closeModal }, h('span', { text: '✕' }))
@@ -4614,7 +4780,7 @@
           h('p', { class: 'small muted', style: 'margin:0; font-size:12px; line-height:1.4;', text: t.desc })
         )
       );
-      itemBtn.addEventListener('mouseenter', function () { itemBtn.style.borderColor = '#14532D'; itemBtn.style.background = '#F0FDF4'; });
+      itemBtn.addEventListener('mouseenter', function () { itemBtn.style.borderColor = '#163B65'; itemBtn.style.background = '#EAF4FF'; });
       itemBtn.addEventListener('mouseleave', function () { itemBtn.style.borderColor = '#CBD5E1'; itemBtn.style.background = '#F8FAF9'; });
       list.appendChild(itemBtn);
     });
@@ -4643,10 +4809,10 @@
     var topBar = h('div', { class: 'bar-sub', style: 'display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;' },
       h('div', { style: 'display:flex; align-items:center; gap:10px;' },
         h('img', { src: 'logo-sq.png', style: 'width:42px; height:42px; border-radius:8px;' }),
-        h('h2', { style: 'margin:0; color:#14532D; font-size:1.35rem; font-weight:900;', text: existingRep ? 'تعديل استبانة المعززات' : 'استبانة لتحديد المعززات التي يرغب فيها الشخص' })
+        h('h2', { style: 'margin:0; color:#163B65; font-size:1.35rem; font-weight:900;', text: existingRep ? 'تعديل استبانة المعززات' : 'استبانة لتحديد المعززات التي يرغب فيها الشخص' })
       ),
       h('div', { class: 'row-actions' },
-        h('button', { class: 'btn light', type: 'button', style: 'font-weight:700;', text: 'رجوع لقائمة التقييم', onclick: function () { go('evaluations'); } })
+        h('button', { class: 'btn light', type: 'button', style: 'font-weight:700;', text: 'رجوع لقائمة التقارير', onclick: function () { go('reports'); } })
       )
     );
     v.appendChild(topBar);
@@ -4690,15 +4856,15 @@
     var reinState = (ev.reinforcers && ev.reinforcers.items) || {};
     var customTexts = (ev.reinforcers && ev.reinforcers.custom_items) || {};
 
-    var tableWrap = h('div', { style: 'overflow-x:auto; margin-bottom:24px; border-radius:12px; border:1.5px solid #14532D;' });
+    var tableWrap = h('div', { style: 'overflow-x:auto; margin-bottom:24px; border-radius:12px; border:1.5px solid #163B65;' });
     var tbl = h('table', { class: 'tbl', style: 'width:100%; border-collapse:collapse; background:#FFF;' });
     
     var thead = h('thead', null,
-      h('tr', { style: 'background:#14532D; color:#FFF; text-align:center;' },
-        h('th', { style: 'padding:10px; border:1px solid #14532D; width:45%; text-align:right;', text: 'المعزز المطلوب تقييمه' }),
-        h('th', { style: 'padding:10px; border:1px solid #14532D; width:18%; background:#059669;', text: 'شديدة (✔)' }),
-        h('th', { style: 'padding:10px; border:1px solid #14532D; width:18%; background:#D97706;', text: 'متوسطة (✔)' }),
-        h('th', { style: 'padding:10px; border:1px solid #14532D; width:18%; background:#64748B;', text: 'قليلة (✔)' })
+      h('tr', { style: 'background:#163B65; color:#FFF; text-align:center;' },
+        h('th', { style: 'padding:10px; border:1px solid #163B65; width:45%; text-align:right;', text: 'المعزز المطلوب تقييمه' }),
+        h('th', { style: 'padding:10px; border:1px solid #163B65; width:18%; background:#2563EB;', text: 'شديدة (✔)' }),
+        h('th', { style: 'padding:10px; border:1px solid #163B65; width:18%; background:#D97706;', text: 'متوسطة (✔)' }),
+        h('th', { style: 'padding:10px; border:1px solid #163B65; width:18%; background:#64748B;', text: 'قليلة (✔)' })
       )
     );
     tbl.appendChild(thead);
@@ -4707,7 +4873,7 @@
 
     REINFORCERS_CATALOG.forEach(function (catObj, cIdx) {
       var catRow = h('tr', { style: 'background:#DCFCE7; font-weight:900;' },
-        h('td', { colspan: 4, style: 'padding:10px 14px; color:#14532D; font-size:15px; border:1px solid #CBD5E1;', text: '● ' + catObj.cat })
+        h('td', { colspan: 4, style: 'padding:10px 14px; color:#163B65; font-size:15px; border:1px solid #CBD5E1;', text: '● ' + catObj.cat })
       );
       tbody.appendChild(catRow);
 
@@ -4722,7 +4888,7 @@
             type: 'text',
             placeholder: 'اكتب معززات أخرى يرغب فيها الطفل هنا...',
             value: customTexts[key] || '',
-            style: 'width:100%; padding:6px 10px; border:1.5px solid #14532D; border-radius:6px; font-weight:600;'
+            style: 'width:100%; padding:6px 10px; border:1.5px solid #163B65; border-radius:6px; font-weight:600;'
           });
           otherInp.oninput = function () { customTexts[key] = otherInp.value; };
           nameCell.appendChild(h('div', { style: 'display:flex; align-items:center; gap:8px;' },
@@ -4777,8 +4943,8 @@
 
     // بطاقة توقيع المدير فقط
     card.appendChild(h('div', { style: 'display:flex; justify-content:center; margin-top:20px; border-top:1.5px solid #CBD5E1; padding-top:16px;' },
-      h('div', { style: 'text-align:center; padding:12px 28px; border:1.5px solid #14532D; border-radius:10px; background:#F8FAFC; min-width:280px;' },
-        h('strong', { style: 'color:#14532D; font-size:14.5px; font-weight:900; display:block; margin-bottom:4px;', text: 'توقيع وختم مدير المركز' }),
+      h('div', { style: 'text-align:center; padding:12px 28px; border:1.5px solid #163B65; border-radius:10px; background:#F8FAFC; min-width:280px;' },
+        h('strong', { style: 'color:#163B65; font-size:14.5px; font-weight:900; display:block; margin-bottom:4px;', text: 'توقيع وختم مدير المركز' }),
         h('div', { style: 'height:45px; border-bottom:1px dashed #94A3B8; margin-bottom:6px;' }),
         h('span', { class: 'small muted', style: 'font-size:11px;', text: 'التأشيرة والختم الرسمي لدار الإحسان' })
       )
@@ -4890,10 +5056,10 @@
     var topBar = h('div', { class: 'bar-sub', style: 'display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;' },
       h('div', { style: 'display:flex; align-items:center; gap:10px;' },
         h('img', { src: 'logo-sq.png', style: 'width:42px; height:42px; border-radius:8px;' }),
-        h('h2', { style: 'margin:0; color:#14532D; font-size:1.35rem; font-weight:900;', text: existingRep ? 'تعديل شبكة المقابلة والفحص' : 'شبكة المقابلة والفحص البيداغوجي والنفسي' })
+        h('h2', { style: 'margin:0; color:#163B65; font-size:1.35rem; font-weight:900;', text: existingRep ? 'تعديل شبكة المقابلة والفحص' : 'شبكة المقابلة والفحص البيداغوجي والنفسي' })
       ),
       h('div', { class: 'row-actions' },
-        h('button', { class: 'btn light', type: 'button', style: 'font-weight:700;', text: 'رجوع لقائمة التقييم', onclick: function () { go('evaluations'); } })
+        h('button', { class: 'btn light', type: 'button', style: 'font-weight:700;', text: 'رجوع لقائمة التقارير', onclick: function () { go('reports'); } })
       )
     );
     v.appendChild(topBar);
@@ -4938,7 +5104,7 @@
     };
 
     function makeSectionHeader(num, title) {
-      return h('div', { style: 'background:linear-gradient(135deg, #14532D 0%, #166534 100%); color:#FFF; padding:10px 16px; border-radius:10px; margin:22px 0 12px; font-weight:800; font-size:14.5px; display:flex; align-items:center; gap:8px; box-shadow:0 2px 8px rgba(20,83,45,0.15);' },
+      return h('div', { style: 'background:linear-gradient(135deg, #163B65 0%, #163B65 100%); color:#FFF; padding:10px 16px; border-radius:10px; margin:22px 0 12px; font-weight:800; font-size:14.5px; display:flex; align-items:center; gap:8px; box-shadow:0 2px 8px rgba(22, 59, 101,0.15);' },
         h('span', { style: 'background:#F59E0B; color:#000; width:24px; height:24px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:12px; font-weight:900;' }, num),
         h('span', { text: title })
       );
@@ -5056,29 +5222,29 @@
     var commentText = h('textarea', { rows: 4, placeholder: 'تعليق مدير المركز والمختصين...', style: 'width:100%; padding:12px; border:1.5px solid #CBD5E1; border-radius:8px; font-weight:600;' }, iv.expert_comment || 'الحالة تظهر إمكانات واعدة للتطور والاستجابة للبرامج التأهيلية المخصصة.');
 
     var grid7 = h('div', { style: 'background:#F8FAFC; padding:16px; border-radius:12px; border:1.5px solid #E2E8F0; display:flex; flex-direction:column; gap:14px;' },
-      h('div', null, h('b', { style: 'color:#14532D; font-size:14px;', text: '• اضطرابات الذاكرة:' })),
+      h('div', null, h('b', { style: 'color:#163B65; font-size:14px;', text: '• اضطرابات الذاكرة:' })),
       h('div', { style: 'display:flex; justify-content:space-between; align-items:center;' }, h('span', { style: 'font-weight:700;', text: '- هل اضطرابات الذاكرة ظهرت:' }), memOnsetSelect),
       h('div', { style: 'display:flex; justify-content:space-between; align-items:center;' }, h('span', { style: 'font-weight:700;', text: '- هل تتذكر الحالة موضع الأشياء؟' }), memPlacesRad),
       h('div', { style: 'display:flex; justify-content:space-between; align-items:center;' }, h('span', { style: 'font-weight:700;', text: '- هل تتذكر المواعيد (كزيارة الطبيب، أخذ الدواء...)؟' }), memApptsRad),
       
-      h('div', { style: 'margin-top:6px;' }, h('b', { style: 'color:#14532D; font-size:14px;', text: '• اضطرابات اللغة:' })),
+      h('div', { style: 'margin-top:6px;' }, h('b', { style: 'color:#163B65; font-size:14px;', text: '• اضطرابات اللغة:' })),
       h('div', { style: 'display:flex; justify-content:space-between; align-items:center;' }, h('span', { style: 'font-weight:700;', text: '- هل تعاني الحالة من نقص الكلمة؟' }), langAnomiaRad),
       h('div', null, h('label', { style: 'font-weight:700; margin-bottom:4px; display:block;', text: '- هل كلام الحالة سليم أو يظهر عليه اضطرابات؟' }), langSpeechInp),
 
-      h('div', { style: 'margin-top:6px;' }, h('b', { style: 'color:#14532D; font-size:14px;', text: '• اضطرابات التوجه الزماني والمكاني:' })),
+      h('div', { style: 'margin-top:6px;' }, h('b', { style: 'color:#163B65; font-size:14px;', text: '• اضطرابات التوجه الزماني والمكاني:' })),
       h('div', { style: 'display:flex; justify-content:space-between; align-items:center;' }, h('span', { style: 'font-weight:700;', text: '- هل يحدث لدى الحالة التباس في الأيام؟' }), timeDaysRad),
       h('div', { style: 'display:flex; justify-content:space-between; align-items:center;' }, h('span', { style: 'font-weight:700;', text: '- هل يحدث لدى الحالة التباس في الوقت؟' }), timeHoursRad),
       h('div', { style: 'display:flex; justify-content:space-between; align-items:center;' }, h('span', { style: 'font-weight:700;', text: '- هل يحدث لدى الحالة تيهان داخل المركز؟' }), spaceCenterRad),
 
-      h('div', { style: 'margin-top:6px;' }, h('b', { style: 'color:#14532D; font-size:14px;', text: '• اضطراب الأبراكسيا (الحركات والاستعمال):' })),
+      h('div', { style: 'margin-top:6px;' }, h('b', { style: 'color:#163B65; font-size:14px;', text: '• اضطراب الأبراكسيا (الحركات والاستعمال):' })),
       h('div', { style: 'display:flex; justify-content:space-between; align-items:center;' }, h('span', { style: 'font-weight:700;', text: '- هل تجد الحالة صعوبة في ارتداء الثياب؟' }), apraxiaClothesRad),
       h('div', { style: 'display:flex; justify-content:space-between; align-items:center;' }, h('span', { style: 'font-weight:700;', text: '- هل تجد الحالة صعوبة في تناول الطعام؟' }), apraxiaEatingRad),
       h('div', { style: 'display:flex; justify-content:space-between; align-items:center;' }, h('span', { style: 'font-weight:700;', text: '- هل تجد الحالة صعوبة في استعمال الأشياء؟' }), apraxiaObjectsRad),
 
-      h('div', { style: 'margin-top:6px;' }, h('b', { style: 'color:#14532D; font-size:14px;', text: '• اضطراب الأقنوزيا (التعرف):' })),
+      h('div', { style: 'margin-top:6px;' }, h('b', { style: 'color:#163B65; font-size:14px;', text: '• اضطراب الأقنوزيا (التعرف):' })),
       h('div', { style: 'display:flex; justify-content:space-between; align-items:center;' }, h('span', { style: 'font-weight:700;', text: '- هل تستطيع التعرف على الوجوه المألوفة؟' }), agnosiaFacesRad),
 
-      h('div', { style: 'margin-top:6px;' }, h('b', { style: 'color:#14532D; font-size:14px;', text: '• اضطرابات النوم والنفسية:' })),
+      h('div', { style: 'margin-top:6px;' }, h('b', { style: 'color:#163B65; font-size:14px;', text: '• اضطرابات النوم والنفسية:' })),
       h('div', { style: 'display:flex; justify-content:space-between; align-items:center;' }, h('span', { style: 'font-weight:700;', text: '- هل تجد الحالة صعوبة في النوم؟' }), sleepDiffRad),
       h('div', { style: 'display:flex; justify-content:space-between; align-items:center;' }, h('span', { style: 'font-weight:700;', text: '- هل تعاني من الاستيقاظ عدة مرات في الليل؟' }), sleepWakingRad),
       h('div', { style: 'display:flex; justify-content:space-between; align-items:center;' }, h('span', { style: 'font-weight:700;', text: '- هل هناك تغيرات في الحالة النفسية؟' }), psychChangesRad),
@@ -5087,14 +5253,14 @@
       h('div', { style: 'display:flex; justify-content:space-between; align-items:center;' }, h('span', { style: 'font-weight:700;', text: '- هل تم إخضاع الحالة لبعض الاختبارات النفسية أو العقلية؟' }), psychTestsRad),
       h('div', null, psychTestsText),
 
-      h('div', { style: 'margin-top:10px;' }, h('label', { style: 'font-weight:800; color:#14532D; margin-bottom:4px; display:block;', text: '• تعليق مدير المركز والمختصين:' }), commentText)
+      h('div', { style: 'margin-top:10px;' }, h('label', { style: 'font-weight:800; color:#163B65; margin-bottom:4px; display:block;', text: '• تعليق مدير المركز والمختصين:' }), commentText)
     );
     card.appendChild(grid7);
 
     // بطاقة توقيع المدير فقط
     card.appendChild(h('div', { style: 'display:flex; justify-content:center; margin-top:20px; border-top:1.5px solid #CBD5E1; padding-top:16px;' },
-      h('div', { style: 'text-align:center; padding:12px 28px; border:1.5px solid #14532D; border-radius:10px; background:#F8FAFC; min-width:280px;' },
-        h('strong', { style: 'color:#14532D; font-size:14.5px; font-weight:900; display:block; margin-bottom:4px;', text: 'توقيع وختم مدير المركز' }),
+      h('div', { style: 'text-align:center; padding:12px 28px; border:1.5px solid #163B65; border-radius:10px; background:#F8FAFC; min-width:280px;' },
+        h('strong', { style: 'color:#163B65; font-size:14.5px; font-weight:900; display:block; margin-bottom:4px;', text: 'توقيع وختم مدير المركز' }),
         h('div', { style: 'height:45px; border-bottom:1px dashed #94A3B8; margin-bottom:6px;' }),
         h('span', { class: 'small muted', style: 'font-size:11px;', text: 'التأشيرة والختم الرسمي لدار الإحسان' })
       )
@@ -5284,10 +5450,10 @@
     var topBar = h('div', { class: 'bar-sub', style: 'display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;' },
       h('div', { style: 'display:flex; align-items:center; gap:10px;' },
         h('img', { src: 'logo-sq.png', style: 'width:42px; height:42px; border-radius:8px;' }),
-        h('h2', { style: 'margin:0; color:#14532D; font-size:1.35rem; font-weight:900;', text: existingRep ? 'تعديل التقرير النهائي للطالب' : 'التقرير النهائي لمتابعة الطالب' })
+        h('h2', { style: 'margin:0; color:#163B65; font-size:1.35rem; font-weight:900;', text: existingRep ? 'تعديل التقرير النهائي للطالب' : 'التقرير النهائي لمتابعة الطالب' })
       ),
       h('div', { class: 'row-actions' },
-        h('button', { class: 'btn light', type: 'button', style: 'font-weight:700;', text: 'رجوع لقائمة التقييم', onclick: function () { go('evaluations'); } })
+        h('button', { class: 'btn light', type: 'button', style: 'font-weight:700;', text: 'رجوع لقائمة التقارير', onclick: function () { go('reports'); } })
       )
     );
     v.appendChild(topBar);
@@ -5320,7 +5486,7 @@
     card.appendChild(metaGrid);
 
     // الحالة الانضباطية ونظام الحصص (1 إلى 5 اختيار)
-    card.appendChild(h('div', { style: 'background:linear-gradient(135deg, #14532D 0%, #166534 100%); color:#FFF; padding:10px 16px; border-radius:10px; margin:22px 0 12px; font-weight:800; font-size:14.5px; box-shadow:0 2px 8px rgba(20,83,45,0.15);' },
+    card.appendChild(h('div', { style: 'background:linear-gradient(135deg, #163B65 0%, #163B65 100%); color:#FFF; padding:10px 16px; border-radius:10px; margin:22px 0 12px; font-weight:800; font-size:14.5px; box-shadow:0 2px 8px rgba(22, 59, 101,0.15);' },
       h('span', { text: '● الحالة الانضباطية لنظام الحصص السنوية والأحجام الساعية:' })
     ));
 
@@ -5346,8 +5512,8 @@
         ratioButtons.forEach(function (b, idx) {
           var isCur = ratios[idx] === currentWeeklyRatio;
           b.querySelector('.box-indicator').style.background = isCur ? '#000' : '#FFF';
-          b.style.borderColor = isCur ? '#14532D' : '#CBD5E1';
-          b.style.background = isCur ? '#F0FDF4' : '#FFF';
+          b.style.borderColor = isCur ? '#163B65' : '#CBD5E1';
+          b.style.background = isCur ? '#EAF4FF' : '#FFF';
         });
       };
       ratioButtons.push(btn);
@@ -5362,9 +5528,9 @@
     var utilizedSessionsInp = h('input', { type: 'number', value: af.utilized_sessions != null ? af.utilized_sessions : 47, style: 'width:100%; font-weight:800; text-align:center; padding:8px; border:1px solid #CBD5E1; border-radius:6px;' });
     var utilizedHoursInp = h('input', { type: 'number', value: af.utilized_hours != null ? af.utilized_hours : 760, style: 'width:100%; font-weight:800; text-align:center; padding:8px; border:1px solid #CBD5E1; border-radius:6px;' });
     var unspentHoursInp = h('input', { type: 'number', value: af.unspent_hours != null ? af.unspent_hours : 10, style: 'width:100%; font-weight:900; text-align:center; color:#DC2626; font-size:16px; padding:8px; border:1.5px solid #DC2626; border-radius:6px; background:#FEF2F2;' });
-    var absentDaysInp = h('input', { type: 'number', value: af.absent_days != null ? af.absent_days : 2, style: 'width:90px; font-weight:800; text-align:center; padding:6px; border:1.5px solid #14532D; border-radius:6px;' });
+    var absentDaysInp = h('input', { type: 'number', value: af.absent_days != null ? af.absent_days : 2, style: 'width:90px; font-weight:800; text-align:center; padding:6px; border:1.5px solid #163B65; border-radius:6px;' });
 
-    var adminAbsenceDisplay = h('span', { style: 'font-weight:900; color:#14532D;', text: (af.absent_days != null ? String(af.absent_days).padStart(2, '0') : '02') + ' يوم' });
+    var adminAbsenceDisplay = h('span', { style: 'font-weight:900; color:#163B65;', text: (af.absent_days != null ? String(af.absent_days).padStart(2, '0') : '02') + ' يوم' });
 
     function calcHoursFromAbsent() {
       var days = parseInt(absentDaysInp.value, 10) || 0;
@@ -5384,18 +5550,24 @@
         var records = await C.rest('GET', '/attendance?child_id=eq.' + uid(kidId)).catch(function () { return []; });
         var absentCount = 0;
         if (Array.isArray(records)) {
-          absentCount = records.filter(function (r) { return r.status === 'absent' || r.present === false || r.status === 'غائب'; }).length;
+          absentCount = records.filter(function (r) {
+            return r.status === 'absent' || r.status === 'excused' || r.present === false || r.status === 'غائب';
+          }).length;
         }
         try {
-          var localAtt = JSON.parse(localStorage.getItem('de_attendance_records') || '[]');
-          var localKidAbsent = localAtt.filter(function (x) { return x.child_id === kidId && (x.status === 'absent' || x.present === false); }).length;
-          if (localKidAbsent > absentCount) absentCount = localKidAbsent;
+          for (var i = 0; i < localStorage.length; i++) {
+            var k = localStorage.key(i);
+            if (k && k.indexOf('de_att_records_') === 0) {
+              var map = JSON.parse(localStorage.getItem(k) || '{}');
+              if (map[kidId] === 'absent' || map[kidId] === 'غائب') {
+                absentCount++;
+              }
+            }
+          }
         } catch (e) {}
 
-        if (absentCount > 0 || !af.absent_days) {
-          absentDaysInp.value = absentCount > 0 ? absentCount : 2;
-          calcHoursFromAbsent();
-        }
+        absentDaysInp.value = absentCount;
+        calcHoursFromAbsent();
       } catch (err) {}
     }
 
@@ -5409,9 +5581,9 @@
       autoFetchAttendance(ev.child_id);
     }
 
-    var attNoticeBadge = h('div', { style: 'background:#F0FDF4; border:1.5px solid #10B981; border-radius:10px; padding:12px 16px; margin-bottom:16px; font-size:13px; color:#064E3B; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;' },
+    var attNoticeBadge = h('div', { style: 'background:#EAF4FF; border:1.5px solid #2563EB; border-radius:10px; padding:12px 16px; margin-bottom:16px; font-size:13px; color:#163B65; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;' },
       h('div', { style: 'display:flex; align-items:center; gap:8px;' },
-        h('span', { style: 'background:#10B981; color:#FFF; width:22px; height:22px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:12px; font-weight:900;' }, '✓'),
+        h('span', { style: 'background:#2563EB; color:#FFF; width:22px; height:22px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:12px; font-weight:900;' }, '✓'),
         h('strong', { text: 'الوضع التلقائي للغيابات مفعل:' }),
         h('span', { text: 'كل يوم غياب يعادل إنقاص 5 ساعات من الحجم الساعي المستغل.' })
       ),
@@ -5467,7 +5639,7 @@
     var responseSegment = makeRatingSegment(af.admin_response || 'جيد');
 
     var adminCard = h('div', { style: 'background:#F8FAFC; border:1.5px solid #E2E8F0; border-radius:12px; padding:18px; margin-bottom:20px;' },
-      h('strong', { style: 'display:block; margin-bottom:12px; font-size:14.5px; font-weight:900; color:#14532D;', text: '• ملاحظات الإدارة (اختيار بين: ضعيف / متوسط / جيد):' }),
+      h('strong', { style: 'display:block; margin-bottom:12px; font-size:14.5px; font-weight:900; color:#163B65;', text: '• ملاحظات الإدارة (اختيار بين: ضعيف / متوسط / جيد):' }),
       h('div', { style: 'display:grid; grid-template-columns:repeat(auto-fit, minmax(210px, 1fr)); gap:16px;' },
         h('div', { style: 'background:#FFF; padding:12px; border-radius:10px; border:1px solid #CBD5E1;' },
           h('label', { style: 'font-weight:800; font-size:13px; margin-bottom:6px; display:block;', text: '*الغياب:' }),
@@ -5491,7 +5663,7 @@
 
     // • التذكير ببعض الالتزامات منها (ثابتة في التقرير)
     card.appendChild(h('div', { style: 'background:#F8FAFC; border:1.5px solid #E2E8F0; border-radius:12px; padding:16px; margin-bottom:20px;' },
-      h('strong', { style: 'display:block; margin-bottom:8px; font-size:13.5px; font-weight:800; color:#14532D;', text: '• التذكير ببعض الالتزامات منها (ثابتة):' }),
+      h('strong', { style: 'display:block; margin-bottom:8px; font-size:13.5px; font-weight:800; color:#163B65;', text: '• التذكير ببعض الالتزامات منها (ثابتة):' }),
       h('ul', { style: 'margin:0; padding-right:20px; font-size:12.5px; line-height:1.7; color:#334155;' },
         h('li', { text: 'احترام النظام الداخلي لتعهد الولي كاملا والعمل به.' }),
         h('li', { text: 'دفع الاشتراك السنوي حسب الاتفاق المبرم مع الإدارة.' }),
@@ -5510,8 +5682,8 @@
         h('strong', { text: 'ألتزم بما اطلعت عليه للموسم الدراسي المقبل ' + (schoolYearInp.value || '2025/2026') }),
         h('div', { style: 'margin-top:6px; color:#64748B; font-size:12px;', text: 'الاسم واللقب: ....................................................' })
       ),
-      h('div', { style: 'text-align:center; padding:12px 28px; border:1.5px solid #14532D; border-radius:10px; background:#F8FAFC; min-width:280px;' },
-        h('strong', { style: 'color:#14532D; font-size:14.5px; font-weight:900; display:block; margin-bottom:4px;', text: 'توقيع وختم مدير المركز' }),
+      h('div', { style: 'text-align:center; padding:12px 28px; border:1.5px solid #163B65; border-radius:10px; background:#F8FAFC; min-width:280px;' },
+        h('strong', { style: 'color:#163B65; font-size:14.5px; font-weight:900; display:block; margin-bottom:4px;', text: 'توقيع وختم مدير المركز' }),
         h('div', { style: 'height:45px; border-bottom:1px dashed #94A3B8; margin-bottom:6px;' }),
         h('span', { class: 'small muted', style: 'font-size:11px;', text: 'التأشيرة والختم الرسمي لدار الإحسان' })
       )
@@ -5640,12 +5812,12 @@
     var items = rf.items || {};
     var custom = rf.custom_items || {};
 
-    var wrap = h('div', { class: 'oep-sheet-container reinforcers-sheet', style: 'background:#FFF; padding:28px 32px; border:2px solid #14532D; font-family:"Cairo", "IBM Plex Sans Arabic", sans-serif; direction:rtl;' });
+    var wrap = h('div', { class: 'oep-sheet-container reinforcers-sheet', style: 'background:#FFF; padding:28px 32px; border:2px solid #163B65; font-family:"Cairo", "IBM Plex Sans Arabic", sans-serif; direction:rtl;' });
 
     // ترويسة الوثيقة الرسمية مع الشعار الرسمي لدار الإحسان
-    wrap.appendChild(h('div', { style: 'display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #14532D; padding-bottom:12px; margin-bottom:16px;' },
+    wrap.appendChild(h('div', { style: 'display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #163B65; padding-bottom:12px; margin-bottom:16px;' },
       h('div', { style: 'text-align:right;' },
-        h('h3', { style: 'margin:0 0 4px; color:#14532D; font-size:16px; font-weight:900;', text: 'جمعية أولياء الأطفال المعاقين ذهنيًا دار الإحسان' }),
+        h('h3', { style: 'margin:0 0 4px; color:#163B65; font-size:16px; font-weight:900;', text: 'جمعية أولياء الأطفال المعاقين ذهنيًا دار الإحسان' }),
         h('div', { style: 'font-size:13px; color:#475569; font-weight:700;', text: 'المركز النفسي البيداغوجي — العطف غرداية' })
       ),
       h('div', { style: 'text-align:center;' },
@@ -5663,20 +5835,20 @@
     ));
 
     // جدول المعززات مع 3 خيارات وعلامة ✔
-    var tbl = h('table', { style: 'width:100%; border-collapse:collapse; text-align:center; border:1.5px solid #14532D; font-size:11.5px; margin-bottom:16px;' });
+    var tbl = h('table', { style: 'width:100%; border-collapse:collapse; text-align:center; border:1.5px solid #163B65; font-size:11.5px; margin-bottom:16px;' });
     tbl.appendChild(h('thead', null,
-      h('tr', { style: 'background:#14532D; color:#FFF; font-weight:800;' },
-        h('th', { style: 'padding:6px; border:1px solid #14532D; text-align:right; width:45%;' }, 'المعزز المطلوب تقييمه'),
-        h('th', { style: 'padding:6px; border:1px solid #14532D; width:18%;' }, 'شديدة'),
-        h('th', { style: 'padding:6px; border:1px solid #14532D; width:18%;' }, 'متوسطة'),
-        h('th', { style: 'padding:6px; border:1px solid #14532D; width:18%;' }, 'قليلة')
+      h('tr', { style: 'background:#163B65; color:#FFF; font-weight:800;' },
+        h('th', { style: 'padding:6px; border:1px solid #163B65; text-align:right; width:45%;' }, 'المعزز المطلوب تقييمه'),
+        h('th', { style: 'padding:6px; border:1px solid #163B65; width:18%;' }, 'شديدة'),
+        h('th', { style: 'padding:6px; border:1px solid #163B65; width:18%;' }, 'متوسطة'),
+        h('th', { style: 'padding:6px; border:1px solid #163B65; width:18%;' }, 'قليلة')
       )
     ));
 
     var tb = h('tbody', null);
     REINFORCERS_CATALOG.forEach(function (catObj, cIdx) {
       tb.appendChild(h('tr', { style: 'background:#DCFCE7; font-weight:800;' },
-        h('td', { colspan: 4, style: 'padding:5px 10px; text-align:right; border:1px solid #CBD5E1; color:#14532D;', text: '● ' + catObj.cat })
+        h('td', { colspan: 4, style: 'padding:5px 10px; text-align:right; border:1px solid #CBD5E1; color:#163B65;', text: '● ' + catObj.cat })
       ));
       catObj.items.forEach(function (itemLabel, iIdx) {
         var key = cIdx + '_' + iIdx;
@@ -5686,7 +5858,7 @@
 
         tb.appendChild(h('tr', { style: 'border:1px solid #CBD5E1;' },
           h('td', { style: 'padding:4px 10px; border:1px solid #CBD5E1; text-align:right; font-weight:600;' }, displayLabel),
-          h('td', { style: 'padding:4px; border:1px solid #CBD5E1; font-weight:900; color:#059669; font-size:13px;' }, chosen === 'شديدة' ? '✔' : ''),
+          h('td', { style: 'padding:4px; border:1px solid #CBD5E1; font-weight:900; color:#2563EB; font-size:13px;' }, chosen === 'شديدة' ? '✔' : ''),
           h('td', { style: 'padding:4px; border:1px solid #CBD5E1; font-weight:900; color:#D97706; font-size:13px;' }, chosen === 'متوسطة' ? '✔' : ''),
           h('td', { style: 'padding:4px; border:1px solid #CBD5E1; font-weight:900; color:#64748B; font-size:13px;' }, chosen === 'قليلة' ? '✔' : '')
         ));
@@ -5697,13 +5869,13 @@
 
     // الملاحظات الكاملة ومواصفات المعزز الفعال ومبدأ بريماك (المطابقة للوثيقة الأصلية)
     var notesBox = h('div', { style: 'background:#F8FAFC; border:1.5px solid #CBD5E1; border-radius:10px; padding:16px; margin-bottom:16px; font-size:11.5px; line-height:1.7; color:#1E293B;' },
-      h('strong', { style: 'display:block; color:#14532D; font-size:13px; font-weight:900; margin-bottom:6px;', text: 'ويتم التقييم للمعززات من خلال الآتي:' }),
+      h('strong', { style: 'display:block; color:#163B65; font-size:13px; font-weight:900; margin-bottom:6px;', text: 'ويتم التقييم للمعززات من خلال الآتي:' }),
       h('div', { style: 'margin-bottom:8px; padding-right:12px;' },
         h('div', { text: '1- من خلال الملاحظة المباشرة للفرد يمكن أن نحدد النشاطات المحببة له.' }),
         h('div', { text: '2- من خلال المقابلة مع الوالدين وذلك بسؤالهم لتحديد المعززات المحتملة.' }),
         h('div', { text: '3- سؤال الفرد نفسه.' })
       ),
-      h('strong', { style: 'display:block; color:#14532D; font-size:13px; font-weight:900; margin-bottom:6px;', text: 'مواصفات المعزز الفعال:' }),
+      h('strong', { style: 'display:block; color:#163B65; font-size:13px; font-weight:900; margin-bottom:6px;', text: 'مواصفات المعزز الفعال:' }),
       h('div', { style: 'display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px; padding-right:12px;' },
         h('div', null,
           h('b', { text: '1- فورية التعزيز: ' }), h('span', { text: 'الذي يحدث بعد السلوك مباشرة أكثر فاعلية من المؤجل.' }),
@@ -5722,15 +5894,15 @@
           h('b', { text: '7- كمية التعزيز: ' }), h('span', { text: 'التعزيز الفعال الذي يتناسب مع صعوبة السلوك المطلوب.' })
         )
       ),
-      h('strong', { style: 'display:block; color:#14532D; font-size:13px; font-weight:900; margin-bottom:4px;', text: 'ملاحظات على أنواع المعززات ومبدأ بريماك:' }),
+      h('strong', { style: 'display:block; color:#163B65; font-size:13px; font-weight:900; margin-bottom:4px;', text: 'ملاحظات على أنواع المعززات ومبدأ بريماك:' }),
       h('p', { style: 'margin:0; padding-right:12px;', text: 'المعززات النشاطية تعد من أفضل أنواع المعززات وأكثرها قبولاً لأن الإشباع نادراً ما يحدث فيها، وتستند دائماً لمبدأ بريماك (Premack Principle) الذي نستخدم فيه سلوكاً محبباً للفرد في تعزيز سلوك نادراً ما يقوم به (مثل: مشاهدة التلفزيون بعد إنجاز الواجب والمهام المطلوبة).' })
     );
     wrap.appendChild(notesBox);
 
     // توقيع وختم مدير المركز فقط
-    wrap.appendChild(h('div', { style: 'display:flex; justify-content:center; align-items:center; margin-top:20px; border-top:1.5px solid #14532D; padding-top:14px;' },
-      h('div', { style: 'text-align:center; padding:12px 32px; border:1.5px solid #14532D; border-radius:10px; background:#F8FAFC; min-width:280px;' },
-        h('strong', { style: 'color:#14532D; font-size:15px; font-weight:900; display:block; margin-bottom:4px;', text: 'توقيع وختم مدير المركز' }),
+    wrap.appendChild(h('div', { style: 'display:flex; justify-content:center; align-items:center; margin-top:20px; border-top:1.5px solid #163B65; padding-top:14px;' },
+      h('div', { style: 'text-align:center; padding:12px 32px; border:1.5px solid #163B65; border-radius:10px; background:#F8FAFC; min-width:280px;' },
+        h('strong', { style: 'color:#163B65; font-size:15px; font-weight:900; display:block; margin-bottom:4px;', text: 'توقيع وختم مدير المركز' }),
         h('div', { style: 'height:50px;' }),
         h('span', { class: 'small muted', style: 'font-size:11.5px; color:#64748B;', text: 'التأشيرة والختم الرسمي لدار الإحسان' })
       )
@@ -5744,12 +5916,12 @@
     var ev = parseEvaluationReport(r);
     var iv = (ev.interview) || {};
 
-    var wrap = h('div', { class: 'oep-sheet-container interview-sheet', style: 'background:#FFF; padding:28px 32px; border:2px solid #14532D; font-family:"Cairo", "IBM Plex Sans Arabic", sans-serif; direction:rtl;' });
+    var wrap = h('div', { class: 'oep-sheet-container interview-sheet', style: 'background:#FFF; padding:28px 32px; border:2px solid #163B65; font-family:"Cairo", "IBM Plex Sans Arabic", sans-serif; direction:rtl;' });
 
     // ترويسة الوثيقة مع الشعار
-    wrap.appendChild(h('div', { style: 'display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #14532D; padding-bottom:12px; margin-bottom:14px;' },
+    wrap.appendChild(h('div', { style: 'display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #163B65; padding-bottom:12px; margin-bottom:14px;' },
       h('div', { style: 'text-align:right;' },
-        h('h3', { style: 'margin:0 0 2px; color:#14532D; font-size:15px; font-weight:900;', text: 'جمعية أولياء الأطفال المعاقين ذهنيًا دار الإحسان' }),
+        h('h3', { style: 'margin:0 0 2px; color:#163B65; font-size:15px; font-weight:900;', text: 'جمعية أولياء الأطفال المعاقين ذهنيًا دار الإحسان' }),
         h('div', { style: 'font-size:12.5px; color:#475569; font-weight:700;', text: 'المركز النفسي البيداغوجي — العطف غرداية' })
       ),
       h('div', { style: 'text-align:center;' },
@@ -5760,7 +5932,7 @@
     ));
 
     function makeH(num, title) {
-      return h('div', { style: 'background:#14532D; color:#FFF; padding:6px 12px; font-weight:800; font-size:13px; margin:12px 0 6px; border-radius:6px;' }, num + '- ' + title);
+      return h('div', { style: 'background:#163B65; color:#FFF; padding:6px 12px; font-weight:800; font-size:13px; margin:12px 0 6px; border-radius:6px;' }, num + '- ' + title);
     }
 
     // 1- تقديم الحالة
@@ -5849,14 +6021,14 @@
     wrap.appendChild(t7);
 
     wrap.appendChild(h('div', { style: 'margin-top:10px; background:#F8FAF9; border:1px solid #CBD5E1; padding:10px 14px; border-radius:8px;' },
-      h('strong', { style: 'display:block; margin-bottom:3px; color:#14532D;', text: 'تعليق مدير المركز والمختصين:' }),
+      h('strong', { style: 'display:block; margin-bottom:3px; color:#163B65;', text: 'تعليق مدير المركز والمختصين:' }),
       h('p', { style: 'margin:0; font-size:12px; line-height:1.6;', text: iv.expert_comment || 'الحالة تظهر مؤشرات إيجابية للاستجابة للمرافقة والتأهيل المستمر.' })
     ));
 
     // توقيع وختم مدير المركز فقط
-    wrap.appendChild(h('div', { style: 'display:flex; justify-content:center; align-items:center; margin-top:20px; border-top:1.5px solid #14532D; padding-top:14px;' },
-      h('div', { style: 'text-align:center; padding:12px 32px; border:1.5px solid #14532D; border-radius:10px; background:#F8FAFC; min-width:280px;' },
-        h('strong', { style: 'color:#14532D; font-size:15px; font-weight:900; display:block; margin-bottom:4px;', text: 'توقيع وختم مدير المركز' }),
+    wrap.appendChild(h('div', { style: 'display:flex; justify-content:center; align-items:center; margin-top:20px; border-top:1.5px solid #163B65; padding-top:14px;' },
+      h('div', { style: 'text-align:center; padding:12px 32px; border:1.5px solid #163B65; border-radius:10px; background:#F8FAFC; min-width:280px;' },
+        h('strong', { style: 'color:#163B65; font-size:15px; font-weight:900; display:block; margin-bottom:4px;', text: 'توقيع وختم مدير المركز' }),
         h('div', { style: 'height:50px;' }),
         h('span', { class: 'small muted', style: 'font-size:11.5px; color:#64748B;', text: 'التأشيرة والختم الرسمي لدار الإحسان' })
       )
@@ -5876,7 +6048,7 @@
     wrap.appendChild(h('div', { style: 'display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #000; padding-bottom:12px; margin-bottom:16px;' },
       h('div', { style: 'text-align:right;' },
         h('div', { style: 'font-size:12.5px; font-weight:700;', text: 'الجمهورية الجزائرية الديمقراطية الشعبية' }),
-        h('div', { style: 'font-size:14px; font-weight:900; color:#14532D;', text: 'جمعية أولياء الأطفال المعاقين ذهنياً دار الإحسان' }),
+        h('div', { style: 'font-size:14px; font-weight:900; color:#163B65;', text: 'جمعية أولياء الأطفال المعاقين ذهنياً دار الإحسان' }),
         h('div', { style: 'font-size:12px; color:#475569; font-weight:700;', text: 'المركز النفسي البيداغوجي — العطف غرداية' })
       ),
       h('div', { style: 'text-align:center;' },
@@ -5888,7 +6060,7 @@
     // المخاطبة
     wrap.appendChild(h('div', { style: 'text-align:center; margin-bottom:14px;' },
       h('div', { style: 'font-size:15.5px; font-weight:900;', text: 'المكرم ولي أمر / الطالب' }),
-      h('div', { style: 'font-size:15px; font-weight:800; margin-top:2px; color:#14532D;', text: af.parent_name || 'مصطفى' })
+      h('div', { style: 'font-size:15px; font-weight:800; margin-top:2px; color:#163B65;', text: af.parent_name || 'مصطفى' })
     ));
 
     // السلام عليكم والنص التمهيدي
@@ -6092,6 +6264,7 @@
   /* رسم ورقة التقييم الرسمية (الإدارة: 3 أزرار للتقرير الكتابي، التقرير الكمي المطابق للصورة، والتقرير الشامل مع الجداول) */
   function renderEvaluationSheetView(r, childFullName, secName, kd, initialReportMode, adminOpts) {
     var ev = parseEvaluationReport(r);
+    if (ev.eval_type === 'behavior_observation') return renderBehaviorObservationSheetView(r, childFullName, secName, kd, adminOpts);
     if (ev.eval_type === 'reinforcers') return renderReinforcersSheetView(r, childFullName, secName, kd);
     if (ev.eval_type === 'interview_diagnostic') return renderInterviewDiagnosticSheetView(r, childFullName, secName, kd);
     if (ev.eval_type === 'annual_final') return renderAnnualFinalSheetView(r, childFullName, secName, kd);
@@ -6168,7 +6341,7 @@
         h('tr', null,
           h('th', { text: 'المشرفون: الإسم واللقب' }),
           h('th', { text: 'الوظيفة / التخصص' }),
-          h('th', { text: 'التوقيع والختم' })
+          h('th', { text: 'إمضاء المدير' })
         )
       ),
       h('tbody', null, supRows)
@@ -6382,16 +6555,16 @@
 
     var tab1 = makeReportControlRow(
       'notes',
-      'التقرير الأول (الكتابي)',
-      'التقرير البيداغوجي الوصفي — تقرير الملاحظات والتوجيهات',
-      'تقرير_الملاحظات_والتوجيهات',
-      'جارٍ تجهيز تقرير الملاحظات والتوجيهات...'
+      'التقرير الأول (النوعي)',
+      'التقرير النوعي — تقرير الملاحظات والتوجيهات البيداغوجية',
+      'التقرير_النوعي',
+      'جارٍ تجهيز التقرير النوعي (الملاحظات والتوجيهات)...'
     );
     var tab2 = makeReportControlRow(
       'statistics',
       'التقرير الثاني (الكمي)',
       'التقرير التقييمي الكمي — كشف النتائج والأعمدة والدائرة النسبية',
-      'التقرير_الكمي_لنتائج_التقييم',
+      'التقرير_الكمي',
       'جارٍ تجهيز التقرير الكمي لنتائج التقييم...'
     );
     var tab3 = makeReportControlRow(
@@ -6536,6 +6709,717 @@
   }
 
   /* ---- باني ومحرر استمارة التقييم البيداغوجي (مع خانات التقرير والمشرفين والمجالات المصغرة) ---- */
+
+  /* =====================================================================
+     دار الإحسان — استمارة ملاحظة سلوك (جديدة بأيقونات احترافية ومطابقة للوثيقة الرسمية)
+     ===================================================================== */
+  var BEHAVIOR_OBSERVATION_ITEMS = [
+    { id: 1, icon: '🏫', text: 'الاستقرار داخل القسم' },
+    { id: 2, icon: '🗣️', text: 'التواصل اللفظي مثل القدرة على تكرار الكلمات وفهم التعليمات اللفظية، والتعبير عن الاحتياجات' },
+    { id: 3, icon: '🔤', text: 'التواصل غير اللفظي مثل الإشارات والرموز...' },
+    { id: 4, icon: '🤲', text: 'الاستقلالية والمساعدة الذاتية' },
+    { id: 5, icon: '👥', text: 'التقليد' },
+    { id: 6, icon: '👂', text: 'الاستماع والاستجابة للأوامر وللتعليمات' },
+    { id: 7, icon: '🎯', text: 'الطلب والاختيار' },
+    { id: 8, icon: '🤝', text: 'التفاعل الاجتماعي واللعب وبناء علاقات مع الاقران ومع الغير' },
+    { id: 9, icon: '🏃', text: 'الحركية الكبرى والتناسق الحركي' },
+    { id: 10, icon: '👁️', text: 'الانتباه البصري' },
+    { id: 11, icon: '🎧', text: 'الانتباه السمعي' },
+    { id: 12, icon: '✋', text: 'الانتباه اللمسي' },
+    { id: 13, icon: '⚡', text: 'العصبية والعناد' },
+    { id: 14, icon: '⚠️', text: 'السلوكيات الغير مقبولة ان وجدت' },
+    { id: 15, icon: '🔄', text: 'السلوكيات النمطية ان وجدت' },
+    { id: 16, icon: '🧩', text: 'المشاكل الحسية ان وجدت' }
+  ];
+
+  function calcKidAgeStr(dob) {
+    if (!dob) return '—';
+    try {
+      var birthDate = new Date(dob);
+      var today = new Date();
+      var age = today.getFullYear() - birthDate.getFullYear();
+      var m = today.getMonth() - birthDate.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--;
+      return age > 0 ? (age + ' سنة') : '—';
+    } catch (e) {
+      return '—';
+    }
+  }
+
+  function openBehaviorObservationBuilder(existingRep, kids, sections, secAllOpts, branchOpts) {
+    S.inSubBuilder = true;
+    try { window.history.pushState({ deApp: true, sec: 'evaluations', center: S.activeCenter, subBuilder: true }, ''); } catch (e) {}
+    var ev = parseEvaluationReport(existingRep);
+    ev.eval_type = 'behavior_observation';
+    if (!existingRep) {
+      ev.title = 'استمارة ملاحظة سلوك';
+    }
+
+    var v = $('#view');
+    v.textContent = '';
+
+    var topBar = h('div', { class: 'bar-sub', style: 'display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;' },
+      h('div', { style: 'display:flex; align-items:center; gap:10px;' },
+        h('img', { src: 'logo-sq.png', style: 'width:42px; height:42px; border-radius:8px;' }),
+        h('h2', { style: 'margin:0; color:#163B65; font-size:1.35rem; font-weight:900;', text: existingRep ? 'تعديل استمارة ملاحظة سلوك' : 'استمارة ملاحظة سلوك جديدة' })
+      ),
+      h('div', { class: 'row-actions' },
+        h('button', { class: 'btn light', type: 'button', style: 'font-weight:700;', text: 'رجوع لقائمة التقارير', onclick: function () { go('reports'); } })
+      )
+    );
+    v.appendChild(topBar);
+
+    var card = h('div', { class: 'card', style: 'max-width:1050px; margin:0 auto; padding:24px; border-radius:16px; border:1.5px solid #E2E8F0; box-shadow:0 4px 20px rgba(0,0,0,0.06);' });
+
+    var selKid = kids.filter(function (k) { return k.id === ev.child_id; })[0] || (kids.length === 1 ? kids[0] : null);
+    if (selKid && !ev.child_id) ev.child_id = selKid.id;
+
+    var obs = ev.behavior_observation || {};
+    var itemsState = obs.items || {};
+
+    var kidSelect = h('select', { style: 'font-weight:700; width:100%; padding:10px 12px; border-radius:8px; border:1.5px solid #CBD5E1;' });
+    kidSelect.appendChild(h('option', { value: '', text: '— اختر الطالب المعني بالملاحظة —' }));
+    kids.forEach(function (k) {
+      var opt = h('option', { value: k.id, text: k.full_name + (k.section ? (' — ' + k.section) : '') });
+      if (k.id === ev.child_id) opt.selected = true;
+      kidSelect.appendChild(opt);
+    });
+
+    var disabilityInp = h('input', { type: 'text', style: 'width:100%; padding:10px; border-radius:8px; border:1.5px solid #CBD5E1; font-weight:700;', placeholder: 'الإعاقة / الاضطراب', value: obs.disability || (selKid && (selKid.disability || '')) || 'توحد' });
+    var ageInp = h('input', { type: 'text', style: 'width:100%; padding:10px; border-radius:8px; border:1.5px solid #CBD5E1; font-weight:700; text-align:center;', placeholder: 'العمر (مثال: 08 سنوات)', value: obs.age || (selKid && selKid.dob ? calcKidAgeStr(selKid.dob) : '08 سنوات') });
+    var reportDateInp = h('input', { type: 'date', style: 'width:100%; padding:10px; border-radius:8px; border:1.5px solid #CBD5E1;', value: ev.report_date || new Date().toISOString().slice(0, 10) });
+
+    function onKidChange() {
+      ev.child_id = kidSelect.value;
+      var chosen = kids.filter(function (k) { return k.id === ev.child_id; })[0];
+      if (chosen) {
+        if (!disabilityInp.value || disabilityInp.value === 'توحد') disabilityInp.value = chosen.disability || 'طيف توحد';
+        if (chosen.dob) ageInp.value = calcKidAgeStr(chosen.dob);
+      }
+    }
+    kidSelect.addEventListener('change', onKidChange);
+
+    var metaGrid = h('div', { style: 'display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:16px; margin-bottom:20px; background:#F8FAFC; padding:18px; border-radius:12px; border:1.5px solid #E2E8F0;' },
+      h('div', null, h('label', { class: 'lbl', style: 'font-weight:800; margin-bottom:4px; display:block;', text: 'اسم ولقب الحالة:' }), kidSelect),
+      h('div', null, h('label', { class: 'lbl', style: 'font-weight:800; margin-bottom:4px; display:block;', text: 'الإعاقة / الاضطراب:' }), disabilityInp),
+      h('div', null, h('label', { class: 'lbl', style: 'font-weight:800; margin-bottom:4px; display:block;', text: 'العمر:' }), ageInp),
+      h('div', null, h('label', { class: 'lbl', style: 'font-weight:800; margin-bottom:4px; display:block;', text: 'تاريخ الملاحظة:' }), reportDateInp)
+    );
+    card.appendChild(metaGrid);
+
+    // الجدول الرئيسي لـ 16 مؤشر سلوكي
+    var tableEl = h('table', { style: 'width:100%; border-collapse:collapse; border:2px solid #163B65; margin-bottom:20px; background:#FFFFFF; text-align:right;' });
+    var thead = h('thead', null,
+      h('tr', { style: 'background:#163B65; color:#FFFFFF;' },
+        h('th', { style: 'padding:10px 12px; border:1px solid #CBD5E1; width:45%; font-size:14px; font-weight:900;', text: 'العبارات (مؤشرات السلوك)' }),
+        h('th', { style: 'padding:10px 4px; border:1px solid #CBD5E1; text-align:center; width:11%; font-size:13px; font-weight:800;', text: 'يوجد' }),
+        h('th', { style: 'padding:10px 4px; border:1px solid #CBD5E1; text-align:center; width:11%; font-size:13px; font-weight:800;', text: 'متوسط' }),
+        h('th', { style: 'padding:10px 4px; border:1px solid #CBD5E1; text-align:center; width:11%; font-size:13px; font-weight:800;', text: 'لا يوجد' }),
+        h('th', { style: 'padding:10px 8px; border:1px solid #CBD5E1; text-align:center; width:22%; font-size:13px; font-weight:800;', text: 'ملاحظات' })
+      )
+    );
+    tableEl.appendChild(thead);
+
+    var tbody = h('tbody');
+    var rowStateRefs = {};
+
+    BEHAVIOR_OBSERVATION_ITEMS.forEach(function (it, idx) {
+      var saved = itemsState[it.id] || {};
+      var curVal = saved.val || '';
+      var curNote = saved.note || '';
+
+      var noteInp = h('input', {
+        type: 'text',
+        placeholder: 'ملاحظات الحالة...',
+        value: curNote,
+        style: 'width:100%; padding:6px 8px; border:1px solid #CBD5E1; border-radius:6px; font-size:12.5px; box-sizing:border-box;'
+      });
+
+      function makeRadioBtn(optVal, activeColor) {
+        var isChecked = curVal === optVal;
+        var btn = h('button', {
+          type: 'button',
+          style: 'padding:6px 10px; border-radius:6px; font-size:12px; font-weight:800; cursor:pointer; width:100%; transition:all 0.15s ease; ' +
+                 (isChecked ? ('background:' + activeColor + '; color:#FFF; border:1.5px solid ' + activeColor + '; box-shadow:0 2px 4px rgba(0,0,0,0.15);') : 'background:#F8FAFC; color:#64748B; border:1px solid #CBD5E1;'),
+          text: optVal
+        });
+        btn.onclick = function () {
+          curVal = (curVal === optVal ? '' : optVal);
+          rowStateRefs[it.id].updateUI();
+        };
+        return btn;
+      }
+
+      var bYes = makeRadioBtn('يوجد', '#2563EB');
+      var bMed = makeRadioBtn('متوسط', '#F59E0B');
+      var bNo = makeRadioBtn('لا يوجد', '#64748B');
+
+      function updateRowUI() {
+        var isY = curVal === 'يوجد';
+        var isM = curVal === 'متوسط';
+        var isN = curVal === 'لا يوجد';
+        bYes.style.background = isY ? '#2563EB' : '#F8FAFC';
+        bYes.style.color = isY ? '#FFF' : '#64748B';
+        bYes.style.border = isY ? '1.5px solid #2563EB' : '1px solid #CBD5E1';
+
+        bMed.style.background = isM ? '#F59E0B' : '#F8FAFC';
+        bMed.style.color = isM ? '#FFF' : '#64748B';
+        bMed.style.border = isM ? '1.5px solid #F59E0B' : '1px solid #CBD5E1';
+
+        bNo.style.background = isN ? '#64748B' : '#F8FAFC';
+        bNo.style.color = isN ? '#FFF' : '#64748B';
+        bNo.style.border = isN ? '1.5px solid #64748B' : '1px solid #CBD5E1';
+      }
+
+      rowStateRefs[it.id] = {
+        get: function () { return { id: it.id, val: curVal, note: noteInp.value }; },
+        updateUI: updateRowUI
+      };
+
+      var tr = h('tr', { style: 'background:' + (idx % 2 === 0 ? '#FFFFFF' : '#F8FAFC') + '; border-bottom:1px solid #E2E8F0;' },
+        h('td', { style: 'padding:8px 12px; border:1px solid #E2E8F0; font-size:13.5px; font-weight:700; color:#0F172A; vertical-align:middle;' },
+          h('span', { style: 'display:inline-block; margin-left:8px; font-size:18px;', text: it.icon }),
+          h('span', { text: it.text })
+        ),
+        h('td', { style: 'padding:4px; border:1px solid #E2E8F0; text-align:center; vertical-align:middle;' }, bYes),
+        h('td', { style: 'padding:4px; border:1px solid #E2E8F0; text-align:center; vertical-align:middle;' }, bMed),
+        h('td', { style: 'padding:4px; border:1px solid #E2E8F0; text-align:center; vertical-align:middle;' }, bNo),
+        h('td', { style: 'padding:4px 8px; border:1px solid #E2E8F0; vertical-align:middle;' }, noteInp)
+      );
+      tbody.appendChild(tr);
+    });
+    tableEl.appendChild(tbody);
+    card.appendChild(tableEl);
+
+    // ملاحظات إضافية
+    var extraNotesArea = h('textarea', {
+      rows: 4,
+      style: 'width:100%; padding:10px; border-radius:8px; border:1.5px solid #CBD5E1; font-family:inherit; font-size:13.5px; box-sizing:border-box; margin-bottom:20px;',
+      placeholder: 'سجل أي ملاحظات إضافية بخصوص سلوك الحالة هنا...'
+    });
+    extraNotesArea.value = obs.additional_notes || '';
+
+    card.appendChild(h('div', null,
+      h('label', { class: 'lbl', style: 'font-weight:800; font-size:14px; color:#163B65; margin-bottom:6px; display:block;', text: 'ملاحظات إضافية:' }),
+      extraNotesArea
+    ));
+
+    // تذييل الإمضاء (إمضاء المدير وتحته يمضي بدون خانة)
+    var sigFooter = h('div', { style: 'margin-top:24px; padding-top:16px; border-top:1.5px solid #E2E8F0; display:flex; justify-content:flex-end;' },
+      h('div', { style: 'text-align:center; min-width:220px;' },
+        h('strong', { style: 'display:block; color:#163B65; font-size:15px; font-weight:900; margin-bottom:8px;', text: 'إمضاء المدير' }),
+        h('div', { style: 'height:65px;' })
+      )
+    );
+    card.appendChild(sigFooter);
+
+    // أزرار الحفظ والنشر
+    var actionsBar = h('div', { style: 'display:flex; justify-content:flex-end; gap:12px; margin-top:24px;' },
+      h('button', {
+        type: 'button',
+        class: 'btn light',
+        style: 'font-weight:700;',
+        onclick: function () { saveObsAction('draft'); }
+      }, h('span', { text: 'حفظ كمسودة' })),
+      h('button', {
+        type: 'button',
+        class: 'btn gold',
+        style: 'font-weight:800;',
+        onclick: function () { saveObsAction('published'); }
+      }, h('span', { text: 'اعتماد ونشر للأولياء' }))
+    );
+    card.appendChild(actionsBar);
+
+    async function saveObsAction(statusKey) {
+      if (!kidSelect.value) return toast('يرجى اختيار الطالب المعني أولاً.', 'bad');
+      var chosenKid = kids.filter(function (k) { return k.id === kidSelect.value; })[0];
+      var packedItems = {};
+      BEHAVIOR_OBSERVATION_ITEMS.forEach(function (it) {
+        packedItems[it.id] = rowStateRefs[it.id].get();
+      });
+
+      var obsData = {
+        disability: disabilityInp.value,
+        age: ageInp.value,
+        additional_notes: extraNotesArea.value,
+        items: packedItems
+      };
+
+      var payload = {
+        eval_type: 'behavior_observation',
+        title: 'استمارة ملاحظة سلوك',
+        status: statusKey,
+        behavior_observation: obsData
+      };
+
+      var fullActivities = EVAL_MARKER + JSON.stringify(payload);
+      var recordBody = {
+        child_id: kidSelect.value,
+        title: 'استمارة ملاحظة سلوك — ' + (chosenKid ? chosenKid.full_name : ''),
+        report_date: reportDateInp.value,
+        status: statusKey,
+        activities: fullActivities,
+        notes: extraNotesArea.value || null
+      };
+
+      try {
+        if (ev.id && DE.isUuid(String(ev.id))) {
+          await saveProgressReportResilient('PATCH', '/progress_reports?id=eq.' + uid(ev.id), recordBody);
+        } else {
+          var created = await saveProgressReportResilient('POST', '/progress_reports', recordBody);
+          if (Array.isArray(created) && created[0]) ev.id = created[0].id;
+        }
+        await syncSharedEvaluationRecord(Object.assign({}, recordBody, { id: ev.id }), null);
+        bust();
+        toast(statusKey === 'published' ? 'تم نشر استمارة ملاحظة السلوك بنجاح!' : 'تم حفظ الاستمارة كمسودة.', 'ok');
+        go('evaluations');
+      } catch (err) {
+        toast('تعذر الحفظ: ' + (err.message || 'خطأ غير متوقع'), 'bad');
+      }
+    }
+
+    v.appendChild(card);
+  }
+
+  function renderBehaviorObservationSheetView(r, childFullName, secName, kd, adminOpts) {
+    var ev = parseEvaluationReport(r);
+    var obs = ev.behavior_observation || {};
+    var itemsState = obs.items || {};
+
+    var wrap = h('div', { class: 'behavior-observation-paper card', style: 'max-width:980px; margin:0 auto; padding:24px; background:#FFFFFF; border:1px solid #CBD5E1; border-radius:12px; font-family:"Cairo","Tajawal",sans-serif;' });
+
+    // ترويسة الوثيقة: الشعار في أعلى اليسار!
+    var logoImg = h('img', { src: 'logo-sq.png', alt: 'شعار المركز', style: 'width:80px; height:80px; border-radius:8px;' });
+
+    var header = h('div', { style: 'display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #163B65; padding-bottom:12px; margin-bottom:16px;' },
+      h('div', { style: 'text-align:right;' },
+        h('h3', { style: 'margin:0 0 2px; color:#163B65; font-size:15px; font-weight:800;', text: 'جمعية أولياء الأطفال المعاقين ذهنيًا' }),
+        h('h4', { style: 'margin:0 0 2px; color:#2563EB; font-size:14px; font-weight:700;', text: 'المركز النفسي البيداغوجي دار الإحسان' }),
+        h('p', { style: 'margin:0; color:#64748B; font-size:12px;', text: '— العطف - غرداية —' })
+      ),
+      h('div', { style: 'text-align:center;' },
+        h('h2', { style: 'margin:0; color:#163B65; font-size:1.6rem; font-weight:900; letter-spacing:0.5px;', text: 'استمارة ملاحظة سلوك' })
+      ),
+      h('div', { style: 'text-align:left;' },
+        logoImg
+      )
+    );
+    wrap.appendChild(header);
+
+    // معلومات الحالة
+    var infoRow = h('div', { style: 'display:grid; grid-template-columns:2fr 1fr 1fr; gap:12px; background:#F8FAFC; padding:10px 14px; border:1px solid #E2E8F0; border-radius:8px; margin-bottom:16px; font-size:13.5px;' },
+      h('div', null, h('span', { style: 'font-weight:800; color:#163B65;', text: 'اسم و لقب الحالة: ' }), h('strong', { text: childFullName || '—' })),
+      h('div', null, h('span', { style: 'font-weight:800; color:#163B65;', text: 'الإعاقة/الاضطراب: ' }), h('span', { text: obs.disability || (kd && kd.disability) || '—' })),
+      h('div', null, h('span', { style: 'font-weight:800; color:#163B65;', text: 'العمر: ' }), h('span', { text: obs.age || (kd && kd.dob ? calcKidAgeStr(kd.dob) : '—') }))
+    );
+    wrap.appendChild(infoRow);
+
+    // جدول الـ 16 مؤشر
+    var tbl = h('table', { style: 'width:100%; border-collapse:collapse; border:1.5px solid #163B65; margin-bottom:18px; font-size:12.5px;' });
+    tbl.appendChild(h('thead', null,
+      h('tr', { style: 'background:#163B65; color:#FFF;' },
+        h('th', { style: 'padding:8px 10px; border:1px solid #CBD5E1; text-align:right;', text: 'العبارات' }),
+        h('th', { style: 'width:70px; padding:8px 4px; border:1px solid #CBD5E1; text-align:center;', text: 'يوجد' }),
+        h('th', { style: 'width:70px; padding:8px 4px; border:1px solid #CBD5E1; text-align:center;', text: 'متوسط' }),
+        h('th', { style: 'width:70px; padding:8px 4px; border:1px solid #CBD5E1; text-align:center;', text: 'لا يوجد' }),
+        h('th', { style: 'width:160px; padding:8px 6px; border:1px solid #CBD5E1; text-align:center;', text: 'ملاحظات' })
+      )
+    ));
+
+    var tb = h('tbody');
+    BEHAVIOR_OBSERVATION_ITEMS.forEach(function (it, idx) {
+      var sv = itemsState[it.id] || {};
+      var val = sv.val || '';
+      var tr = h('tr', { style: 'background:' + (idx % 2 === 0 ? '#FFFFFF' : '#F8FAFC') + ';' },
+        h('td', { style: 'padding:6px 10px; border:1px solid #E2E8F0; font-weight:700;' },
+          h('span', { style: 'margin-left:6px; font-size:16px;', text: it.icon }),
+          h('span', { text: it.text })
+        ),
+        h('td', { style: 'padding:6px 4px; border:1px solid #E2E8F0; text-align:center; font-weight:900;' }, val === 'يوجد' ? h('span', { style: 'color:#2563EB; font-size:15px;', text: '✔' }) : ''),
+        h('td', { style: 'padding:6px 4px; border:1px solid #E2E8F0; text-align:center; font-weight:900;' }, val === 'متوسط' ? h('span', { style: 'color:#F59E0B; font-size:15px;', text: '✔' }) : ''),
+        h('td', { style: 'padding:6px 4px; border:1px solid #E2E8F0; text-align:center; font-weight:900;' }, val === 'لا يوجد' ? h('span', { style: 'color:#64748B; font-size:15px;', text: '✔' }) : ''),
+        h('td', { style: 'padding:6px 8px; border:1px solid #E2E8F0; font-size:12px; color:#475569;' }, h('span', { text: sv.note || '—' }))
+      );
+      tb.appendChild(tr);
+    });
+    tbl.appendChild(tb);
+    wrap.appendChild(tbl);
+
+    // ملاحظات إضافية
+    if (obs.additional_notes) {
+      wrap.appendChild(h('div', { style: 'margin-bottom:16px; background:#F8FAFC; padding:12px 14px; border-radius:8px; border:1px solid #E2E8F0;' },
+        h('strong', { style: 'display:block; color:#163B65; margin-bottom:4px; font-size:13.5px;', text: 'ملاحظات إضافية:' }),
+        h('p', { style: 'margin:0; font-size:13px; line-height:1.5; color:#1E293B;', text: obs.additional_notes })
+      ));
+    }
+
+    // مكان الإمضاء بدون خانة
+    var sig = h('div', { style: 'margin-top:20px; display:flex; justify-content:flex-end;' },
+      h('div', { style: 'text-align:center; min-width:200px;' },
+        h('strong', { style: 'display:block; color:#163B65; font-size:15px; font-weight:900; margin-bottom:8px;', text: 'إمضاء المدير' }),
+        h('div', { style: 'height:60px;' })
+      )
+    );
+    wrap.appendChild(sig);
+
+    // شريط الأزرار للمشرف (تعديل / تنزيل PDF / حذف)
+    var bottomBar = h('div', { style: 'display:flex; justify-content:space-between; align-items:center; margin-top:20px; padding-top:14px; border-top:1px solid #E2E8F0; flex-wrap:wrap; gap:10px;' },
+      h('div', null,
+        h('button', {
+          type: 'button',
+          class: 'btn light',
+          onclick: async function () {
+            try {
+              toast('جارٍ تجهيز استمارة ملاحظة السلوك بصيغة PDF...', 'ok');
+              var pdfBytes = await DE_PDF.renderBehaviorObservationToPdf(ev, childFullName, secName, kd);
+              DE_PDF.downloadPdf(pdfBytes, 'استمارة_ملاحظة_سلوك_' + (childFullName || 'تلميذ').replace(/\s+/g, '_') + '.pdf');
+              toast('تم تنزيل الاستمارة بنجاح!', 'ok');
+            } catch (err) {
+              toast('تعذر التنزيل: ' + err.message, 'bad');
+            }
+          }
+        }, makeSvgIcon('s-download'), h('span', { text: 'تحميل PDF (A4)' }))
+      ),
+      adminOpts ? h('div', { class: 'row-actions' },
+        adminOpts.onEdit ? h('button', { type: 'button', class: 'btn light', onclick: adminOpts.onEdit }, makeSvgIcon('s-edit'), h('span', { text: 'تعديل' })) : null,
+        adminOpts.onDelete ? h('button', { type: 'button', class: 'btn danger', onclick: adminOpts.onDelete }, makeSvgIcon('s-trash'), h('span', { text: 'حذف' })) : null
+      ) : null
+    );
+    wrap.appendChild(bottomBar);
+
+    return wrap;
+  }
+
+  /* =====================================================================
+     دار الإحسان — التقرير النوعي (الوصف والملاحظات والتوجيهات البيداغوجية مع عرض التقرير الكمي فوقه)
+     ===================================================================== */
+  function openQualitativeReportBuilder(existingRep, kids, sections, secAllOpts, branchOpts) {
+    S.inSubBuilder = true;
+    try { window.history.pushState({ deApp: true, sec: 'reports', center: S.activeCenter, subBuilder: true }, ''); } catch (e) {}
+    var ev = parseEvaluationReport(existingRep);
+    ev.eval_type = 'qualitative';
+    if (!existingRep) {
+      ev.title = 'التقرير النوعي — تقرير الملاحظات والتوجيهات البيداغوجية';
+    }
+
+    var v = $('#view');
+    v.textContent = '';
+
+    var topBar = h('div', { class: 'bar-sub', style: 'display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;' },
+      h('div', { style: 'display:flex; align-items:center; gap:10px;' },
+        h('img', { src: 'logo-sq.png', style: 'width:42px; height:42px; border-radius:8px;' }),
+        h('h2', { style: 'margin:0; color:#163B65; font-size:1.35rem; font-weight:900;', text: existingRep ? 'تعديل التقرير النوعي' : 'كتابة التقرير النوعي (الملاحظات والتوجيهات)' })
+      ),
+      h('div', { class: 'row-actions' },
+        h('button', { class: 'btn light', type: 'button', style: 'font-weight:700;', text: 'رجوع لقائمة التقارير', onclick: function () { go('reports'); } })
+      )
+    );
+    v.appendChild(topBar);
+
+    var selKid = kids.filter(function (k) { return k.id === ev.child_id; })[0] || (kids.length === 1 ? kids[0] : null);
+    if (selKid && !ev.child_id) ev.child_id = selKid.id;
+
+    var curSecId = S.isEducator ? S.eduSectionId : (selKid ? selKid.section_id : '');
+    var secFilterSelect = h('select', { disabled: !!S.isEducator },
+      h('option', { value: '', text: '— جميع الأقسام —' }),
+      secAllOpts.map(function (o) { return h('option', { value: o[0], text: o[1] }); })
+    );
+    secFilterSelect.value = curSecId || '';
+
+    var kidSearch = h('input', { type: 'search', class: 'fld-search', placeholder: 'ابحث باسم الطفل أو رقم القيد...', autocomplete: 'off' });
+    var kidSelect = h('select', null);
+
+    function populateKidsSelect() {
+      var sId = secFilterSelect.value;
+      var q = normAr(kidSearch.value.trim());
+      var keep = ev.child_id || kidSelect.value;
+      while (kidSelect.firstChild) kidSelect.removeChild(kidSelect.firstChild);
+      kidSelect.appendChild(h('option', { value: '', text: '— اختر الطالب المعني بالتقرير —' }));
+      kids.forEach(function (k) {
+        if (sId && !childMatchesSection(k, sId, nameOf(sections, sId, 'name'), sections)) return;
+        var label = (k.membership_no ? ('[' + k.membership_no + '] ') : '') + k.full_name + (k.section ? (' — ' + k.section) : '');
+        if (q && normAr(label).indexOf(q) === -1) return;
+        kidSelect.appendChild(h('option', { value: k.id, text: label }));
+      });
+      if (keep && kids.some(function (k) { return k.id === keep; })) {
+        kidSelect.value = keep;
+      }
+    }
+
+    secFilterSelect.addEventListener('change', function () {
+      populateKidsSelect();
+      ev.child_id = kidSelect.value;
+      renderQuantitativeOnTop();
+    });
+
+    kidSearch.addEventListener('input', function () {
+      populateKidsSelect();
+      ev.child_id = kidSelect.value;
+      renderQuantitativeOnTop();
+    });
+
+    populateKidsSelect();
+
+    var titleInput = h('input', { type: 'text', maxlength: 145, value: ev.title || 'التقرير النوعي — تقرير الملاحظات والتوجيهات البيداغوجية' });
+    var dateInput = h('input', { type: 'date', value: ev.report_date });
+
+    var termSelect = h('select', null,
+      h('option', { value: 'الثلاثي الأخير', text: 'الثلاثي الأخير (الثالث)' }),
+      h('option', { value: 'الثلاثي الأول', text: 'الثلاثي الأول' }),
+      h('option', { value: 'الثلاثي الثاني', text: 'الثلاثي الثاني' })
+    );
+    termSelect.value = ev.term || 'الثلاثي الأخير';
+
+    var schoolYearInput = h('input', { type: 'text', maxlength: 20, value: ev.school_year || '2024/2025' });
+    var disabilityDegInput = h('input', { type: 'text', maxlength: 50, value: ev.degree_of_disability || 'متوسطة' });
+    var qualLevelInput = h('input', { type: 'text', maxlength: 80, value: ev.qualification_level || '' });
+
+    var step1Card = h('div', { class: 'card prog-step-card' },
+      h('h3', { class: 'prog-step-title', style: 'color:#163B65;', text: '1⃣ بيانات الحالة والموسم الدراسي' }),
+      h('div', { class: 'eval-builder-grid-2' },
+        h('label', { class: 'fld' }, h('span', { text: 'تصفية حسب القسم التربوي:' }), secFilterSelect),
+        h('label', { class: 'fld' }, h('span', { text: 'بحث عن الطفل:' }), kidSearch)
+      ),
+      h('label', { class: 'fld' }, h('span', { text: 'الطفل المعني بالتقرير:' }), kidSelect),
+      h('div', { class: 'eval-builder-grid-2' },
+        h('label', { class: 'fld' }, h('span', { text: 'تقييم الثلاثي:' }), termSelect),
+        h('label', { class: 'fld' }, h('span', { text: 'الموسم الدراسي:' }), schoolYearInput),
+        h('label', { class: 'fld' }, h('span', { text: 'تاريخ التقرير:' }), dateInput),
+        h('label', { class: 'fld' }, h('span', { text: 'عنوان الوثيقة:' }), titleInput),
+        h('label', { class: 'fld' }, h('span', { text: 'درجة الإعاقة / الاضطراب:' }), disabilityDegInput),
+        h('label', { class: 'fld' }, h('span', { text: 'القسم ومستوى التأهيل:' }), qualLevelInput)
+      )
+    );
+    v.appendChild(step1Card);
+
+    // =========================================================================
+    // 2. بطاقة التقرير الكمي (معروضة في الأعلى مباشرة فوق التقرير النوعي لتوجيه ملئه)
+    // =========================================================================
+    var quantHost = h('div', { class: 'card', style: 'margin-bottom:16px; border:2px solid #2563EB; border-radius:14px; background:#F8FAFC; padding:18px;' });
+
+    function renderQuantitativeOnTop() {
+      quantHost.textContent = '';
+      var chosenKid = kids.filter(function (k) { return k.id === ev.child_id; })[0];
+      var sName = chosenKid ? (nameOf(sections, chosenKid.section_id, 'name') || chosenKid.section || '') : '';
+
+      quantHost.appendChild(h('div', { style: 'display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:1.5px solid #CBD5E1; padding-bottom:8px;' },
+        h('div', { style: 'display:flex; align-items:center; gap:8px;' },
+          h('span', { style: 'font-size:22px;', text: '📊' }),
+          h('strong', { style: 'color:#163B65; font-size:15px; font-weight:900;', text: 'التقرير التقييمي الكمي لنتائج الحالة (معروض في الأعلى لتوجيه ملء التقرير النوعي)' })
+        ),
+        h('span', { class: 'badge gold', style: 'font-size:11px;', text: 'مخطط بياني مباشر' })
+      ));
+
+      var canvasWrap = h('div', { style: 'width:100%; min-height:280px; background:#FFF; border:1px solid #E2E8F0; border-radius:8px; display:flex; align-items:center; justify-content:center;' },
+        h('span', { class: 'muted small', text: 'جارٍ رسم التقرير الكمي البياني...' })
+      );
+      quantHost.appendChild(canvasWrap);
+
+      if (window.DE_PDF && typeof window.DE_PDF.renderQuantitativePageCanvas === 'function') {
+        window.DE_PDF.renderQuantitativePageCanvas(ev, chosenKid ? chosenKid.full_name : '', sName, chosenKid).then(function (cEl) {
+          canvasWrap.textContent = '';
+          cEl.style.width = '100%';
+          cEl.style.height = 'auto';
+          cEl.style.display = 'block';
+          cEl.style.maxWidth = '100%';
+          canvasWrap.appendChild(cEl);
+        }).catch(function () {});
+      }
+    }
+
+    kidSelect.addEventListener('change', function () {
+      ev.child_id = kidSelect.value;
+      renderQuantitativeOnTop();
+    });
+
+    renderQuantitativeOnTop();
+    v.appendChild(quantHost);
+
+    // 3. خانات التقرير النوعي (الوصف العام لأداء الحالة والخانات الستة)
+    var MAX_GR_CHARS = 700;
+    var MAX_GR_LINES = 10;
+    var grCounterBadge = h('span', { class: 'muted small', style: 'display:block; margin-top:4px; font-weight:700;' });
+    var generalReportArea = h('textarea', { rows: 8, maxlength: MAX_GR_CHARS, placeholder: 'اكتب التقرير العام الشامل لأداء وسلوك الحالة (مضبوط بحد أقصى لا يتجاوز صفحة A4)...' });
+    generalReportArea.value = String(ev.general_report || '').slice(0, MAX_GR_CHARS);
+
+    function updateGrLimitUI() {
+      var val = generalReportArea.value || '';
+      var lines = val.split('\n');
+      if (lines.length > MAX_GR_LINES) {
+        val = lines.slice(0, MAX_GR_LINES).join('\n');
+        generalReportArea.value = val;
+      }
+      if (val.length > MAX_GR_CHARS) {
+        val = val.slice(0, MAX_GR_CHARS);
+        generalReportArea.value = val;
+      }
+      ev.general_report = val;
+      var rem = MAX_GR_CHARS - val.length;
+      grCounterBadge.textContent = 'حد صفحة A4: ' + val.length + ' / ' + MAX_GR_CHARS + ' حرف (' + lines.length + '/' + MAX_GR_LINES + ' أسطر)' + (rem <= 0 ? ' — امتلأت مساحة الصندوق في صفحة A4' : '');
+      grCounterBadge.style.color = rem <= 30 ? '#DC2626' : '#475569';
+    }
+    generalReportArea.addEventListener('input', updateGrLimitUI);
+    updateGrLimitUI();
+
+    var ab = ev.abilities || {};
+    function makeAbArea(key, placeholder) {
+      var ta = h('textarea', { rows: 2, maxlength: 130, placeholder: placeholder + ' (حد أقصى سطران لصفحة A4)' });
+      ta.value = String(ab[key] || '').slice(0, 130);
+      ta.addEventListener('input', function () {
+        if (!ev.abilities) ev.abilities = {};
+        var lns = ta.value.split('\n');
+        if (lns.length > 2) ta.value = lns.slice(0, 2).join(' ');
+        ev.abilities[key] = ta.value.slice(0, 130);
+      });
+      return ta;
+    }
+
+    var stepReportFieldsCard = h('div', { class: 'card prog-step-card' },
+      h('h3', { class: 'prog-step-title', style: 'color:#163B65;', text: '3⃣ خانات التقرير النوعي — الوصف العام لأداء الحالة' }),
+      h('div', { class: 'eval-builder-grid-2' },
+        h('label', { class: 'fld' },
+          h('span', { text: 'التقرير العام (مربع التقرير الشامل على اليمين — مضبوط لصفحة A4):' }),
+          generalReportArea,
+          grCounterBadge
+        ),
+        h('div', { class: 'oep-abilities-stack' },
+          h('label', { class: 'fld' }, h('span', { text: '1. إمكانيات والقدرات الحالية:' }), makeAbArea('current_potentials', 'سجل الإمكانيات والقدرات الحالية...')),
+          h('label', { class: 'fld' }, h('span', { text: '2. المهارات المعرفية والفكرية:' }), makeAbArea('cognitive_intellectual', 'سجل المهارات المعرفية والفكرية...')),
+          h('label', { class: 'fld' }, h('span', { text: '3. اللغة (استقبالية تعبيرية):' }), makeAbArea('language_receptive_expressive', 'سجل مستوى اللغة الاستقبالية والتعبيرية...')),
+          h('label', { class: 'fld' }, h('span', { text: '4. القدرات الإتصالية والسلوكية:' }), makeAbArea('communication_behavioral', 'سجل القدرات التواصلية والسلوك...')),
+          h('label', { class: 'fld' }, h('span', { text: '5. المعارف الأكاديمية وما قبل الأكاديمي:' }), makeAbArea('academic_preacademic', 'سجل المعارف الأكاديمية وما قبل الأكاديمية...')),
+          h('label', { class: 'fld' }, h('span', { text: '6. القدرات الحركية والاستقلالية:' }), makeAbArea('motor_independence', 'سجل القدرات الحركية ومستوى الاستقلالية...'))
+        )
+      )
+    );
+    v.appendChild(stepReportFieldsCard);
+
+    // 4. الخلاصة والتوصيات
+    function buildDynamicListBlock(title, arrKey, placeholder, addLabel) {
+      var MAX_ITEMS_A4 = 4;
+      var container = h('div', { class: 'dynamic-items-container' });
+      var addBtn = h('button', {
+        type: 'button',
+        class: 'btn small light',
+        text: addLabel,
+        onclick: function () {
+          if ((ev[arrKey] || []).length >= MAX_ITEMS_A4) {
+            return toast('الحد الأقصى 4 نقاط في كل خانة لصفحة A4.', 'bad');
+          }
+          ev[arrKey].push('');
+          redraw();
+        }
+      });
+      function redraw() {
+        container.textContent = '';
+        if (!ev[arrKey] || !ev[arrKey].length) ev[arrKey] = [''];
+        if (ev[arrKey].length > MAX_ITEMS_A4) ev[arrKey] = ev[arrKey].slice(0, MAX_ITEMS_A4);
+        addBtn.disabled = ev[arrKey].length >= MAX_ITEMS_A4;
+        ev[arrKey].forEach(function (val, idx) {
+          var inp = h('input', { type: 'text', maxlength: 120, placeholder: placeholder, value: String(val || '').slice(0, 120) });
+          inp.addEventListener('input', function () { ev[arrKey][idx] = inp.value.slice(0, 120); });
+          var del = h('button', {
+            type: 'button',
+            class: 'btn small danger',
+            text: 'حذف',
+            disabled: ev[arrKey].length <= 1,
+            onclick: function () {
+              ev[arrKey].splice(idx, 1);
+              redraw();
+            }
+          });
+          container.appendChild(h('div', { class: 'dynamic-item-row' }, inp, del));
+        });
+      }
+      redraw();
+      return h('div', { class: 'card', style: 'margin-bottom:0;' },
+        h('div', { class: 'bar-sub' }, h('h4', { text: title }), addBtn),
+        container
+      );
+    }
+
+    var stepSummaryCard = h('div', { class: 'card prog-step-card' },
+      h('h3', { class: 'prog-step-title', style: 'color:#163B65;', text: '4⃣ الخلاصة والتوصيات' }),
+      h('div', { class: 'eval-builder-grid-2' },
+        buildDynamicListBlock('نقاط القوة', 'strengths', 'اكتب نقطة قوة...', '+ إضافة نقطة قوة'),
+        buildDynamicListBlock('نقاط الضعف', 'weaknesses', 'اكتب نقطة ضعف...', '+ إضافة نقطة ضعف')
+      ),
+      buildDynamicListBlock('التوصيات والتوجيهات', 'recommendations', 'اكتب توصية للمركز والأسرة...', '+ إضافة توصية أخرى')
+    );
+    v.appendChild(stepSummaryCard);
+
+    // تذييل الحفظ والنشر
+    var saveActions = h('div', { style: 'display:flex; justify-content:flex-end; gap:12px; margin-top:20px;' },
+      h('button', {
+        type: 'button',
+        class: 'btn light',
+        onclick: function () { saveQualitativeAction('draft'); }
+      }, h('span', { text: 'حفظ كمسودة' })),
+      h('button', {
+        type: 'button',
+        class: 'btn gold',
+        style: 'font-weight:800;',
+        onclick: function () { saveQualitativeAction('published'); }
+      }, h('span', { text: 'اعتماد ونشر للولي' }))
+    );
+    v.appendChild(saveActions);
+
+    async function saveQualitativeAction(statusKey) {
+      if (!kidSelect.value) return toast('يرجى اختيار الطالب المعني أولاً.', 'bad');
+      var chosenKid = kids.filter(function (k) { return k.id === kidSelect.value; })[0];
+
+      ev.status = statusKey;
+      ev.title = titleInput.value;
+      ev.report_date = dateInput.value;
+      ev.term = termSelect.value;
+      ev.school_year = schoolYearInput.value;
+      ev.degree_of_disability = disabilityDegInput.value;
+      ev.qualification_level = qualLevelInput.value;
+
+      var fullPayload = {
+        eval_type: 'qualitative',
+        status: statusKey,
+        title: ev.title,
+        term: ev.term,
+        school_year: ev.school_year,
+        degree_of_disability: ev.degree_of_disability,
+        qualification_level: ev.qualification_level,
+        supervisors: ev.supervisors,
+        general_report: ev.general_report,
+        abilities: ev.abilities,
+        strengths: ev.strengths,
+        weaknesses: ev.weaknesses,
+        recommendations: ev.recommendations,
+        domains: ev.domains
+      };
+
+      var fullActivities = EVAL_MARKER + JSON.stringify(fullPayload);
+      var recordBody = {
+        child_id: kidSelect.value,
+        title: ev.title + ' — ' + (chosenKid ? chosenKid.full_name : ''),
+        report_date: ev.report_date,
+        status: statusKey,
+        activities: fullActivities,
+        notes: ev.general_report || null
+      };
+
+      try {
+        if (ev.id && DE.isUuid(String(ev.id))) {
+          await saveProgressReportResilient('PATCH', '/progress_reports?id=eq.' + uid(ev.id), recordBody);
+        } else {
+          var created = await saveProgressReportResilient('POST', '/progress_reports', recordBody);
+          if (Array.isArray(created) && created[0]) ev.id = created[0].id;
+        }
+        await syncSharedEvaluationRecord(Object.assign({}, recordBody, { id: ev.id }), null);
+        bust();
+        toast(statusKey === 'published' ? 'تم اعتماد ونشر التقرير النوعي بنجاح!' : 'تم حفظ التقرير النوعي كمسودة.', 'ok');
+        go('reports');
+      } catch (err) {
+        toast('تعذر الحفظ: ' + (err.message || 'خطأ غير متوقع'), 'bad');
+      }
+    }
+  }
+
   function openEvaluationBuilder(existingRep, kids, sections, secAllOpts, branchOpts) {
     S.inSubBuilder = true;
     try { window.history.pushState({ deApp: true, sec: 'evaluations', center: S.activeCenter, subBuilder: true }, ''); } catch (e) {}
@@ -6548,7 +7432,7 @@
     var topBar = h('div', { class: 'bar-sub' },
       h('h2', { text: existingRep ? 'تعديل استمارة التقييم البيداغوجي' : 'إضافة استمارة تقييم بيداغوجي رسمية جديدة' }),
       h('div', { class: 'row-actions' },
-        h('button', { class: 'btn light', type: 'button', text: 'رجوع لقائمة التقييم', onclick: function () { go('evaluations'); } })
+        h('button', { class: 'btn light', type: 'button', text: 'رجوع لقائمة التقارير', onclick: function () { go('reports'); } })
       )
     );
     v.appendChild(topBar);
@@ -7195,8 +8079,8 @@
     var d = await getMany('reports', 'children', 'branches', 'sections');
     var allReports = d[0], kids = d[1], branches = d[2], sections = d[3];
 
-    // إظهار التقارير الدورية فقط واستبعاد استمارات التقييم
-    var rows = allReports.filter(function (r) { return !isEvaluationReport(r); });
+    // إظهار التقارير بمختلف أنواعها: النوعي، الكمي، النهائي، والدورية
+    var rows = allReports.filter(function (r) { return isSectionReport(r); });
 
     if (S.isEducator && (S.eduSectionId || S.eduSectionName)) {
       kids = kids.filter(function (k) { return childMatchesSection(k, S.eduSectionId, S.eduSectionName, sections); });
@@ -7284,15 +8168,125 @@
       setTimeout(function () { editReport(null); }, 40);
     }
 
+    function openChooseReportTypeModal(onSelectType) {
+      var modal = h('div', {
+        class: 'modal card',
+        style: 'max-width:620px; width:95%; background:#FFFFFF; padding:24px; border-radius:18px; box-shadow:0 25px 60px rgba(0,0,0,0.3); border:2px solid #163B65;'
+      });
+      var repTypes = [
+        {
+          id: 'qualitative',
+          icon: '📝',
+          title: '1. التقرير النوعي (الملاحظات والتوجيهات البيداغوجية)',
+          badge: 'يعرض التقرير الكمي فوقه',
+          desc: 'الوصف العام لأداء وسلوك الحالة، الإمكانيات والقدرات، المهارات المعرفية، نقاط القوة والضعف والتوصيات، مع إظهار النتائج الكمية والرسوم البيانية في الأعلى لتوجيه الملء.'
+        },
+        {
+          id: 'annual_final',
+          icon: '🎓',
+          title: '2. التقرير النهائي لمتابعة الطالب',
+          badge: 'احتساب الغيابات تلقائياً',
+          desc: 'الحالة الانضباطية، نظام الحصص (1 إلى 5)، استدعاء الغيابات آلياً من جدول الغيابات (5 س/يوم) مع إمكانية التعديل اليدوي، ومكان إمضاء المدير دون رسم خانة.'
+        },
+        {
+          id: 'periodic',
+          icon: '📄',
+          title: '3. تقرير دوري عادي للطفل (مع رفع ملف)',
+          badge: 'مرفق PDF/صورة',
+          desc: 'تقرير دوري مختصر للمكتسبات والأنشطة المنجزة مع إمكانية رفع ملف تقرير مصور أو PDF لتحميله مباشرة من طرف الولي.'
+        }
+      ];
+      modal.appendChild(h('div', { style: 'display:flex; justify-content:space-between; align-items:center; border-bottom:1.5px solid #E2E8F0; padding-bottom:12px; margin-bottom:16px;' },
+        h('div', null,
+          h('h3', { style: 'margin:0 0 4px; color:#163B65; font-size:1.35rem; font-weight:900;', text: 'اختر نوع التقرير المراد إنشاؤه' }),
+          h('p', { class: 'small muted', style: 'margin:0;', text: 'حدد نوع التقرير للبدء في تعبئته أو تصديره' })
+        ),
+        h('button', { type: 'button', class: 'icon-btn', style: 'font-size:18px;', onclick: closeModal }, h('span', { text: '✕' }))
+      ));
+      var rList = h('div', { style: 'display:flex; flex-direction:column; gap:12px;' });
+      repTypes.forEach(function (t) {
+        var itBtn = h('div', {
+          class: 'hover-card',
+          style: 'display:flex; align-items:flex-start; gap:14px; padding:14px 16px; border:1.5px solid #CBD5E1; border-radius:12px; cursor:pointer; background:#F8FAF9; transition:all 0.15s ease;',
+          onclick: function () {
+            closeModal();
+            onSelectType(t.id);
+          }
+        },
+          h('div', { style: 'font-size:28px; line-height:1; flex-shrink:0; margin-top:2px;' }, t.icon),
+          h('div', { style: 'flex:1;' },
+            h('div', { style: 'display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;' },
+              h('strong', { style: 'color:#0F172A; font-size:14.5px;', text: t.title }),
+              h('span', { class: 'badge gold', style: 'font-size:11px;', text: t.badge })
+            ),
+            h('p', { class: 'small muted', style: 'margin:0; font-size:12px; line-height:1.4;', text: t.desc })
+          )
+        );
+        itBtn.addEventListener('mouseenter', function () { itBtn.style.borderColor = '#2563EB'; itBtn.style.background = '#EAF4FF'; });
+        itBtn.addEventListener('mouseleave', function () { itBtn.style.borderColor = '#CBD5E1'; itBtn.style.background = '#F8FAF9'; });
+        rList.appendChild(itBtn);
+      });
+      modal.appendChild(rList);
+      modal.appendChild(h('div', { style: 'display:flex; justify-content:flex-end; margin-top:16px;' },
+        h('button', { type: 'button', class: 'btn light', onclick: closeModal }, h('span', { text: 'إلغاء' }))
+      ));
+      openModal(modal);
+    }
+
+    async function deleteReportRecord(r) {
+      if (!(await ask({ title: 'حذف التقرير؟', msg: 'سيُحذف التقرير نهائيًا من الإدارة وفضاء الأولياء.', ok: 'حذف نهائي', danger: true }))) return;
+      if (r.id && DE.isUuid(String(r.id))) {
+        try { await C.rest('DELETE', '/progress_reports?id=eq.' + uid(r.id)); } catch (e) {}
+      }
+      await syncSharedEvaluationRecord(null, r.id);
+      bust();
+      toast('تم حذف التقرير بنجاح.', 'ok');
+      go('reports');
+    }
+
     listView(v, {
-      title: S.isEducator ? ('التقارير التربوية الدورية — قسم ' + (S.eduSectionName || 'فوجي')) : 'التقارير التربوية الدورية للطلبة',
-      addLabel: 'كتابة تقرير دوري جديد',
-      onAdd: function () { if (!kids.length) return toast('لا يوجد أطفال مسجلون في هذا القسم.', 'bad'); editReport(null); },
+      title: S.isEducator ? ('التقارير البيداغوجية والنهائية — قسم ' + (S.eduSectionName || 'فوجي')) : 'التقارير البيداغوجية والنهائية للطلبة',
+      addLabel: 'إضافة تقرير جديد',
+      onAdd: function () {
+        if (!kids.length) return toast('لا يوجد أطفال مسجلون في هذا القسم.', 'bad');
+        openChooseReportTypeModal(function (typeId) {
+          if (typeId === 'annual_final') {
+            openAnnualFinalBuilder(null, kids, sections, secAllOpts, branchOpts);
+          } else if (typeId === 'qualitative') {
+            openQualitativeReportBuilder(null, kids, sections, secAllOpts, branchOpts);
+          } else {
+            editReport(null);
+          }
+        });
+      },
       rows: rows,
       empty: 'لا توجد تقارير دورية مسجلة بعد. اضغط «كتابة تقرير دوري جديد» لإضافة تقرير مع إمكانية رفع ملف.',
       search: function (r) { return r.title + ' ' + nameOf(kids, r.child_id); },
       details: function (r) {
         var kd = kids.filter(function (k) { return k.id === r.child_id; })[0];
+        var sName = kd ? (nameOf(sections, kd.section_id, 'name') || kd.section || '') : '';
+        var subCat = getReportSubCategory(r);
+
+        if (subCat === 'annual_final') {
+          return renderAnnualFinalSheetView(r, kd ? kd.full_name : (r.child_name || '—'), sName, kd, {
+            onEdit: function () { openAnnualFinalBuilder(r, kids, sections, secAllOpts, branchOpts); },
+            onDelete: function () { return deleteReportRecord(r); }
+          });
+        }
+        if (subCat === 'qualitative' || subCat === 'quantitative' || isEvaluationReport(r)) {
+          var curStatus = extractEvalStatus(r);
+          return renderEvaluationSheetView(r, kd ? kd.full_name : (r.child_name || '—'), sName, kd, null, {
+            isPublished: curStatus === 'published',
+            onEdit: function () {
+              if (subCat === 'qualitative') openQualitativeReportBuilder(r, kids, sections, secAllOpts, branchOpts);
+              else openEvaluationBuilder(r, kids, sections, secAllOpts, branchOpts);
+            },
+            onSend: function () { return updateEvalPublishStatus(r, 'published'); },
+            onUnpublish: function () { return updateEvalPublishStatus(r, 'draft'); },
+            onDelete: function () { return deleteReportRecord(r); }
+          });
+        }
+
         return h('div', { class: 'child-details' },
           r.achievements ? h('div', { class: 'cd-item wide' }, h('span', { text: 'المكتسبات والمهارات المحققة' }), h('b', { text: r.achievements })) : null,
           r.activities ? h('div', { class: 'cd-item wide' }, h('span', { text: 'الأنشطة والورشات المنجزة' }), h('b', { text: r.activities })) : null,
@@ -7320,8 +8314,15 @@
         {
           label: 'عنوان التقرير',
           get: function (r) {
+            var subCat = getReportSubCategory(r);
+            var bLabel = 'تقرير دوري';
+            var bCls = 'ok';
+            if (subCat === 'annual_final') { bLabel = 'التقرير النهائي'; bCls = 'gold'; }
+            else if (subCat === 'qualitative') { bLabel = 'التقرير النوعي'; bCls = 'ok'; }
+            else if (subCat === 'quantitative') { bLabel = 'التقرير الكمي'; bCls = 'gold'; }
+
             return h('div', { class: 'row-actions' },
-              badge('تقرير دوري', 'ok'),
+              badge(bLabel, bCls),
               h('strong', { text: r.title }),
               r.attachment_path ? h('span', { class: 'badge gold', text: 'مرفق ملف' }) : null
             );
@@ -7333,8 +8334,15 @@
         { label: 'الحالة', get: function (r) { return badge(r.status === 'published' ? 'منشور للولي' : 'مسودة', r.status === 'published' ? 'ok' : 'gray'); } }
       ],
       actions: function (r) {
+        var subCat = getReportSubCategory(r);
+        var editHandler = function () {
+          if (subCat === 'annual_final') return openAnnualFinalBuilder(r, kids, sections, secAllOpts, branchOpts);
+          if (subCat === 'qualitative') return openQualitativeReportBuilder(r, kids, sections, secAllOpts, branchOpts);
+          if (isEvaluationReport(r)) return openEvaluationBuilder(r, kids, sections, secAllOpts, branchOpts);
+          return editReport(r);
+        };
         return [
-          rbtn('تعديل التقرير', function () { return editReport(r); }),
+          rbtn('تعديل التقرير', editHandler),
           r.status === 'published'
             ? rbtn('إلغاء النشر', async function () {
               await C.rest('PATCH', '/progress_reports?id=eq.' + uid(r.id), { status: 'draft' });
@@ -7362,8 +8370,8 @@
     var d = await getMany('reports', 'children', 'branches', 'sections');
     var allReports = d[0], kids = d[1], branches = d[2], sections = d[3];
 
-    // إظهار استمارات التقييم فقط
-    var rows = allReports.filter(function (r) { return isEvaluationReport(r); });
+    // إظهار استمارات التقييم فقط (استبعاد التقارير المنقولة لقسم التقارير)
+    var rows = allReports.filter(function (r) { return isSectionEvaluation(r); });
 
     if (S.isEducator && (S.eduSectionId || S.eduSectionName)) {
       kids = kids.filter(function (k) { return childMatchesSection(k, S.eduSectionId, S.eduSectionName, sections); });
@@ -7439,8 +8447,8 @@
             openReinforcersBuilder(null, kids, sections, secAllOpts, branchOpts);
           } else if (typeId === 'interview_diagnostic') {
             openInterviewDiagnosticBuilder(null, kids, sections, secAllOpts, branchOpts);
-          } else if (typeId === 'annual_final') {
-            openAnnualFinalBuilder(null, kids, sections, secAllOpts, branchOpts);
+          } else if (typeId === 'behavior_observation') {
+            openBehaviorObservationBuilder(null, kids, sections, secAllOpts, branchOpts);
           } else {
             openEvaluationBuilder(null, kids, sections, secAllOpts, branchOpts);
           }
@@ -7457,7 +8465,16 @@
         return renderEvaluationSheetView(r, kd ? kd.full_name : (r.child_name || '—'), sName, kd, null, {
           isPublished: curStatus === 'published',
           onEdit: function () {
-            openEvaluationBuilder(r, kids, sections, secAllOpts, branchOpts);
+            var subCat = getReportSubCategory(r);
+            if (subCat === 'behavior_observation') {
+              openBehaviorObservationBuilder(r, kids, sections, secAllOpts, branchOpts);
+            } else if (subCat === 'reinforcers') {
+              openReinforcersBuilder(r, kids, sections, secAllOpts, branchOpts);
+            } else if (subCat === 'interview_diagnostic') {
+              openInterviewDiagnosticBuilder(r, kids, sections, secAllOpts, branchOpts);
+            } else {
+              openEvaluationBuilder(r, kids, sections, secAllOpts, branchOpts);
+            }
           },
           onSend: function () {
             return updateEvalPublishStatus(r, 'published');
@@ -8865,7 +9882,7 @@
         h('div', null, h('span', { text: 'قيد الدراسة' }), h('strong', { class: 'sic-num', text: String(countReview) })),
         h('div', { class: 'att-stat-icon-wrap' }, makeSvgIcon('s-clock'))
       ),
-      h('div', { class: 'att-stat', style: '--c:#059669;' },
+      h('div', { class: 'att-stat', style: '--c:#2563EB;' },
         h('div', null, h('span', { text: 'تم الاعتماد' }), h('strong', { class: 'sic-num', text: String(countEnrolled) })),
         h('div', { class: 'att-stat-icon-wrap' }, makeSvgIcon('s-check-circle'))
       )
@@ -9696,7 +10713,7 @@
       var rate = totalInSec > 0 ? Math.round((present / totalInSec) * 100) : 0;
       var items = [
         { t: 'إجمالي أطفال القسم', n: totalInSec, c: '#102F50', icon: 's-users' },
-        { t: 'الحاضرون', n: present, c: '#059669', icon: 's-check-circle' },
+        { t: 'الحاضرون', n: present, c: '#2563EB', icon: 's-check-circle' },
         { t: 'الغائبون', n: absent, c: '#DC2626', icon: 's-x-circle' },
         { t: 'لم تُحدد حالتهم', n: unrec, c: '#64748B', icon: 's-clock' },
         { t: 'نسبة الحضور اليومية', n: rate + '%', c: '#C49A50', icon: 's-card', isText: true }
