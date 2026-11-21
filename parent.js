@@ -349,7 +349,7 @@
     var np2 = $('#lblNp2'); if (np2) np2.textContent = t('confirmPassLabel');
     var nh = $('#npHint'); if (nh) nh.textContent = t('passRule');
     var lb = $('#lBtn'); if (lb) lb.textContent = mode === 'login' ? t('btnLogin') : mode === 'forgot' ? t('btnForgotSend') : t('btnSetSave');
-    var fb = $('#forgotBtn'); if (fb) fb.textContent = t('btnForgot');
+    var fb = $('#forgotBtn'); if (fb) fb.hidden = true;
     var bb = $('#backBtn'); if (bb) bb.textContent = t('btnBack');
     var nt = $('#loginNotice'); if (nt) nt.textContent = t('accountNotice');
     var who = $('#who'); if (who && (!S.name || who.textContent === 'ولي الأمر' || who.textContent === 'Parent')) who.textContent = S.name || t('whoDefault');
@@ -404,9 +404,9 @@
   function setMode(m, customHint) {
     mode = m;
     $('#stCreds').hidden = m !== 'login';
-    $('#stForgot').hidden = m !== 'forgot';
+    if ($('#stForgot')) $('#stForgot').hidden = true;
     $('#stSet').hidden = m !== 'set';
-    $('#forgotBtn').hidden = m !== 'login';
+    if ($('#forgotBtn')) $('#forgotBtn').hidden = true;
     $('#backBtn').hidden = (m === 'login' || m === 'set');
 
     $('#lBtn').textContent = m === 'login' ? t('btnLogin') : m === 'forgot' ? t('btnForgotSend') : t('btnSetSave');
@@ -2453,6 +2453,11 @@ function generateWordDocObservation(rep, child, secName, brName) {
         var rawJson = JSON.parse(r.activities.slice(EVAL_MARKER.length));
         if (rawJson && typeof rawJson === 'object') {
           if (rawJson.eval_type) res.eval_type = rawJson.eval_type;
+          if (rawJson.medico_functional_fr) res.medico_functional_fr = Object.assign({}, rawJson.medico_functional_fr);
+          if (rawJson.target_behavior_eval) res.target_behavior_eval = Object.assign({}, rawJson.target_behavior_eval);
+          if (rawJson.target_behavior_report) res.target_behavior_report = Object.assign({}, rawJson.target_behavior_report);
+          if (rawJson.mas_eval) res.mas_eval = Object.assign({}, rawJson.mas_eval);
+          if (rawJson.mas_behavior_report) res.mas_behavior_report = Object.assign({}, rawJson.mas_behavior_report);
           if (rawJson.reinforcers) res.reinforcers = Object.assign({}, res.reinforcers, rawJson.reinforcers);
           if (rawJson.interview) res.interview = Object.assign({}, res.interview, rawJson.interview);
           if (rawJson.annual_final) res.annual_final = Object.assign({}, res.annual_final, rawJson.annual_final);
@@ -3257,7 +3262,12 @@ function renderParentOfficialEvaluationSheet(r, childFullName, secName, kd, init
     }, h('span', { class: 'muted small', text: 'جارٍ رسم التقرير الكمي البياني...' }));
 
     function renderQuantCanvasNow() {
-      if (window.DE_PDF && typeof window.DE_PDF.renderQuantitativePageCanvas === 'function') {
+      (function renderParentQuant(attempt) {
+        if (!window.DE_PDF || typeof window.DE_PDF.renderQuantitativePageCanvas !== 'function') {
+          if (attempt < 20) return setTimeout(function () { renderParentQuant(attempt + 1); }, 150);
+          quantitativeCanvasHost.textContent = 'تعذر تحميل محرك الرسوم البيانية. يرجى تحديث الصفحة.';
+          return;
+        }
         window.DE_PDF.renderQuantitativePageCanvas(ev, childFullName, secName, kd).then(function (cEl) {
           quantitativeCanvasHost.textContent = '';
           cEl.style.width = '100%';
@@ -3265,8 +3275,8 @@ function renderParentOfficialEvaluationSheet(r, childFullName, secName, kd, init
           cEl.style.display = 'block';
           cEl.style.maxWidth = '100%';
           quantitativeCanvasHost.appendChild(cEl);
-        }).catch(function () {});
-      }
+        }).catch(function () {}).catch(function(err){ quantitativeCanvasHost.textContent = 'تعذر رسم التقرير الكمي: ' + ((err && err.message) || ''); });
+      })(0);
     }
     setTimeout(renderQuantCanvasNow, 10);
 
@@ -4160,7 +4170,7 @@ async function init() {
       showLogin('المصادقة عبر Supabase Auth إلزامية.');
     });
 
-    $('#forgotBtn').addEventListener('click', function () { setMode('forgot'); });
+    // تمت إزالة «نسيت كلمة المرور» بناءً على طلب الإدارة
     $('#backBtn').addEventListener('click', function () { setMode('login'); });
     var lBtn = $('#logoutBtn'); if (lBtn) lBtn.addEventListener('click', function () { logout(); });
 

@@ -1,11 +1,11 @@
 {
-  "name": "dar-el-ihsan",
+  "name": "dar-el-ihsan-parents",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.1.0",
   "type": "module",
   "scripts": {
-    "check": "node scripts/check-project.mjs",
-    "build": "node scripts/build.mjs"
+    "check": "node check-project-script.mjs",
+    "build": "node build-script.mjs"
   },
   "dependencies": {},
   "devDependencies": {}

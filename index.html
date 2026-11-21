@@ -12,9 +12,9 @@
 <link rel="icon" href="logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="portal.css?v=20261121_v15">
-<link rel="stylesheet" href="icons.css?v=20261121_v15">
-<link rel="stylesheet" href="parent-modern.css?v=20261121_v15">
+<link rel="stylesheet" href="portal.css?v=20261121_v16">
+<link rel="stylesheet" href="icons.css?v=20261121_v16">
+<link rel="stylesheet" href="parent-modern.css?v=20261121_v16">
 <link rel="manifest" href="parent.webmanifest">
 <meta name="theme-color" content="#123E73">
 <meta name="mobile-web-app-capable" content="yes">
@@ -22,8 +22,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="دار الإحسان">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="stylesheet" href="pwa.css?v=20261121_v15">
-<script src="pwa.js?v=20261121_v15" defer></script>
+<link rel="stylesheet" href="pwa.css?v=20261121_v16">
+<script src="pwa.js?v=20261121_v16" defer></script>
 </head>
 <body>
 <svg width="0" height="0" class="sprite" aria-hidden="true">
@@ -66,9 +66,7 @@
       <label class="fld"><span id="lblEmail">اسم المستخدم أو البريد الإلكتروني</span><input id="email" type="text" inputmode="email" autocapitalize="none" autocomplete="username" dir="ltr" maxlength="254"></label>
       <label class="fld"><span id="lblPassword">كلمة المرور</span><input id="password" type="password" autocomplete="current-password" dir="ltr" maxlength="72"></label>
     </div>
-    <div id="stForgot" hidden>
-      <label class="fld"><span id="lblFEmail">البريد الإلكتروني للحساب</span><input id="fEmail" type="email" inputmode="email" autocomplete="username" dir="ltr" maxlength="254"></label>
-    </div>
+    
     <div id="stSet" hidden>
       <label class="fld"><span id="lblSetEmail">اسم المستخدم (البريد الإلكتروني)</span><input id="setEmail" type="email" autocomplete="username" dir="ltr" readonly class="fld-readonly"></label>
       <label class="fld"><span id="lblNp1">كلمة المرور الجديدة</span><input id="np1" type="password" autocomplete="new-password" dir="ltr" maxlength="72"><small class="hint" id="npHint">10 أحرف على الأقل مع حرف كبير وصغير ورقم.</small></label>
@@ -77,7 +75,6 @@
     <p id="lErr" class="err" role="alert" hidden></p>
     <p id="lOk" class="okmsg" role="status" hidden></p>
     <button id="lBtn" class="btn block" type="submit">دخول</button>
-    <button id="forgotBtn" class="linkbtn" type="button">نسيت كلمة المرور؟</button>
     <button id="backBtn" class="linkbtn" type="button" hidden>رجوع لتسجيل الدخول</button>
     <p class="muted small" id="loginNotice">الحسابات تُنشأ من إدارة المركز فقط. إن لم تصلك دعوة فتواصل مع المركز.</p>
   </form>
@@ -167,13 +164,14 @@
 <div id="modal" class="modal" hidden role="dialog" aria-modal="true"><div id="modalCard" class="modal-card"></div></div>
 <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 
-<script src="cms-config.js?v=20261121_v15"></script>
-<script src="de-core.js?v=20261121_v15"></script>
-<script src="username.js?v=20261121_v15"></script>
-<script src="qr-gen.js?v=20261121_v15"></script>
-<script src="icons.js?v=20261121_v15"></script>
-<script src="navback.js?v=20261121_v15"></script>
-<script src="pdf-writer.js?v=20261121_v15"></script>
-<script src="parent.js?v=20261121_v15"></script>
+<script src="cms-config.js?v=20261121_v16"></script>
+<script src="de-core.js?v=20261121_v16"></script>
+<script src="fr-names.js?v=20261121_v16"></script>
+<script src="username.js?v=20261121_v16"></script>
+<script src="qr-gen.js?v=20261121_v16"></script>
+<script src="icons.js?v=20261121_v16"></script>
+<script src="navback.js?v=20261121_v16"></script>
+<script src="pdf-writer.js?v=20261121_v16"></script>
+<script src="parent.js?v=20261121_v16"></script>
 </body>
 </html>

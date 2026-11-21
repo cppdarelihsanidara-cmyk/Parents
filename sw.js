@@ -1,7 +1,7 @@
 /* Service worker — دار الإحسان.
    الاستراتيجية: الشبكة أولاً مع تجاوز الكاش القديم لتطبيق كافة التعديلات فوراً. */
 'use strict';
-var CACHE = 'de-parents-dev-20261121-v15';
+var CACHE = 'de-parents-dev-20261121-v16';
 var SHELL = [
   "./", "index.html", "navback.js", "icons.js", "icons.css", "parent.html",
   "manage.html", "portal.css", "manage-theme.css", "parent-modern.css", "pdf-writer.js", "zip-builder.js",
@@ -35,7 +35,7 @@ self.addEventListener('fetch', function (e) {
 
   // استراتيجية الشبكة أولاً Network First لضمان تحميل أحدث تعديلات JS و CSS دائماً
   e.respondWith(
-    fetch(req).then(function (res) {
+    fetch(req, { cache: 'no-store' }).then(function (res) {
       if (res && res.ok && res.type === 'basic') {
         var copy = res.clone();
         caches.open(CACHE).then(function (c) { c.put(req, copy); });
