@@ -2125,7 +2125,7 @@
     bar('SYNTHÈSE GÉNÉRALE', '#BFDBFE');
     var general=String(ev.general_report||'').trim() || 'Aucune observation générale n’a été saisie.';
     var gh=textLines(general,M+18,y+28,CW-36,'18px Arial, sans-serif',27,13);
-    var gBoxH=Math.max(88,gh+48); ctx.strokeStyle='#64748B'; ctx.strokeRect(M,y-8,CW,gBoxH); y+=gBoxH+18;
+    var gBoxH=Math.max(48,gh+24); ctx.strokeStyle='#64748B'; ctx.strokeRect(M,y-8,CW,gBoxH); y+=gBoxH+18;
     bar('DOMAINES DE DÉVELOPPEMENT', '#BFDBFE');
     var ab=ev.abilities||{};
     var domains=[

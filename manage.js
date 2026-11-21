@@ -3563,7 +3563,9 @@
                     style: 'font-size:12px; font-weight:800; display:inline-flex; align-items:center; gap:5px;',
                     title: 'حذف هذا البرنامج الأسبوعي نهائياً دون المساس ببيانات الأطفال أو التقارير',
                     onclick: function () {
+                      if (S._deletingProg) return;
                       confirmModal('هل أنت متأكد من حذف هذا البرنامج الأسبوعي لفوج «' + sec.name + '»؟ (لن يتأثر ملف أي طفل أو تقرير مرتبط بالفوج)', async function () {
+                        if (S._deletingProg) return; S._deletingProg = true;
                         try {
                           if (pItem.id && DE.isUuid(String(pItem.id))) {
                             await C.rest('DELETE', '/educational_programs?id=eq.' + uid(pItem.id));
@@ -3590,7 +3592,7 @@
                           toast('تم حذف البرنامج الأسبوعي بنجاح.', 'ok');
                         } catch (err) {
                           toast('تعذر حذف البرنامج: ' + (err.message || err), 'bad');
-                        }
+                        } finally { S._deletingProg = false; }
                       });
                     }
                   }, makeSvgIcon('s-delete'), h('span', { text: 'حذف البرنامج' })) : null)
@@ -4035,14 +4037,14 @@
       var trTimes = h('tr', null,
         currentWeekState.time_slots.map(function (slot, slotIdx) {
           var timeBox = h('div', {
-            style: 'display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; padding:2px 1px; min-width:85px;'
+            style: 'display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; padding:4px 3px; min-width:136px;'
           },
             h('div', { style: 'display:flex; align-items:center; justify-content:center; gap:2px; direction:ltr;' },
               h('input', {
                 type: 'text',
                 value: slot.start,
                 title: 'تعديل وقت البداية (مثال: 08:00)',
-                style: 'border:1px solid #CBD5E1; border-radius:4px; padding:2px 3px; font-size:11px; font-weight:800; width:45px; text-align:center; background:#FFFFFF; color:#0F172A;',
+                style: 'border:1px solid #B8C2D0; border-radius:6px; padding:4px 5px; font-size:12px; font-weight:800; width:62px; min-width:60px; text-align:center; background:#FFFFFF; color:#101D35;',
                 onchange: function (e) {
                   slot.start = e.target.value;
                   slot.duration = calcDurationMins(slot.start, slot.end);
@@ -4055,7 +4057,7 @@
                 type: 'text',
                 value: slot.end,
                 title: 'تعديل وقت النهاية (مثال: 08:45)',
-                style: 'border:1px solid #CBD5E1; border-radius:4px; padding:2px 3px; font-size:11px; font-weight:800; width:45px; text-align:center; background:#FFFFFF; color:#0F172A;',
+                style: 'border:1px solid #B8C2D0; border-radius:6px; padding:4px 5px; font-size:12px; font-weight:800; width:62px; min-width:60px; text-align:center; background:#FFFFFF; color:#101D35;',
                 onchange: function (e) {
                   slot.end = e.target.value;
                   slot.duration = calcDurationMins(slot.start, slot.end);
@@ -4617,7 +4619,8 @@
     }, true);
   }
 
-  function openFullDocumentPreviewModal(titleText, contentEl, onDownloadPdf) {
+  function openFullDocumentPreviewModal(titleText, contentEl, onDownloadPdf, previewOpts) {
+    var hideZoom = !!(previewOpts && previewOpts.hideZoom);
     var zoomPct = 100;
     var zoomLabel = h('span', { style: 'font-weight:900; font-size:12.5px; color:#163B65; min-width:46px; text-align:center;', text: '100%' });
     var stageInner = h('div', {
@@ -4643,10 +4646,10 @@
         h('strong', { style: 'color:#163B65; font-size:14.5px;', text: titleText || 'معاينة الوثيقة الكاملة' })
       ),
       h('div', { style: 'display:flex; align-items:center; gap:6px; flex-wrap:wrap;' },
-        h('button', { type: 'button', class: 'btn small light', text: '− تصغير', onclick: function () { applyZoom(zoomPct - 15); } }),
-        zoomLabel,
-        h('button', { type: 'button', class: 'btn small light', text: '+ تكبير', onclick: function () { applyZoom(zoomPct + 15); } }),
-        h('button', { type: 'button', class: 'btn small light', text: '100%', onclick: function () { applyZoom(100); } }),
+        !hideZoom ? h('button', { type: 'button', class: 'btn small light', text: '− تصغير', onclick: function () { applyZoom(zoomPct - 15); } }) : null,
+        !hideZoom ? zoomLabel : null,
+        !hideZoom ? h('button', { type: 'button', class: 'btn small light', text: '+ تكبير', onclick: function () { applyZoom(zoomPct + 15); } }) : null,
+        !hideZoom ? h('button', { type: 'button', class: 'btn small light', text: '100%', onclick: function () { applyZoom(100); } }) : null,
         typeof onDownloadPdf === 'function' ? h('button', { type: 'button', class: 'btn small gold', text: '📄 تحميل PDF', onclick: onDownloadPdf }) : null,
         h('button', { type: 'button', class: 'btn small light', text: '🖨 طباعة', onclick: function () { window.print(); } }),
         h('button', { type: 'button', class: 'btn small danger', text: 'إغلاق', onclick: closeModal })
@@ -10473,7 +10476,7 @@
                 toast('تعذر تحميل PDF: ' + (err.message || err), 'bad');
               }
             };
-            openFullDocumentPreviewModal('FICHE DE SUIVI MÉDICO-FONCTIONNEL — ' + frName, pagesHolder, dlFn);
+            openFullDocumentPreviewModal('FICHE DE SUIVI MÉDICO-FONCTIONNEL — ' + frName, pagesHolder, dlFn, { hideZoom: true });
             try {
               var canvases = await window.DE_PDF.renderMedicoFunctionalFrenchPages(ev, frName, secName, kd);
               pagesHolder.textContent = '';
@@ -11002,7 +11005,7 @@
                 toast('تم تحميل ملف PDF بنجاح!', 'ok');
               } catch (err) { toast('تعذر التحميل: ' + (err.message || err), 'bad'); }
             };
-            openFullDocumentPreviewModal('FICHE DE SUIVI MÉDICO-FONCTIONNEL — ' + mfState.child_name_fr, host, dlNow);
+            openFullDocumentPreviewModal('FICHE DE SUIVI MÉDICO-FONCTIONNEL — ' + mfState.child_name_fr, host, dlNow, { hideZoom: true });
             try {
               var canvases = await window.DE_PDF.renderMedicoFunctionalFrenchPages(built.evObj, mfState.child_name_fr, built.secName, built.chosen);
               host.textContent = '';
@@ -15853,6 +15856,8 @@
         's-search': ['M11 3a8 8 0 1 0 0 16 8 8 0 0 0 0-16z', 'm21 21-4.3-4.3'],
         's-check': ['M20 6 9 17l-5-5'],
         's-clock': ['M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z', 'M12 6v6l4 2'],
+        's-calendar-check': ['M8 2v4', 'M16 2v4', 'M3 10h18', 'M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z', 'M9 16l2 2 4-4'],
+        's-inbox': ['M22 12h-6l-2 3h-4l-2-3H2', 'M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z'],
         's-desktop': ['M2 3h20v14H2z', 'M8 21h8M12 17v4M12 7v6M9.5 10.5 12 13l2.5-2.5'],
         's-copy': ['M9 9h13v13H9z', 'M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1'],
         's-wand': ['m15 4-1 1 4 4 1-1a2.83 2.83 0 1 0-4-4ZM13 6 3 16v4h4L17 10M8 2v2M2 8h2M18 14v2M22 18h-2'],
