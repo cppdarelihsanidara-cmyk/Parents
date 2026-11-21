@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "check": "node scripts/check-project.mjs",
-    "build": "npm run check"
+    "build": "node scripts/build.mjs"
   },
   "dependencies": {},
   "devDependencies": {}
