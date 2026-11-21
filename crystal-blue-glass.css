@@ -1,0 +1,429 @@
+/* ============================================================================
+   DAR EL IHSAN — CRYSTAL BLUE GLASSMORPHISM DESIGN SYSTEM (v17)
+   Mandatory Palette (Strictly Zero Green):
+   - Midnight Navy : #101D35
+   - Royal Blue    : #263F65
+   - Ice Blue      : #8CB9DC
+   - Mist Blue     : #DCEAF5
+   - Pearl White   : #F5F6F8
+   - Silver        : #B8C2D0
+   Typography: Tajawal / IBM Plex Sans Arabic (RTL) & Inter (LTR)
+   ============================================================================ */
+
+:root {
+  --cb-navy: #101D35;
+  --cb-royal: #263F65;
+  --cb-ice: #8CB9DC;
+  --cb-mist: #DCEAF5;
+  --cb-pearl: #F5F6F8;
+  --cb-silver: #B8C2D0;
+  --cb-glass-bg: rgba(255, 255, 255, 0.80);
+  --cb-glass-strong: rgba(255, 255, 255, 0.92);
+  --cb-glass-border: rgba(140, 185, 220, 0.45);
+  --cb-shadow-sm: 0 4px 16px rgba(16, 29, 53, 0.06);
+  --cb-shadow-md: 0 10px 30px rgba(16, 29, 53, 0.09);
+  --cb-shadow-lg: 0 18px 46px rgba(16, 29, 53, 0.14);
+
+  /* Override ALL legacy theme variables (eliminating all green tokens) */
+  --primary: #263F65 !important;
+  --primary-dark: #101D35 !important;
+  --primary-light: #8CB9DC !important;
+  --accent: #263F65 !important;
+  --brand: #101D35 !important;
+  --brand-2: #263F65 !important;
+  --forest: #101D35 !important;
+  --forest-2: #263F65 !important;
+  --green: #263F65 !important;
+  --green-soft: #DCEAF5 !important;
+  --ok: #263F65 !important;
+  --ok-bg: #DCEAF5 !important;
+  --success: #263F65 !important;
+  --success-bg: #DCEAF5 !important;
+  --gold: #263F65 !important;
+  --bg: #F5F6F8 !important;
+  --surface: rgba(255, 255, 255, 0.84) !important;
+  --text: #101D35 !important;
+  --muted: #52627A !important;
+  --border: #B8C2D0 !important;
+}
+
+/* Global Typography & Ambient Crystal Blue Canvas */
+html, body {
+  font-family: 'Tajawal', 'IBM Plex Sans Arabic', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
+  color: var(--cb-navy) !important;
+  background:
+    radial-gradient(circle at 12% 10%, rgba(140, 185, 220, 0.34) 0%, transparent 42%),
+    radial-gradient(circle at 88% 18%, rgba(220, 234, 245, 0.72) 0%, transparent 46%),
+    linear-gradient(155deg, #F5F6F8 0%, #E8F1F8 52%, #F5F6F8 100%) !important;
+  background-attachment: fixed !important;
+  overflow-x: clip;
+  -webkit-font-smoothing: antialiased;
+}
+
+[dir="ltr"], .ltr, [lang="fr"], [lang="en"] {
+  font-family: 'Inter', 'IBM Plex Sans Arabic', sans-serif !important;
+}
+
+/* Keyframes (Measured, subtle motion) */
+@keyframes cbFadeUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes cbModalIn {
+  from { opacity: 0; transform: scale(0.97) translateY(6px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* Frosted Glass Cards, Panels, Sidebar, Topbar */
+.card,
+.panel,
+.stat-card,
+.kpi-card,
+.audit-v2-panel,
+.audit-v2-stat,
+.audit-v2-hero,
+.child-sub-item-card,
+.wk-section-program-card,
+.wk-programs-hero-card,
+.login-card,
+.auth-card,
+.glass-card,
+.feature-card,
+.program-card,
+.news-card,
+.center-card,
+.parent-card,
+.child-card {
+  background: var(--cb-glass-bg) !important;
+  backdrop-filter: blur(12px) saturate(135%) !important;
+  -webkit-backdrop-filter: blur(12px) saturate(135%) !important;
+  border: 1px solid var(--cb-glass-border) !important;
+  border-radius: 16px !important;
+  box-shadow: var(--cb-shadow-sm), inset 0 1px 0 rgba(255, 255, 255, 0.85) !important;
+  color: var(--cb-navy) !important;
+  transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+  animation: cbFadeUp 0.28s ease-out both;
+}
+
+.card:hover,
+.stat-card:hover,
+.wk-section-program-card:hover,
+.feature-card:hover,
+.center-card:hover,
+.parent-card:hover {
+  border-color: rgba(140, 185, 220, 0.8) !important;
+  box-shadow: var(--cb-shadow-md), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+}
+
+/* Sidebar & Navigation (Crystal Blue Frosted Glass) */
+aside,
+.sidebar,
+#sidebar,
+nav.sidebar,
+.side-nav {
+  background: linear-gradient(180deg, rgba(16, 29, 53, 0.95) 0%, rgba(38, 63, 101, 0.93) 100%) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+  border-inline-end: 1px solid rgba(140, 185, 220, 0.28) !important;
+  color: #F5F6F8 !important;
+}
+
+aside button,
+aside a,
+#nav button,
+#nav a,
+.sidebar button,
+.sidebar a {
+  color: rgba(245, 246, 248, 0.9) !important;
+  border-radius: 11px !important;
+  transition: background 0.18s ease, color 0.18s ease, transform 0.16s ease;
+}
+
+aside button:hover,
+aside a:hover,
+#nav button:hover,
+#nav a:hover {
+  background: rgba(140, 185, 220, 0.18) !important;
+  color: #FFFFFF !important;
+}
+
+aside button.active,
+aside a.active,
+#nav [data-sec].active,
+.nav-item.active {
+  background: linear-gradient(135deg, rgba(140, 185, 220, 0.32), rgba(220, 234, 245, 0.20)) !important;
+  border: 1px solid rgba(140, 185, 220, 0.55) !important;
+  color: #FFFFFF !important;
+  font-weight: 800 !important;
+  box-shadow: 0 4px 14px rgba(16, 29, 53, 0.22) !important;
+}
+
+/* Topbar / Public Header / Footer */
+header,
+.topbar,
+.site-header,
+.navbar,
+.p-header {
+  background: rgba(255, 255, 255, 0.82) !important;
+  backdrop-filter: blur(14px) saturate(140%) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(140%) !important;
+  border-bottom: 1px solid rgba(140, 185, 220, 0.42) !important;
+  box-shadow: 0 4px 20px rgba(16, 29, 53, 0.06) !important;
+  color: var(--cb-navy) !important;
+}
+
+footer,
+.site-footer {
+  background: linear-gradient(180deg, #101D35 0%, #1B2E4E 100%) !important;
+  color: #DCEAF5 !important;
+  border-top: 1px solid rgba(140, 185, 220, 0.25) !important;
+}
+
+footer a, .site-footer a {
+  color: #DCEAF5 !important;
+}
+
+/* Unified Buttons — Crystal Blue (ZERO Green) */
+.btn,
+button.primary,
+button.gold,
+.cta-btn {
+  border-radius: 10px !important;
+  font-family: inherit !important;
+  font-weight: 700 !important;
+  transition: transform 0.15s ease, box-shadow 0.18s ease, background 0.18s ease, border-color 0.18s ease !important;
+}
+
+.btn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.btn.primary,
+.btn.gold,
+.btn-primary,
+.cta-btn {
+  background: linear-gradient(135deg, #101D35 0%, #263F65 100%) !important;
+  color: #FFFFFF !important;
+  border: 1px solid rgba(140, 185, 220, 0.45) !important;
+  box-shadow: 0 4px 14px rgba(16, 29, 53, 0.18) !important;
+}
+
+.btn.primary:hover,
+.btn.gold:hover,
+.btn-primary:hover,
+.cta-btn:hover {
+  background: linear-gradient(135deg, #263F65 0%, #101D35 100%) !important;
+  box-shadow: 0 6px 20px rgba(38, 63, 101, 0.28) !important;
+  transform: translateY(-1px);
+}
+
+.btn.light,
+.btn.ghost,
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.88) !important;
+  color: #101D35 !important;
+  border: 1px solid #B8C2D0 !important;
+}
+
+.btn.light:hover,
+.btn.ghost:hover {
+  background: #DCEAF5 !important;
+  border-color: #8CB9DC !important;
+  color: #101D35 !important;
+}
+
+.btn.danger {
+  background: rgba(255, 255, 255, 0.92) !important;
+  color: #991B1B !important;
+  border: 1px solid #FCA5A5 !important;
+}
+
+.btn.danger:hover {
+  background: #FEF2F2 !important;
+  border-color: #EF4444 !important;
+}
+
+/* Badges — Crystal Blue (ZERO Green) */
+.badge,
+.pill,
+.tag,
+.status-badge {
+  border-radius: 999px !important;
+  font-weight: 700 !important;
+}
+
+.badge.ok,
+.badge.green,
+.badge.success,
+.badge.info,
+.audit-v2-kind.create {
+  background: #DCEAF5 !important;
+  color: #101D35 !important;
+  border: 1px solid #8CB9DC !important;
+}
+
+.badge.gold,
+.badge.warn,
+.audit-v2-kind.update {
+  background: rgba(38, 63, 101, 0.12) !important;
+  color: #263F65 !important;
+  border: 1px solid rgba(38, 63, 101, 0.30) !important;
+}
+
+.badge.gray {
+  background: #F5F6F8 !important;
+  color: #52627A !important;
+  border: 1px solid #B8C2D0 !important;
+}
+
+/* Forms, Inputs & Readability (Crisp non-transparent inputs for fast data entry) */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="date"],
+input[type="search"],
+input[type="tel"],
+select,
+textarea {
+  background: #FFFFFF !important;
+  color: #101D35 !important;
+  border: 1.5px solid #B8C2D0 !important;
+  border-radius: 10px !important;
+  font-family: inherit !important;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease !important;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none !important;
+  border-color: #263F65 !important;
+  box-shadow: 0 0 0 3px rgba(140, 185, 220, 0.42) !important;
+}
+
+label.fld,
+.form-group,
+.field-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+label.fld > span,
+.lbl {
+  color: #101D35 !important;
+  font-weight: 700 !important;
+}
+
+/* Tables — High clarity & horizontal responsiveness */
+table {
+  background: #FFFFFF !important;
+  border-color: #B8C2D0 !important;
+  color: #101D35 !important;
+}
+
+table thead th {
+  background: #DCEAF5 !important;
+  color: #101D35 !important;
+  font-weight: 800 !important;
+  border-color: #B8C2D0 !important;
+}
+
+table tbody tr:nth-child(even) {
+  background: rgba(245, 246, 248, 0.72) !important;
+}
+
+table tbody tr:hover {
+  background: rgba(220, 234, 245, 0.45) !important;
+}
+
+/* Modals — Smooth Frosted Backdrop */
+.modal-backdrop,
+.modal-overlay,
+#modal {
+  backdrop-filter: blur(6px) !important;
+  -webkit-backdrop-filter: blur(6px) !important;
+}
+
+.modal,
+.modal-body {
+  background: var(--cb-glass-strong) !important;
+  border: 1px solid rgba(140, 185, 220, 0.55) !important;
+  border-radius: 18px !important;
+  box-shadow: var(--cb-shadow-lg) !important;
+  animation: cbModalIn 0.22s ease-out both;
+}
+
+/* Audit / Attendance / Dashboard Green Overrides */
+.audit-v2-hero {
+  background: linear-gradient(135deg, rgba(16, 29, 53, 0.95) 0%, rgba(38, 63, 101, 0.92) 100%) !important;
+  color: #FFFFFF !important;
+}
+.audit-v2-hero h1,
+.audit-v2-hero p,
+.audit-v2-eyebrow {
+  color: #F5F6F8 !important;
+}
+.audit-v2-stat.green,
+.audit-v2-stat.blue,
+.audit-v2-stat.gold {
+  border-inline-start: 4px solid #263F65 !important;
+}
+.att-btn.present,
+.att-status-present,
+.pill-present,
+.ok-msg,
+#lOk {
+  background: #DCEAF5 !important;
+  color: #101D35 !important;
+  border-color: #8CB9DC !important;
+}
+
+/* Toast Notifications */
+.toast.ok {
+  background: #101D35 !important;
+  color: #FFFFFF !important;
+  border: 1px solid #8CB9DC !important;
+}
+
+/* Print / Document Sheets remain pure crisp white */
+@media print {
+  html, body {
+    background: #FFFFFF !important;
+  }
+  .card, .panel, .modal {
+    background: #FFFFFF !important;
+    backdrop-filter: none !important;
+    box-shadow: none !important;
+  }
+}
+
+/* Mobile & Tablet Responsiveness */
+@media (max-width: 768px) {
+  .card, .panel, .wk-section-program-card {
+    border-radius: 12px !important;
+    padding: 12px !important;
+  }
+  table {
+    font-size: 12.5px !important;
+  }
+}
+
+/* Respect User Reduced-Motion Preference */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Strictly zero green on floating contact / WhatsApp buttons */
+.wa-float, .whatsapp-float, .whatsapp-btn, .fab-wa, a[href*="wa.me"], a[href*="whatsapp"] {
+  background: linear-gradient(135deg, #101D35 0%, #263F65 100%) !important;
+  color: #FFFFFF !important;
+  border: 1px solid rgba(140, 185, 220, 0.55) !important;
+  box-shadow: 0 8px 24px rgba(16, 29, 53, 0.24) !important;
+}

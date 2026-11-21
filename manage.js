@@ -3379,11 +3379,28 @@
       return (sections && nameOf(sections, secId, 'name')) || 'الفوج التربوي';
     }
 
-    function findProgramForSection(secId) {
-      var found = rows.find(function (r) { return r.section_id === secId; });
-      if (found) return found;
-      return sharedList.find(function (r) { return r && r.section_id === secId; });
+    function findAllProgramsForSection(secId) {
+      var map = {};
+      var out = [];
+      (rows || []).forEach(function (r) {
+        if (r && String(r.section_id) === String(secId)) {
+          var k = String(r.id || (r.semester + '_' + r.academic_year));
+          if (!map[k]) { map[k] = true; out.push(r); }
+        }
+      });
+      readSharedProgramsLocal().forEach(function (r) {
+        if (r && String(r.section_id) === String(secId)) {
+          var k = String(r.id || (r.semester + '_' + r.academic_year));
+          if (!map[k]) { map[k] = true; out.push(r); }
+        }
+      });
+      return out;
     }
+    function findProgramForSection(secId) {
+      var all = findAllProgramsForSection(secId);
+      return all.length ? all[0] : null;
+    }
+    var expandedProgId = null;
 
     function renderProgramsDashboard() {
       mainContainer.textContent = '';
@@ -3462,7 +3479,8 @@
       var sectionsGrid = h('div', { style: 'display:flex; flex-direction:column; gap:14px;' });
 
       sections.forEach(function (sec) {
-        var prog = findProgramForSection(sec.id);
+        var secProgs = findAllProgramsForSection(sec.id);
+        var prog = secProgs.length ? secProgs[0] : null;
         var isExpanded = (expandedSecId === sec.id);
 
         var secCard = h('div', {
@@ -3482,7 +3500,7 @@
                 h('h3', { style: 'margin:0; color:#0F172A; font-size:1.15rem; font-weight:800;', text: sec.name }),
                 prog ? (
                   (prog.status === 'published' || prog.status === 'updated')
-                    ? h('span', { style: 'background:#DCFCE7; color:#163B65; border:1px solid #60A5FA; font-weight:800; font-size:11.5px; padding:2px 10px; border-radius:12px;', text: '✓ معتمد ومنشور للأولياء' })
+                    ? h('span', { style: 'background:#DCEAF5; color:#163B65; border:1px solid #60A5FA; font-weight:800; font-size:11.5px; padding:2px 10px; border-radius:12px;', text: '✓ معتمد ومنشور للأولياء' })
                     : h('span', { style: 'background:#FEF3C7; color:#92400E; border:1px solid #FCD34D; font-weight:800; font-size:11.5px; padding:2px 10px; border-radius:12px;', text: '📝 مسودة برنامج أسبوعي' })
                 ) : h('span', { style: 'background:#F1F5F9; color:#64748B; border:1px solid #CBD5E1; font-weight:700; font-size:11.5px; padding:2px 10px; border-radius:12px;', text: '⚪ لا يوجد برنامج بعد' })
               ),
@@ -3491,74 +3509,93 @@
               )
             )
           ),
-          // يسار: أزرار الإجراءات
-          h('div', { style: 'display:flex; align-items:center; gap:8px; flex-wrap:wrap;' },
-            prog ? (
-              h('div', { style: 'display:flex; gap:8px; align-items:center;' },
-                h('button', {
-                  type: 'button',
-                  class: 'btn ' + (isExpanded ? 'gold' : 'light'),
-                  style: 'font-weight:800; font-size:13px; display:flex; align-items:center; gap:6px; min-width:115px; justify-content:center;',
-                  title: isExpanded ? 'إخفاء ورقة البرنامج الأسبوعي' : 'عرض التفاصيل والبرنامج الأسبوعي نفسه',
-                  onclick: function () {
-                    if (isExpanded) {
-                      expandedSecId = null;
-                      activeWeekState = null;
-                    } else {
-                      expandedSecId = sec.id;
-                      activeWeekState = parseExistingProgramState(prog, sections);
-                      isMergeMode = false;
-                      mergeSelectedCells = {};
-                    }
-                    renderProgramsDashboard();
-                  }
-                }, makeSvgIcon(isExpanded ? 's-close' : 's-eye'), h('span', { text: isExpanded ? 'إخفاء التفاصيل' : '👁 التفاصيل' })),
-
-                h('button', {
-                  type: 'button',
-                  class: 'btn light',
-                  style: 'font-size:12.5px; font-weight:700;',
-                  title: 'تحميل البرنامج بصيغة PDF (A4 أفقي)',
-                  onclick: async function () {
-                    try {
-                      var pState = parseExistingProgramState(prog, sections);
-                      toast('جارٍ تجهيز ملف PDF...', 'ok');
-                      var bytes = await window.DE_PDF.renderWeeklyProgramToPdf(pState, sec.name);
-                      window.DE_PDF.downloadPdf(bytes, 'البرنامج_الأسبوعي_' + sec.name.replace(/\s+/g, '_') + '.pdf');
-                    } catch (e) {
-                      toast('تعذر تحميل PDF: ' + e.message, 'bad');
-                    }
-                  }
-                }, makeSvgIcon('s-file'), h('span', { text: 'PDF' })),
-
-                (!S.isEducator ? h('button', {
-                  type: 'button',
-                  class: 'btn light danger',
-                  style: 'font-size:12.5px; font-weight:800; display:inline-flex; align-items:center; gap:5px;',
-                  title: 'حذف هذا البرنامج الأسبوعي نهائياً دون المساس ببيانات الأطفال أو التقارير',
-                  onclick: function () {
-                    confirmModal('هل أنت متأكد من حذف البرنامج الأسبوعي لفوج «' + sec.name + '»؟ (لن يتأثر ملف أي طفل أو تقرير مرتبط بالفوج)', async function () {
-                      try {
-                        if (prog.id && !String(prog.id).startsWith('prog-')) {
-                          await C.rest('DELETE', '/educational_programs?id=eq.' + uid(prog.id));
-                        }
-                        var shared = readSharedProgramsLocal().filter(function (x) { return x && x.section_id !== sec.id; });
-                        writeSharedProgramsLocal(shared);
-                        rows = rows.filter(function (r) { return r.section_id !== sec.id; });
-                        if (expandedSecId === sec.id) {
-                          expandedSecId = null;
-                          activeWeekState = null;
-                        }
-                        bust();
-                        renderProgramsDashboard();
-                        toast('تم حذف البرنامج الأسبوعي بنجاح.', 'ok');
-                      } catch (err) {
-                        toast('تعذر حذف البرنامج: ' + err.message, 'bad');
+          // يسار: أزرار الإجراءات (يدعم تراكم البرامج مع زر تفاصيل مستقل لكل برنامج وحذف يعمل فعلياً)
+          h('div', { style: 'display:flex; flex-direction:column; gap:6px; align-items:flex-end;' },
+            secProgs.length ? (
+              secProgs.map(function (pItem, pIdx) {
+                var pKey = String(pItem.id || (sec.id + '_' + pIdx));
+                var isThisExp = isExpanded && (!expandedProgId || expandedProgId === pKey);
+                var pTitleTag = secProgs.length > 1
+                  ? ('التفاصيل (' + (pIdx + 1) + ' — ' + (pItem.semester || 'برنامج') + ')')
+                  : 'التفاصيل';
+                return h('div', { style: 'display:flex; gap:6px; align-items:center; flex-wrap:wrap;' },
+                  h('button', {
+                    type: 'button',
+                    class: 'btn ' + (isThisExp ? 'primary' : 'light'),
+                    style: 'font-weight:800; font-size:12.5px; display:inline-flex; align-items:center; gap:6px; min-width:110px; justify-content:center;',
+                    title: isThisExp ? 'إخفاء ورقة البرنامج الأسبوعي' : 'عرض التفاصيل والبرنامج الأسبوعي',
+                    onclick: function () {
+                      if (isThisExp) {
+                        expandedSecId = null;
+                        expandedProgId = null;
+                        activeWeekState = null;
+                      } else {
+                        expandedSecId = sec.id;
+                        expandedProgId = pKey;
+                        activeWeekState = parseExistingProgramState(pItem, sections);
+                        isMergeMode = false;
+                        mergeSelectedCells = {};
                       }
-                    });
-                  }
-                }, makeSvgIcon('s-delete'), h('span', { text: 'حذف البرنامج' })) : null)
-              )
+                      renderProgramsDashboard();
+                    }
+                  }, makeSvgIcon(isThisExp ? 's-close' : 's-eye'), h('span', { text: isThisExp ? 'إخفاء التفاصيل' : pTitleTag })),
+
+                  h('button', {
+                    type: 'button',
+                    class: 'btn light',
+                    style: 'font-size:12px; font-weight:700; display:inline-flex; align-items:center; gap:4px;',
+                    title: 'تحميل البرنامج بصيغة PDF (A4 أفقي)',
+                    onclick: async function () {
+                      try {
+                        var pState = parseExistingProgramState(pItem, sections);
+                        toast('جارٍ تجهيز ملف PDF...', 'ok');
+                        var bytes = await window.DE_PDF.renderWeeklyProgramToPdf(pState, sec.name);
+                        window.DE_PDF.downloadPdf(bytes, 'البرنامج_الأسبوعي_' + sec.name.replace(/\s+/g, '_') + '.pdf');
+                      } catch (e) {
+                        toast('تعذر تحميل PDF: ' + e.message, 'bad');
+                      }
+                    }
+                  }, makeSvgIcon('s-file'), h('span', { text: 'PDF' })),
+
+                  (!S.isEducator ? h('button', {
+                    type: 'button',
+                    class: 'btn light danger',
+                    style: 'font-size:12px; font-weight:800; display:inline-flex; align-items:center; gap:5px;',
+                    title: 'حذف هذا البرنامج الأسبوعي نهائياً دون المساس ببيانات الأطفال أو التقارير',
+                    onclick: function () {
+                      confirmModal('هل أنت متأكد من حذف هذا البرنامج الأسبوعي لفوج «' + sec.name + '»؟ (لن يتأثر ملف أي طفل أو تقرير مرتبط بالفوج)', async function () {
+                        try {
+                          if (pItem.id && DE.isUuid(String(pItem.id))) {
+                            await C.rest('DELETE', '/educational_programs?id=eq.' + uid(pItem.id));
+                          }
+                          var shared = readSharedProgramsLocal().filter(function (x) {
+                            if (!x) return false;
+                            if (pItem.id && x.id) return String(x.id) !== String(pItem.id);
+                            return String(x.section_id) !== String(sec.id);
+                          });
+                          writeSharedProgramsLocal(shared);
+                          sharedList = shared;
+                          rows = rows.filter(function (r) {
+                            if (!r) return false;
+                            if (pItem.id && r.id) return String(r.id) !== String(pItem.id);
+                            return String(r.section_id) !== String(sec.id);
+                          });
+                          if (expandedSecId === sec.id && (!expandedProgId || expandedProgId === pKey)) {
+                            expandedSecId = null;
+                            expandedProgId = null;
+                            activeWeekState = null;
+                          }
+                          bust();
+                          renderProgramsDashboard();
+                          toast('تم حذف البرنامج الأسبوعي بنجاح.', 'ok');
+                        } catch (err) {
+                          toast('تعذر حذف البرنامج: ' + (err.message || err), 'bad');
+                        }
+                      });
+                    }
+                  }, makeSvgIcon('s-delete'), h('span', { text: 'حذف البرنامج' })) : null)
+                );
+              })
             ) : (
               h('span', { style: 'font-size:12px; color:#94A3B8; font-weight:700;', text: '⚪ لا يوجد برنامج مضاف بعد (استخدم زر الإضافة أعلاه)' })
             )
@@ -5209,7 +5246,7 @@
     var tbody = h('tbody', null);
 
     REINFORCERS_CATALOG.forEach(function (catObj, cIdx) {
-      var catRow = h('tr', { style: 'background:#DCFCE7; font-weight:900;' },
+      var catRow = h('tr', { style: 'background:#DCEAF5; font-weight:900;' },
         h('td', { colspan: 4, style: 'padding:10px 14px; color:#163B65; font-size:15px; border:1px solid #CBD5E1;', text: '● ' + catObj.cat })
       );
       tbody.appendChild(catRow);
@@ -6163,7 +6200,7 @@
 
     var tb = h('tbody', null);
     REINFORCERS_CATALOG.forEach(function (catObj, cIdx) {
-      tb.appendChild(h('tr', { style: 'background:#DCFCE7; font-weight:800;' },
+      tb.appendChild(h('tr', { style: 'background:#DCEAF5; font-weight:800;' },
         h('td', { colspan: 4, style: 'padding:5px 10px; text-align:right; border:1px solid #CBD5E1; color:#163B65;', text: '● ' + catObj.cat })
       ));
       catObj.items.forEach(function (itemLabel, iIdx) {
@@ -7001,7 +7038,7 @@
         },
           h('strong', { style: 'color:#1E3A8A; font-size:13.5px;', text: (dIdx + 1) + '. ' + dm.name + ' (إجمالي المهارات: ' + dm.count + ')' }),
           h('span', {
-            style: 'background:#DCFCE7; color:#15803D; border:1px solid #16A34A; padding:2px 10px; border-radius:12px; font-size:12px; font-weight:800;',
+            style: 'background:#DCEAF5; color:#263F65; border:1px solid #16A34A; padding:2px 10px; border-radius:12px; font-size:12px; font-weight:800;',
             text: 'المكتسبة: ' + dm.acquired + ' من ' + dm.count + ' (' + dm.pctFmt + '%)'
           })
         ));
@@ -8031,7 +8068,7 @@
           h('div', { style: 'font-size:22px; font-weight:900; line-height:1.1;', text: String(stats.totalOccurrences) }),
           h('div', { style: 'font-size:11.5px; opacity:0.92; margin-top:3px;', text: 'مجموع مرات حدوث السلوك' })
         ),
-        h('div', { style: 'background:#1E7E62; color:#FFF; padding:10px 12px; border-radius:10px; text-align:center;' },
+        h('div', { style: 'background:#263F65; color:#FFF; padding:10px 12px; border-radius:10px; text-align:center;' },
           h('div', { style: 'font-size:22px; font-weight:900; line-height:1.1;', text: String(stats.totalDays) }),
           h('div', { style: 'font-size:11.5px; opacity:0.92; margin-top:3px;', text: 'عدد أيام المتابعة' })
         ),
@@ -10414,7 +10451,7 @@
 
     var bar = h('div', { class: 'no-print', style: 'display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:12px; padding:10px 12px; background:#F8FAFC; border:1px solid #CBD5E1; border-radius:10px;' },
       h('div', { style: 'display:flex; align-items:center; gap:8px;' },
-        h('span', { class: 'badge gold', text: '🇫🇷 FICHE DE SUIVI MÉDICO-FONCTIONNEL' }),
+        h('span', { class: 'badge gold', text: 'FICHE DE SUIVI MÉDICO-FONCTIONNEL' }),
         h('strong', { style: 'color:#1B365D; font-size:13.5px;', text: frName })
       ),
       h('div', { style: 'display:flex; gap:6px; flex-wrap:wrap;' },
@@ -10551,7 +10588,7 @@
         h('img', { src: 'logo.png', style: 'width:38px; height:38px; border-radius:8px; object-fit:contain;' }),
         h('div', null,
           h('h2', { style: 'margin:0; color:#1B365D; font-size:1.15rem; font-weight:900;', text: existingRep ? 'Modifier — FICHE DE SUIVI MÉDICO-FONCTIONNEL' : 'FICHE DE SUIVI MÉDICO-FONCTIONNEL' }),
-          h('div', { class: 'muted small', text: 'Suivi des crises épileptiques • أحمر: ثابت | أخضر: اختيارات قابلة للإضافة | أسود: كتابة يدوية' })
+          h('div', { class: 'muted small', text: 'Suivi des crises épileptiques' })
         )
       ),
       h('button', { type: 'button', class: 'btn small light', text: 'رجوع لقائمة التقارير', onclick: function () { go('reports'); } })
@@ -10561,22 +10598,15 @@
     var card = h('div', { class: 'card', style: 'max-width:1060px; margin:0 auto; padding:20px; border-radius:14px; border:1.5px solid #CBD5E1; direction:ltr; text-align:left; font-family:"Times New Roman", Georgia, Arial, sans-serif; color:#0F172A;' });
 
     // En-tête officiel avec logo en haut à droite
-    card.appendChild(h('div', { style: 'display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #1B365D; padding-bottom:12px; margin-bottom:16px; gap:12px;' },
+    card.appendChild(h('div', { style: 'display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #101D35; padding-bottom:12px; margin-bottom:16px; gap:12px;' },
+      h('img', { src: 'logo.png', alt: 'Dar El Ihsan', style: 'width:88px; height:88px; object-fit:contain; flex-shrink:0;' }),
       h('div', { style: 'flex:1; text-align:center;' },
         h('div', { style: 'font-weight:900; font-size:20px; color:#0F172A;', text: 'A-P-E-H-M' }),
         h('div', { style: 'font-weight:800; font-size:17px; color:#0F172A;', text: 'Centre psychopédagogique Dar el ihsan' }),
         h('div', { style: 'font-weight:700; font-size:15px; color:#0F172A;', text: '-El ATTEUF – Ghardaïa-' }),
-        h('div', { style: 'font-weight:900; font-size:18px; color:#1B365D; text-decoration:underline; margin-top:8px;', text: 'FICHE DE SUIVI MÉDICO-FONCTIONNEL' }),
+        h('div', { style: 'font-weight:900; font-size:18px; color:#101D35; text-decoration:underline; margin-top:8px;', text: 'FICHE DE SUIVI MÉDICO-FONCTIONNEL' }),
         h('div', { style: 'font-weight:700; font-size:14.5px; color:#0F172A;', text: 'Suivi des crises épileptiques' })
-      ),
-      h('img', { src: 'logo.png', alt: 'Dar El Ihsan', style: 'width:92px; height:92px; object-fit:contain; flex-shrink:0;' })
-    ));
-
-    // Légende des 3 couleurs
-    card.appendChild(h('div', { style: 'display:flex; flex-wrap:wrap; gap:14px; padding:8px 12px; background:#F8FAFC; border:1px solid #CBD5E1; border-radius:8px; margin-bottom:14px; font-family:Arial,sans-serif; font-size:12px;' },
-      h('span', { style: 'color:#B91C1C; font-weight:800;', text: '● Rouge : Texte fixe unifié pour tous les enfants' }),
-      h('span', { style: 'color:#15803D; font-weight:800;', text: '● Vert : Choix sélectionnables (+ ajout de nouvelles options)' }),
-      h('span', { style: 'color:#0F172A; font-weight:800;', text: '● Noir : Saisie manuelle libre' })
+      )
     ));
 
     // Sélecteur de l'enfant (remplit automatiquement le nom en français et l'âge)
@@ -10608,14 +10638,14 @@
     ageFrInp.oninput = function () { mfState.age_fr = ageFrInp.value; };
 
     function makeSectionHead(title, col) {
-      return h('h3', { style: 'margin:18px 0 10px; padding-bottom:5px; border-bottom:1.5px solid #CBD5E1; font-size:16.5px; font-weight:900; color:' + (col || '#1B365D') + ';', text: title });
+      return h('h3', { style: 'margin:18px 0 10px; padding-bottom:5px; border-bottom:1.5px solid #CBD5E1; font-size:16.5px; font-weight:900; color:' + (col || '#101D35') + ';', text: title });
     }
 
     function makeTextField(labelRed, obj, key, ph) {
       var inp = h('input', { type: 'text', value: obj[key] || '', placeholder: ph || '', style: 'width:100%; padding:7px 10px; border:1px solid #CBD5E1; border-radius:6px; color:#0F172A; background:#FFF;' });
       inp.oninput = function () { obj[key] = inp.value; };
       return h('div', { style: 'margin-bottom:8px;' },
-        h('label', { style: 'display:block; font-weight:800; color:#B91C1C; font-size:13.5px; margin-bottom:3px;', text: labelRed + ' :' }),
+        h('label', { style: 'display:block; font-weight:800; color:#0F172A; font-size:13.5px; margin-bottom:3px;', text: labelRed + ' :' }),
         inp
       );
     }
@@ -10625,15 +10655,15 @@
       ta.value = obj[key] || '';
       ta.oninput = function () { obj[key] = ta.value; };
       return h('div', { style: 'margin-bottom:10px;' },
-        h('label', { style: 'display:block; font-weight:800; color:#B91C1C; font-size:13.5px; margin-bottom:4px;', text: labelRed + ' :' }),
+        h('label', { style: 'display:block; font-weight:800; color:#0F172A; font-size:13.5px; margin-bottom:4px;', text: labelRed + ' :' }),
         ta
       );
     }
 
     // Helper pour les listes d'options VERTES sélectionnables + ajout de nouvelles options
     function makeGreenChecklistGroup(titleRed, defaultOpts, selectedArr, customArr, storeKey) {
-      var box = h('div', { style: 'background:#F0FDF4; border:1px solid #86EFAC; border-radius:10px; padding:10px 12px; margin-bottom:12px;' });
-      box.appendChild(h('div', { style: 'font-weight:900; color:#B91C1C; font-size:14px; margin-bottom:6px;', text: titleRed }));
+      var box = h('div', { style: 'background:#F5F6F8; border:1px solid #B8C2D0; border-radius:10px; padding:10px 12px; margin-bottom:12px;' });
+      box.appendChild(h('div', { style: 'font-weight:900; color:#0F172A; font-size:14px; margin-bottom:6px;', text: titleRed }));
       var listWrap = h('div', { style: 'display:flex; flex-direction:column; gap:5px;' });
       box.appendChild(listWrap);
 
@@ -10646,22 +10676,22 @@
 
         all.forEach(function (optText) {
           var isOn = selectedArr.indexOf(optText) >= 0;
-          var chk = h('input', { type: 'checkbox', checked: isOn, style: 'width:16px; height:16px; accent-color:#15803D; cursor:pointer;' });
+          var chk = h('input', { type: 'checkbox', checked: isOn, style: 'width:16px; height:16px; accent-color:#0F172A; cursor:pointer;' });
           chk.onchange = function () {
             var idx = selectedArr.indexOf(optText);
             if (chk.checked && idx < 0) selectedArr.push(optText);
             else if (!chk.checked && idx >= 0) selectedArr.splice(idx, 1);
           };
-          listWrap.appendChild(h('label', { style: 'display:flex; align-items:center; gap:8px; color:#15803D; font-weight:700; font-size:14px; cursor:pointer;' }, chk, h('span', { text: optText })));
+          listWrap.appendChild(h('label', { style: 'display:flex; align-items:center; gap:8px; color:#0F172A; font-weight:700; font-size:14px; cursor:pointer;' }, chk, h('span', { text: optText })));
         });
       }
       renderItems();
 
-      var addInp = h('input', { type: 'text', placeholder: 'Nouvelle option verte...', style: 'flex:1; padding:6px 8px; border:1px solid #86EFAC; border-radius:6px; font-size:13px; color:#15803D; background:#FFF;' });
+      var addInp = h('input', { type: 'text', placeholder: 'Ajouter une option...', style: 'flex:1; padding:6px 8px; border:1px solid #B8C2D0; border-radius:6px; font-size:13px; color:#0F172A; background:#FFF;' });
       var addBtn = h('button', {
         type: 'button',
         class: 'btn small light',
-        style: 'color:#15803D; border-color:#15803D; font-weight:800; font-size:12px;',
+        style: 'color:#0F172A; border-color:#0F172A; font-weight:800; font-size:12px;',
         text: '+ Ajouter',
         onclick: function () {
           var val = (addInp.value || '').trim();
@@ -10680,14 +10710,14 @@
     }
 
     // ── SECTION I ──
-    card.appendChild(makeSectionHead('I. INFORMATIONS PERSONNELLES', '#1B365D'));
+    card.appendChild(makeSectionHead('I. INFORMATIONS PERSONNELLES', '#101D35'));
     card.appendChild(h('div', { style: 'display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:10px; margin-bottom:10px; background:#F8FAFC; padding:12px; border-radius:10px; border:1px solid #CBD5E1;' },
       h('div', null, h('label', { style: 'display:block; font-weight:800; color:#1B365D; font-size:12.5px; margin-bottom:3px;', text: 'Enfant (Base de données) :' }), kidSel),
-      h('div', null, h('label', { style: 'display:block; font-weight:800; color:#B91C1C; font-size:12.5px; margin-bottom:3px;', text: 'Nom et prénom (Français) :' }), frNameInp),
-      h('div', null, h('label', { style: 'display:block; font-weight:800; color:#B91C1C; font-size:12.5px; margin-bottom:3px;', text: 'Âge :' }), ageFrInp),
-      h('div', null, h('label', { style: 'display:block; font-weight:800; color:#B91C1C; font-size:12.5px; margin-bottom:3px;', text: 'Date du rapport :' }), reportDateInp)
+      h('div', null, h('label', { style: 'display:block; font-weight:800; color:#0F172A; font-size:12.5px; margin-bottom:3px;', text: 'Nom et prénom (Français) :' }), frNameInp),
+      h('div', null, h('label', { style: 'display:block; font-weight:800; color:#0F172A; font-size:12.5px; margin-bottom:3px;', text: 'Âge :' }), ageFrInp),
+      h('div', null, h('label', { style: 'display:block; font-weight:800; color:#0F172A; font-size:12.5px; margin-bottom:3px;', text: 'Date du rapport :' }), reportDateInp)
     ));
-    card.appendChild(makeGreenChecklistGroup('Section (choix vert sélectionnable) :', ['Retard mental (RM)', 'Trouble du spectre autistique', 'Trisomie 21'], mfState.section_choices, mfState.section_custom, 'section'));
+    card.appendChild(makeGreenChecklistGroup('Section :', ['Retard mental (RM)', 'Trouble du spectre autistique', 'Trisomie 21'], mfState.section_choices, mfState.section_custom, 'section'));
     card.appendChild(h('div', { style: 'display:grid; grid-template-columns:repeat(auto-fit, minmax(230px, 1fr)); gap:10px;' },
       makeTextField("Date d'admission au centre", mfState, 'admission_date', 'ex: Octobre 2024'),
       makeTextField('Traitement antiépileptique', mfState, 'antiepileptic_treatment', ''),
@@ -10697,7 +10727,7 @@
     card.appendChild(makeAutoTextareaField('Données médicales connues', mfState, 'medical_data', 'ex: Retard global du développement intellectuel associé à une épilepsie.'));
 
     // ── SECTION II ──
-    card.appendChild(makeSectionHead('II. FICHE DE SUIVI DES CRISES ÉPILEPTIQUES', '#1B365D'));
+    card.appendChild(makeSectionHead('II. FICHE DE SUIVI DES CRISES ÉPILEPTIQUES', '#101D35'));
     card.appendChild(h('p', { style: 'font-style:italic; margin:0 0 10px; font-size:14px; color:#0F172A;', text: "Cette fiche doit être renseignée à chaque épisode de crise observé au sein du centre." }));
 
     var epFields = [
@@ -10730,7 +10760,7 @@
 
     var crisisTbl = h('table', { style: 'width:100%; border-collapse:collapse; margin-bottom:14px; font-size:13.5px;' },
       h('thead', null,
-        h('tr', { style: 'background:#FEF2F2; color:#B91C1C;' },
+        h('tr', { style: 'background:#FEF2F2; color:#0F172A;' },
           h('th', { style: 'border:1px solid #334155; padding:7px;', text: 'Informations (Épisode 1)' }),
           h('th', { style: 'border:1px solid #334155; padding:7px;', text: 'Observations' }),
           h('th', { style: 'border:1px solid #334155; padding:7px;', text: 'Informations (Épisode 2)' }),
@@ -10739,9 +10769,9 @@
       ),
       h('tbody', null, epFields.map(function (f) {
         return h('tr', null,
-          h('td', { style: 'border:1px solid #334155; padding:6px; font-weight:800; color:#B91C1C;', text: f.label }),
+          h('td', { style: 'border:1px solid #334155; padding:6px; font-weight:800; color:#0F172A;', text: f.label }),
           h('td', { style: 'border:1px solid #334155; padding:4px;' }, makeEpInput(mfState.episodes[0], f)),
-          h('td', { style: 'border:1px solid #334155; padding:6px; font-weight:800; color:#B91C1C;', text: f.label }),
+          h('td', { style: 'border:1px solid #334155; padding:6px; font-weight:800; color:#0F172A;', text: f.label }),
           h('td', { style: 'border:1px solid #334155; padding:4px;' }, makeEpInput(mfState.episodes[1], f))
         );
       }))
@@ -10764,12 +10794,12 @@
       s.value = mfState.state_during[key] || '';
       s.onchange = function () { mfState.state_during[key] = s.value; };
       return h('div', { style: 'display:flex; justify-content:space-between; align-items:center; gap:10px; padding:5px 0; border-bottom:1px dashed #E2E8F0;' },
-        h('span', { style: 'color:#B91C1C; font-weight:800; font-size:13.5px;', text: '✓ ' + lbl }),
+        h('span', { style: 'color:#0F172A; font-weight:800; font-size:13.5px;', text: '✓ ' + lbl }),
         s
       );
     };
     card.appendChild(h('div', { style: 'background:#FFF; border:1px solid #CBD5E1; border-radius:10px; padding:10px 12px; margin-bottom:12px;' },
-      h('div', { style: 'font-weight:900; color:#B91C1C; font-size:14px; margin-bottom:6px;', text: "2. État de l'enfant pendant la crise :" }),
+      h('div', { style: 'font-weight:900; color:#0F172A; font-size:14px; margin-bottom:6px;', text: "2. État de l'enfant pendant la crise :" }),
       makeSelRow('Réponse aux sollicitations verbales', 'verbal_response', ['Oui', 'Non']),
       makeSelRow('Respiration', 'respiration', ['Normale', 'Anormale', 'Non évaluée']),
       makeSelRow('Changement de coloration du visage ou des lèvres', 'color_change', ['Oui', 'Non']),
@@ -10787,7 +10817,7 @@
     card.appendChild(makeTextField("Nom et prénom de l'employé ayant observé la crise", mfState, 'observer_name', ''));
 
     // ── SECTION III ──
-    card.appendChild(makeSectionHead('III. FICHE DE SUIVI QUOTIDIEN DE LA VIGILANCE ET DE LA FATIGABILITÉ', '#1B365D'));
+    card.appendChild(makeSectionHead('III. FICHE DE SUIVI QUOTIDIEN DE LA VIGILANCE ET DE LA FATIGABILITÉ', '#101D35'));
     card.appendChild(h('p', { style: 'font-style:italic; margin:0 0 10px; font-size:14px; color:#0F172A;', text: "À renseigner quotidiennement par l'éducateur ou l'encadreur pédagogique." }));
 
     var vigInds = [
@@ -10800,7 +10830,7 @@
     ];
     var vigTbl = h('table', { style: 'width:100%; border-collapse:collapse; margin-bottom:14px; font-size:13.5px;' },
       h('thead', null,
-        h('tr', { style: 'background:#FEF2F2; color:#B91C1C;' },
+        h('tr', { style: 'background:#FEF2F2; color:#0F172A;' },
           h('th', { style: 'border:1px solid #334155; padding:7px; text-align:left;', text: 'Indicateurs observés' }),
           h('th', { style: 'border:1px solid #334155; padding:7px; text-align:center;', text: 'Matin' }),
           h('th', { style: 'border:1px solid #334155; padding:7px; text-align:center;', text: 'Pendant les activités' }),
@@ -10816,7 +10846,7 @@
           return h('td', { style: 'border:1px solid #334155; text-align:center; padding:6px;' }, c);
         };
         return h('tr', null,
-          h('td', { style: 'border:1px solid #334155; padding:6px; font-weight:800; color:#B91C1C;', text: ind.label }),
+          h('td', { style: 'border:1px solid #334155; padding:6px; font-weight:800; color:#0F172A;', text: ind.label }),
           mkChk('matin'), mkChk('activites'), mkChk('apres_midi')
         );
       }))
@@ -10828,7 +10858,7 @@
     card.appendChild(makeAutoTextareaField("Observations de l'éducateur concernant l'état quotidien de l'enfant", mfState, 'educator_daily_obs', ''));
 
     // ── SECTION IV ──
-    card.appendChild(makeSectionHead("IV. SUIVI DU SOMMEIL ET DE L'ÉTAT GÉNÉRAL", '#1B365D'));
+    card.appendChild(makeSectionHead("IV. SUIVI DU SOMMEIL ET DE L'ÉTAT GÉNÉRAL", '#101D35'));
     var mkSleepSel = function (key, opts) {
       var s = h('select', { style: 'width:100%; padding:6px; border:1px solid #CBD5E1; border-radius:6px; color:#0F172A; font-weight:700;' },
         h('option', { value: '', text: '—' }),
@@ -10844,7 +10874,7 @@
       return i;
     };
     card.appendChild(h('table', { style: 'width:100%; border-collapse:collapse; margin-bottom:14px; font-size:13.5px;' },
-      h('thead', null, h('tr', { style: 'background:#FEF2F2; color:#B91C1C;' },
+      h('thead', null, h('tr', { style: 'background:#FEF2F2; color:#0F172A;' },
         h('th', { style: 'border:1px solid #334155; padding:7px; width:50%;', text: 'Indicateurs' }),
         h('th', { style: 'border:1px solid #334155; padding:7px; width:50%;', text: 'Observations' })
       )),
@@ -10857,14 +10887,14 @@
         ['Remarques de la famille', mkSleepTxt('family_remarks')]
       ].map(function (pair) {
         return h('tr', null,
-          h('td', { style: 'border:1px solid #334155; padding:6px; font-weight:800; color:#B91C1C;', text: pair[0] }),
+          h('td', { style: 'border:1px solid #334155; padding:6px; font-weight:800; color:#0F172A;', text: pair[0] }),
           h('td', { style: 'border:1px solid #334155; padding:4px;' }, pair[1])
         );
       }))
     ));
 
     // ── SECTION V ──
-    card.appendChild(makeSectionHead('V. BILAN HEBDOMADAIRE DU SUIVI', '#B91C1C'));
+    card.appendChild(makeSectionHead('V. BILAN HEBDOMADAIRE DU SUIVI', '#101D35'));
     card.appendChild(h('div', { style: 'display:grid; grid-template-columns:repeat(auto-fit, minmax(230px, 1fr)); gap:10px;' },
       makeTextField('Nombre de crises enregistrées', mfState.weekly_bilan, 'crises_count', ''),
       makeTextField('Nombre de jours avec fatigue importante', mfState.weekly_bilan, 'heavy_fatigue_days', ''),
@@ -10875,7 +10905,7 @@
     card.appendChild(makeAutoTextareaField("Observations de l'équipe pluridisciplinaire", mfState.weekly_bilan, 'team_observations', ''));
 
     // ── SECTION VI (ROUGE FIXE) ──
-    card.appendChild(makeSectionHead('VI. CONSIGNES DE SÉCURITÉ ET DE SURVEILLANCE', '#B91C1C'));
+    card.appendChild(makeSectionHead('VI. CONSIGNES DE SÉCURITÉ ET DE SURVEILLANCE', '#101D35'));
     var fixedRules = [
       "1. Noter précisément l'heure de début et de fin de chaque crise.",
       "2. Éloigner les objets dangereux et protéger l'enfant contre les risques de blessures.",
@@ -10887,12 +10917,12 @@
       "8. Informer la famille et consigner chaque épisode dans le dossier individuel de l'enfant.",
       "9. Respecter le protocole médical d'urgence établi par le médecin traitant."
     ];
-    card.appendChild(h('div', { style: 'background:#FEF2F2; border:1px solid #FECACA; border-radius:10px; padding:12px 16px; margin-bottom:14px; color:#B91C1C; font-size:14px; line-height:1.7;' },
+    card.appendChild(h('div', { style: 'background:#F5F6F8; border:1px solid #B8C2D0; border-radius:10px; padding:12px 16px; margin-bottom:14px; color:#0F172A; font-size:14px; line-height:1.7;' },
       fixedRules.map(function (rt) { return h('div', { style: 'margin-bottom:4px;', text: rt }); })
     ));
 
     // ── SECTION VII ──
-    card.appendChild(makeSectionHead('VII. VALIDATION ET RESPONSABILITÉS', '#B91C1C'));
+    card.appendChild(makeSectionHead('VII. VALIDATION ET RESPONSABILITÉS', '#101D35'));
     card.appendChild(h('div', { style: 'display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:10px;' },
       makeTextField('Responsable du suivi', mfState.validation, 'followup_responsible', ''),
       makeTextField('Éducateur / Encadreur', mfState.validation, 'educator_name', ''),
@@ -12154,7 +12184,7 @@
           class: 'btn gold',
           style: 'padding:9px 12px; border-radius:8px; font-weight:900; font-size:12.5px; justify-content:flex-start; gap:8px;',
           onclick: function () { openMedicoFunctionalFrenchBuilder(null, kids, sections, secAllOpts, branchOpts); }
-        }, h('span', { style: 'font-size:16px;', text: '🇫🇷' }), h('span', { text: 'FICHE DE SUIVI MÉDICO-FONCTIONNEL (الفرنسي)' })),
+        }, h('span', { style: 'font-size:16px;', text: '📄' }), h('span', { text: 'FICHE DE SUIVI MÉDICO-FONCTIONNEL (الفرنسي)' })),
 
         h('button', {
           type: 'button',
@@ -12276,7 +12306,7 @@
             var subCat = getReportSubCategory(r);
             var bLabel = 'تقرير دوري';
             var bCls = 'ok';
-            if (subCat === 'medico_functional_fr') { bLabel = '🇫🇷 FICHE MÉDICO-FONCTIONNEL'; bCls = 'gold'; }
+            if (subCat === 'medico_functional_fr') { bLabel = 'FICHE MÉDICO-FONCTIONNEL'; bCls = 'gold'; }
             else if (subCat === 'annual_final') { bLabel = 'التقرير النهائي'; bCls = 'gold'; }
             else if (subCat === 'qualitative') { bLabel = "تقرير نوعي تحليلي (Rapport d'analyse qualitatif)"; bCls = 'ok'; }
             else if (subCat === 'quantitative') { bLabel = 'تقرير الكمي (quantitative)'; bCls = 'gold'; }
@@ -13231,45 +13261,81 @@
     dateSelect.addEventListener('change', function () { dateFilter = dateSelect.value; page = 1; renderRows(); });
     tools.append(search, actionSelect, dateSelect); panel.appendChild(tools);
 
-    // شريط إدارة حذف السجل اليومي والتنظيف التلقائي بعد شهر (30 يوماً)
+    // شريط إدارة حذف سجل النشاطات (يوم محدد / آخر أسبوع / آخر شهر / كل الأوقات) + التنظيف التلقائي بعد شهر
     var AUTO_PURGE_KEY = "de_audit_auto_purge_enabled_v1";
     var AUTO_PURGE_LAST_KEY = "de_audit_auto_purge_last_ts_v1";
     var isAutoPurgeOn = localStorage.getItem(AUTO_PURGE_KEY) !== "0";
+
+    var delPeriodSel = h("select", {
+      class: "audit-v2-select",
+      "aria-label": "اختر فترة حذف السجل",
+      style: "min-width:155px; font-weight:700;"
+    },
+      h("option", { value: "day", text: "يوم محدد" }),
+      h("option", { value: "week", text: "آخر أسبوع (7 أيام)" }),
+      h("option", { value: "month", text: "آخر شهر (30 يوماً)" }),
+      h("option", { value: "all", text: "كل الأوقات (حذف السجل بالكامل)" })
+    );
 
     var delDayInp = h("input", {
       type: "date",
       class: "audit-v2-select",
       value: new Date().toISOString().slice(0, 10),
       "aria-label": "اختر اليوم المراد حذف سجله",
-      style: "min-width:145px;"
+      style: "min-width:140px;"
     });
+    delPeriodSel.onchange = function () {
+      delDayInp.style.display = (delPeriodSel.value === "day") ? "" : "none";
+    };
 
-    async function deleteAuditForDay(dayStr) {
-      if (!dayStr) return toast("يرجى تحديد التاريخ أولاً.", "bad");
-      var startIso = dayStr + "T00:00:00.000Z";
-      var nextDay = new Date(dayStr + "T00:00:00.000Z");
-      nextDay.setUTCDate(nextDay.getUTCDate() + 1);
-      var endIso = nextDay.toISOString();
+    async function deleteAuditByPeriod(periodKey, dayStr) {
+      var now = Date.now();
       var doneRemote = false;
       try {
-        await C.rpc("admin_audit_delete_day", { p_day: dayStr });
+        await C.rpc("admin_audit_delete_period", { p_period: periodKey, p_day: periodKey === "day" ? dayStr : null });
         doneRemote = true;
       } catch (e1) {
+        // Fallback عبر REST API
+        var qs = "";
+        if (periodKey === "day") {
+          var startIso = dayStr + "T00:00:00.000Z";
+          var nd = new Date(dayStr + "T00:00:00.000Z"); nd.setUTCDate(nd.getUTCDate() + 1);
+          qs = "created_at=gte." + encodeURIComponent(startIso) + "&created_at=lt." + encodeURIComponent(nd.toISOString());
+        } else if (periodKey === "week") {
+          qs = "created_at=gte." + encodeURIComponent(new Date(now - 7 * 86400000).toISOString());
+        } else if (periodKey === "month") {
+          qs = "created_at=gte." + encodeURIComponent(new Date(now - 30 * 86400000).toISOString());
+        } else {
+          qs = "id=not.is.null";
+        }
         try {
-          await C.rest("DELETE", "/audit_logs?created_at=gte." + encodeURIComponent(startIso) + "&created_at=lt." + encodeURIComponent(endIso));
+          await C.rest("DELETE", "/audit_logs?" + qs);
           doneRemote = true;
         } catch (e2) {
-          throw new Error("تعذر حذف السجل من قاعدة البيانات. تأكد من تشغيل ملف SQL (20-audit-log-retention-and-daily-delete.sql) في Supabase.");
+          try {
+            await C.rest("DELETE", "/audit_log?" + qs.replace(/created_at/g, "at"));
+            doneRemote = true;
+          } catch (e3) {
+            throw new Error("تعذر حذف السجل من Supabase. يرجى تشغيل ملف SQL (20-audit-log-retention-and-daily-delete.sql) مرة واحدة في Supabase SQL Editor.");
+          }
         }
       }
       if (doneRemote) {
-        rows = rows.filter(function (r) {
-          var d = String(r.at || r.created_at || "").slice(0, 10);
-          return d !== dayStr;
-        });
+        if (periodKey === "all") {
+          rows = [];
+        } else if (periodKey === "day") {
+          rows = rows.filter(function (r) { return String(r.at || r.created_at || "").slice(0, 10) !== dayStr; });
+        } else {
+          var cutMs = now - (periodKey === "week" ? 7 : 30) * 86400000;
+          rows = rows.filter(function (r) {
+            var ts = new Date(r.at || r.created_at || 0).getTime();
+            return !ts || ts < cutMs;
+          });
+        }
         bust();
         renderRows();
-        toast("تم حذف سجل نشاطات يوم " + dayStr + " بنجاح.", "ok");
+        var lbl = periodKey === "all" ? "كل الأوقات" : periodKey === "week" ? "آخر أسبوع" : periodKey === "month" ? "آخر شهر" : ("يوم " + dayStr);
+        toast("تم حذف سجل النشاطات (" + lbl + ") بنجاح.", "ok");
       }
     }
 
@@ -13281,7 +13347,7 @@
         try {
           await C.rest("DELETE", "/audit_logs?created_at=lt." + encodeURIComponent(cutoff));
         } catch (e2) {
-          if (!silent) toast("تعذر التنظيف التلقائي: تأكد من تفعيل دالة SQL في Supabase.", "bad");
+          if (!silent) toast("تعذر التنظيف التلقائي: يرجى تشغيل ملف SQL في Supabase.", "bad");
           return false;
         }
       }
@@ -13300,7 +13366,7 @@
     var autoPurgeChk = h("input", {
       type: "checkbox",
       checked: isAutoPurgeOn,
-      style: "width:16px; height:16px; cursor:pointer; accent-color:#163B65;"
+      style: "width:16px; height:16px; cursor:pointer; accent-color:#263F65;"
     });
     autoPurgeChk.onchange = function () {
       isAutoPurgeOn = autoPurgeChk.checked;
@@ -13309,26 +13375,36 @@
     };
 
     var auditManageBar = h("div", {
-      style: "display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; padding:10px 14px; margin-top:10px; background:#FEF2F2; border:1px solid #FECACA; border-radius:10px;"
+      class: "cb-glass-bar",
+      style: "display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; padding:12px 14px; margin-top:10px; background:rgba(220,234,245,0.55); border:1px solid #8CB9DC; border-radius:12px;"
     },
       h("div", { style: "display:flex; align-items:center; gap:8px; flex-wrap:wrap;" },
-        h("span", { style: "font-weight:800; color:#991B1B; font-size:12.5px;", text: "حذف سجل يوم:" }),
+        h("span", { style: "font-weight:800; color:#101D35; font-size:12.5px;", text: "حذف السجل حسب الفترة:" }),
+        delPeriodSel,
         delDayInp,
         h("button", {
           type: "button",
           class: "btn small danger",
           style: "font-weight:800; display:inline-flex; align-items:center; gap:5px;",
           onclick: function () {
-            var dVal = delDayInp.value;
-            if (!dVal) return toast("يرجى اختيار التاريخ أولاً.", "bad");
-            confirmModal("هل أنت متأكد من حذف جميع سجلات النشاطات الخاصة بيوم «" + dVal + "» نهائياً؟", async function () {
-              try { await deleteAuditForDay(dVal); } catch (err) { toast(err.message || "تعذر حذف سجل اليوم.", "bad"); }
+            var pk = delPeriodSel.value;
+            var dv = delDayInp.value;
+            if (pk === "day" && !dv) return toast("يرجى اختيار التاريخ أولاً.", "bad");
+            var msgTxt = pk === "all"
+              ? "هل أنت متأكد من حذف جميع سجلات النشاطات (كل الأوقات) نهائياً؟"
+              : pk === "week"
+                ? "هل أنت متأكد من حذف سجلات النشاطات لآخر أسبوع (7 أيام)؟"
+                : pk === "month"
+                  ? "هل أنت متأكد من حذف سجلات النشاطات لآخر شهر (30 يوماً)؟"
+                  : ("هل أنت متأكد من حذف جميع سجلات النشاطات الخاصة بيوم «" + dv + "»؟");
+            confirmModal(msgTxt, async function () {
+              try { await deleteAuditByPeriod(pk, dv); } catch (err) { toast(err.message || "تعذر حذف السجل.", "bad"); }
             });
           }
-        }, makeSvgIcon("s-delete"), h("span", { text: "حذف سجل هذا اليوم" }))
+        }, makeSvgIcon("s-delete"), h("span", { text: "حذف السجل" }))
       ),
       h("div", { style: "display:flex; align-items:center; gap:10px; flex-wrap:wrap;" },
-        h("label", { style: "display:inline-flex; align-items:center; gap:6px; font-size:12.5px; font-weight:800; color:#163B65; cursor:pointer;" },
+        h("label", { style: "display:inline-flex; align-items:center; gap:6px; font-size:12.5px; font-weight:800; color:#101D35; cursor:pointer;" },
           autoPurgeChk,
           h("span", { text: "حذف تلقائي بعد شهر (30 يوماً)" })
         ),
@@ -13382,7 +13458,7 @@
       filtered.forEach(function (r) { if (r.actor_email) people[r.actor_email] = true; });
       var defs = [
         { label: 'إجمالي العمليات المعروضة', value: filtered.length, icon: 's-clipboard-list', tone: 'blue' },
-        { label: 'عمليات اليوم', value: today, icon: 's-calendar-check', tone: 'green' },
+        { label: 'عمليات اليوم', value: today, icon: 's-calendar-check', tone: 'blue' },
         { label: 'المستخدمون النشطون', value: Object.keys(people).length, icon: 's-users', tone: 'gold' }
       ];
       stats.textContent = '';
