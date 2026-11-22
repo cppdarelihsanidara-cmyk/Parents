@@ -601,8 +601,9 @@
 
   async function syncExistingPushSubscription() {
     // Silent migration: reuse the already-granted browser permission; never prompt again.
-    if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
-    if (!('serviceWorker' in navigator) || !('PushManager' in window) || !S.me) return;
+    // Return true only after the current subscription is confirmed in the database.
+    if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return false;
+    if (!('serviceWorker' in navigator) || !('PushManager' in window) || !S.me) return false;
     try {
       var reg = await navigator.serviceWorker.ready;
       var expectedKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
@@ -617,7 +618,7 @@
           }
         }
         if (!sameKey) {
-          // Disable the stale DB row before replacing its browser subscription.
+          // Disable only this exact old endpoint before replacing its browser subscription.
           try {
             await C.rest('PATCH', '/push_subscriptions?endpoint=eq.' + encodeURIComponent(sub.endpoint), { is_active: false });
           } catch (dbOldErr) { console.warn('Could not deactivate previous push endpoint:', dbOldErr); }
@@ -645,8 +646,10 @@
         is_active: true
       }, { Prefer: 'resolution=merge-duplicates' });
       console.info('Push subscription synchronized with current VAPID key.');
+      return true;
     } catch (e) {
-      console.warn('Automatic push subscription migration will retry on next parent login:', e);
+      console.warn('Automatic push subscription migration will retry on next parent data refresh:', e);
+      return false;
     }
   }
 
@@ -952,8 +955,12 @@
 
       // Migrate old VAPID subscriptions automatically for parents who already granted permission.
       if (!S._pushSyncedOnce && S.me) {
-        S._pushSyncedOnce = true;
-        syncExistingPushSubscription();
+        // Do not mark complete before the asynchronous registration and database write succeed.
+        syncExistingPushSubscription().then(function (ok) {
+          S._pushSyncedOnce = !!ok;
+        }).catch(function () {
+          S._pushSyncedOnce = false;
+        });
       }
 
       show('app');
