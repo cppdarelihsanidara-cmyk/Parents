@@ -564,6 +564,42 @@
   }
 
 
+
+  /* ══ التحديث التلقائي الفوري للإشعارات والتقارير دون الحاجة لإعادة تحميل الصفحة ══ */
+  var _livePollTimer = null;
+  var _livePollingBusy = false;
+  var _lastKnownUnread = -1;
+
+  async function pollParentDataSilently() {
+    if (_livePollingBusy || !S.me || document.hidden) return;
+    _livePollingBusy = true;
+    try {
+      if (typeof load === 'function') {
+        var prevCount = (typeof getTotalUnreadNotifs === 'function') ? getTotalUnreadNotifs() : (S.d && S.d.msgs ? S.d.msgs.length : 0);
+        await load(true);
+        var nextCount = (typeof getTotalUnreadNotifs === 'function') ? getTotalUnreadNotifs() : (S.d && S.d.msgs ? S.d.msgs.length : 0);
+        updateNotifBadge();
+        if (_lastKnownUnread >= 0 && nextCount > prevCount) {
+          toast('وصل إشعار جديد في ملف طفلك!', 'ok');
+          if (typeof playNotificationChime === 'function') { try { playNotificationChime(); } catch (e) {} }
+        }
+        _lastKnownUnread = nextCount;
+      }
+    } catch (e) {}
+    finally { _livePollingBusy = false; }
+  }
+
+  function startParentLivePolling() {
+    if (_livePollTimer) return;
+    _livePollTimer = setInterval(pollParentDataSilently, 12000);
+    document.addEventListener('visibilitychange', function () {
+      if (!document.hidden && S.me) pollParentDataSilently();
+    });
+    window.addEventListener('focus', function () {
+      if (S.me) pollParentDataSilently();
+    });
+  }
+
   async function syncExistingPushSubscription() {
     if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
     if (!('serviceWorker' in navigator) || !('PushManager' in window) || !S.me) return;
@@ -1015,7 +1051,7 @@
                 });
               }
               updateNotifBadge();
-    if (!S._pushSyncedOnce && S.me) { S._pushSyncedOnce = true; syncExistingPushSubscription(); }
+    if (!S._pushSyncedOnce && S.me) { S._pushSyncedOnce = true; syncExistingPushSubscription(); startParentLivePolling(); }
               closeModal();
               render();
               if (failed > 0) toast('تعذر تحديث بعض الإشعارات في قاعدة البيانات، يرجى المحاولة لاحقاً.', 'err');
@@ -3816,7 +3852,7 @@ function renderParentOfficialEvaluationSheet(r, childFullName, secName, kd, init
         h('div', { class: 'pm-lic-right' },
           h('div', { class: 'pm-lic-icon-box' }, icon('i-report')),
           h('div', { class: 'pm-lic-info' },
-            h('h3', { class: 'pm-lic-title', text: r.title }),
+            h('h3', { class: 'pm-lic-title', text: (r.title && r.title.indexOf('قياس السلوك') >= 0) ? r.title : ('قياس السلوك — ' + (r.title || 'تقرير دوري')) }),
             h('div', { class: 'pm-lic-meta' },
               h('span', { text: 'تاريخ التقرير: ' + fmtDate(r.report_date) }),
               r.attachment_path ? h('span', { class: 'badge ok', text: 'يحتوي على مرفق للتحميل' }) : null,
@@ -3832,9 +3868,10 @@ function renderParentOfficialEvaluationSheet(r, childFullName, secName, kd, init
             onclick: function () {
               safeSetItem('local', 'de_seen_rep_' + r.id, '1');
               updateNotifBadge();
+              var repDisplayTitle = (r.title && r.title.indexOf('قياس السلوك') >= 0) ? r.title : ('قياس السلوك — ' + (r.title || 'تقرير دوري'));
               var body = h('div', { class: 'modal-body pm-regular-report-sheet' },
-                h('div', { class: 'bar-sub', style: 'border-bottom:none; padding-bottom:4px;' },
-                  h('h2', { text: r.title }),
+                h('div', { class: 'pm-rep-head' },
+                  h('h2', { style: 'margin:0; font-size:1.15rem; font-weight:900; color:#101D35;', text: repDisplayTitle }),
                   h('span', { class: 'badge ok', text: fmtDate(r.report_date) })
                 ),
                 h('hr', { class: 'pm-rep-hr' })

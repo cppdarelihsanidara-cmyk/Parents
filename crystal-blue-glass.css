@@ -460,3 +460,25 @@ table tbody tr:nth-child(even) { background: var(--ds-table-row-alt); }
   border-radius: 10px !important;
   font-weight: 800 !important;
 }
+
+/* ══ v22: REGULAR REPORT EXACT 1CM START & END MARGINS + ZERO TOP CLIPPING (65126.jpg) ══ */
+.pm-regular-report-sheet {
+  padding: 24px 1cm 20px 1cm !important;
+  box-sizing: border-box !important;
+  overflow-y: visible !important;
+}
+.pm-regular-report-sheet .pm-rep-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 4px;
+  margin-bottom: 10px;
+}
+.pm-regular-report-sheet .pm-rep-hr {
+  border: none !important;
+  border-top: 1.5px solid #CBD5E1 !important;
+  margin: 8px 0 14px 0 !important;
+  width: 100% !important;
+}

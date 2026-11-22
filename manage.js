@@ -7740,6 +7740,7 @@
           if (Array.isArray(created) && created[0]) ev.id = created[0].id;
         }
         await syncSharedEvaluationRecord(Object.assign({}, recordBody, { id: ev.id }), null);
+        if (statusKey === 'published') flushPushOutboxNow();
         bust();
         toast(statusKey === 'published' ? 'تم نشر استمارة ملاحظة السلوك بنجاح!' : 'تم حفظ الاستمارة كمسودة.', 'ok');
         go('evaluations');
@@ -8946,6 +8947,7 @@
         }
         await syncSharedEvaluationRecord(Object.assign({}, standaloneRepBody, { id: repId || ('tbr_' + Date.now()) }), null);
 
+        if (statusKey === 'published') flushPushOutboxNow();
         bust();
         toast(statusKey === 'published' ? 'تم اعتماد ونشر تقييم وتقرير قياس السلوك المستهدف بنجاح!' : 'تم حفظ التقييم وتقرير قياس السلوك المستهدف كمسودة.', 'ok');
         go('evaluations');
@@ -9125,6 +9127,7 @@
           if (Array.isArray(created) && created[0]) ev.id = created[0].id;
         }
         await syncSharedEvaluationRecord(Object.assign({}, recordBody, { id: ev.id || ('tbr_' + Date.now()) }), null);
+        if (statusKey === 'published') flushPushOutboxNow();
         bust();
         toast(statusKey === 'published' ? 'تم اعتماد ونشر تقرير قياس السلوك المستهدف بنجاح!' : 'تم حفظ التقرير كمسودة.', 'ok');
         go('reports');
@@ -10076,6 +10079,7 @@
         }
         await syncSharedEvaluationRecord(Object.assign({}, standaloneRepBody, { id: repId || ('mbr_' + Date.now()) }), null);
 
+        if (statusKey === 'published') flushPushOutboxNow();
         bust();
         toast(statusKey === 'published' ? 'تم اعتماد ونشر استمارة وتقرير دوافع السلوك بنجاح!' : 'تم حفظ الاستمارة وتقرير دوافع السلوك كمسودة.', 'ok');
         go('evaluations');
@@ -10259,6 +10263,7 @@
           if (Array.isArray(created) && created[0]) ev.id = created[0].id;
         }
         await syncSharedEvaluationRecord(Object.assign({}, recordBody, { id: ev.id || ('mbr_' + Date.now()) }), null);
+        if (statusKey === 'published') flushPushOutboxNow();
         bust();
         toast(statusKey === 'published' ? 'تم اعتماد ونشر تقرير دوافع السلوك بنجاح!' : 'تم حفظ التقرير كمسودة.', 'ok');
         go('reports');
@@ -11139,6 +11144,7 @@
           if (Array.isArray(created) && created[0]) ev.id = created[0].id;
         }
         await syncSharedEvaluationRecord(Object.assign({}, recordBody, { id: ev.id }), null);
+        if (statusKey === 'published') flushPushOutboxNow();
         bust();
         toast(statusKey === 'published' ? 'تم اعتماد ونشر التقرير الفرنسي بنجاح!' : 'تم حفظ التقرير الفرنسي كمسودة.', 'ok');
         go('reports', { preserveScroll: true });
@@ -11604,6 +11610,7 @@
           disability: ev.disability,
           section_name: ev.section_name
         }), null);
+        if (statusKey === 'published') flushPushOutboxNow();
         bust();
         toast(statusKey === 'published' ? "تم نشر تقرير نوعي تحليلي (Rapport d'analyse qualitatif) بنجاح!" : 'تم حفظ التقرير كمسودة.', 'ok');
         go('reports');
@@ -16126,13 +16133,7 @@
       created_at: new Date().toISOString()
     };
 
-    var list = getLocalNotifications();
-    list.unshift(newNotif);
-    setLocalNotifications(list);
-    NOTIF_STATE.items = list;
-    updateNotificationBadges();
-
-    // إذا كان الإشعار موجهاً للأولياء، أرسل Web Push فعلياً عبر Edge Function send-push-notifications
+    // إذا كان الإشعار موجهاً للأولياء: أرسله مباشرة عبر Web Push إلى هواتفهم فقط دون إضافته لجرس لوحة الإدارة
     if (audience === 'parents' || audience === 'parent' || audience === 'all') {
       sendWebPushToParents({
         title: title,
@@ -16141,7 +16142,15 @@
         audience: audience,
         url: './parent.html'
       }).catch(function (pe) { console.warn('[DarElIhsan] Web Push dispatch warning:', pe); });
+      toast('تم إرسال الإشعار الفوري إلى هواتف الأولياء.', 'ok');
+      return;
     }
+
+    var list = getLocalNotifications();
+    list.unshift(newNotif);
+    setLocalNotifications(list);
+    NOTIF_STATE.items = list;
+    updateNotificationBadges();
 
     // حفظ في قاعدة البيانات سحابياً
     try {
@@ -16200,6 +16209,21 @@
       throw new Error("فشل إرسال Push (" + res.status + "): " + (errTxt || res.statusText));
     }
     try { return await res.json(); } catch (e) { return { ok: true }; }
+  }
+
+
+  function flushPushOutboxNow() {
+    try {
+      var cfg = window.DE_CMS || window.CMS || {};
+      var baseUrl = (cfg.url || "https://qgjddtylriqdwvpihvmi.supabase.co").replace(/\/$/, "");
+      var anonKey = cfg.anonKey || cfg.key || "";
+      var token = (C && typeof C.token === "function" ? C.token() : (C && C.accessToken)) || anonKey;
+      fetch(baseUrl + "/functions/v1/send-push-notifications", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "apikey": anonKey, "Authorization": "Bearer " + token },
+        body: JSON.stringify({ limit: 30 })
+      }).catch(function () {});
+    } catch (e) {}
   }
 
   async function fetchNotifications() {
