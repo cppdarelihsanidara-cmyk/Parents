@@ -5350,9 +5350,9 @@
       if (n.getMonth() < b.getMonth() || (n.getMonth() === b.getMonth() && n.getDate() < b.getDate())) a--;
       return (a < 10 ? '0' + a : String(a)) + ' ans';
     })(kd.dob) : '—');
-    var sectionChoice = Array.isArray(mf.section_choices) && mf.section_choices.length
-      ? mf.section_choices.join(' / ')
-      : (mf.section_fr || secName || 'Retard mental (RM) / Trouble du spectre autistique / Trisomie 21');
+    var dbClassPart = mf.section_name_db || secName || '';
+    var choicesPart = (Array.isArray(mf.section_choices) && mf.section_choices.length) ? mf.section_choices.join(' / ') : '';
+    var sectionChoice = [dbClassPart, choicesPart].filter(Boolean).join(' — ') || (mf.section_fr || '—');
 
     drawRedLabelBlackVal('❖', 'Nom et prénom', frChildDisplay, '#0F172A');
     drawRedLabelBlackVal('❖', 'Âge', ageFr, '#0F172A');

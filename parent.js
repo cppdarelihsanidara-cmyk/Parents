@@ -957,25 +957,41 @@
           type: 'button',
           class: 'btn small light',
           text: 'تعليم الكل كمقروء',
-          onclick: function () {
-            if (S.d && S.d.msgs) {
-              S.d.msgs.forEach(function (m) {
-                if (!S.reads[m.id]) {
-                  S.reads[m.id] = true;
-                  C.rest('POST', '/message_reads', { message_id: m.id, parent_id: S.me }).catch(function () {});
+          onclick: async function () {
+            if (S._markingAllNotifs) return;
+            S._markingAllNotifs = true;
+            try {
+              var failed = 0;
+              if (S.d && S.d.msgs) {
+                var unreadList = S.d.msgs.filter(function (m) { return !S.reads[m.id]; });
+                for (var i = 0; i < unreadList.length; i++) {
+                  var m = unreadList[i];
+                  try {
+                    await C.rest('POST', '/message_reads', { message_id: m.id, parent_id: S.me });
+                    S.reads[m.id] = true;
+                  } catch (err) {
+                    if (String(err && err.message || '').indexOf('23505') >= 0 || String(err && err.message || '').indexOf('409') >= 0) {
+                      S.reads[m.id] = true;
+                    } else {
+                      failed++;
+                    }
+                  }
                 }
-              });
+              }
+              if (S.d && S.d.reports) {
+                S.d.reports.forEach(function (r) {
+                  if (isEvalReport(r)) safeSetItem('local', 'de_seen_ev_' + r.id, '1');
+                  else safeSetItem('local', 'de_seen_rep_' + r.id, '1');
+                });
+              }
+              updateNotifBadge();
+              closeModal();
+              render();
+              if (failed > 0) toast('تعذر تحديث بعض الإشعارات في قاعدة البيانات، يرجى المحاولة لاحقاً.', 'err');
+              else toast('تم تعليم كل الإشعارات كمقروءة وحفظها بنجاح.', 'ok');
+            } finally {
+              S._markingAllNotifs = false;
             }
-            if (S.d && S.d.reports) {
-              S.d.reports.forEach(function (r) {
-                if (isEvalReport(r)) safeSetItem('local', 'de_seen_ev_' + r.id, '1');
-                else safeSetItem('local', 'de_seen_rep_' + r.id, '1');
-              });
-            }
-            updateNotifBadge();
-            closeModal();
-            render();
-            toast('تم تعليم كل الإشعارات كمقروءة.', 'ok');
           }
         })
       )
@@ -1032,7 +1048,26 @@
             type: 'button',
             class: 'btn-pm-primary',
             text: 'عرض الرسالة',
-            onclick: function () {
+            onclick: async function () {
+              if (!S._markingRead) S._markingRead = {};
+              if (S._markingRead[m.id]) return;
+              if (!S.reads[m.id]) {
+                S._markingRead[m.id] = true;
+                try {
+                  await C.rest('POST', '/message_reads', { message_id: m.id, parent_id: S.me });
+                  S.reads[m.id] = true;
+                } catch (err) {
+                  if (String(err && err.message || '').indexOf('23505') >= 0 || String(err && err.message || '').indexOf('409') >= 0) {
+                    S.reads[m.id] = true;
+                  } else {
+                    toast('تعذر تحديث حالة الإشعار في قاعدة البيانات: ' + ((err && err.message) || 'خطأ اتصال'), 'err');
+                    S._markingRead[m.id] = false;
+                    return;
+                  }
+                }
+                S._markingRead[m.id] = false;
+                updateNotifBadge();
+              }
               closeModal();
               S.tab = 'msgs';
               render();

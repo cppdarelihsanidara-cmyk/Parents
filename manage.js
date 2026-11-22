@@ -3567,7 +3567,7 @@
                       confirmModal('هل أنت متأكد من حذف هذا البرنامج الأسبوعي لفوج «' + sec.name + '»؟ (لن يتأثر ملف أي طفل أو تقرير مرتبط بالفوج)', async function () {
                         if (S._deletingProg) return; S._deletingProg = true;
                         try {
-                          if (pItem.id && DE.isUuid(String(pItem.id))) {
+                          if (pItem.id && !String(pItem.id).startsWith('prog-') && !String(pItem.id).startsWith('local-')) {
                             await C.rest('DELETE', '/educational_programs?id=eq.' + uid(pItem.id));
                           }
                           var shared = readSharedProgramsLocal().filter(function (x) {
@@ -4627,7 +4627,7 @@
       style: 'transform-origin:top center; transition:transform 0.15s ease; width:100%;'
     }, contentEl);
     var stageScroll = h('div', {
-      style: 'flex:1; overflow:auto; background:#E2E8F0; padding:16px; border-radius:10px; max-height:76vh;'
+      class: 'de-a4-preview-stack', style: 'flex:1; overflow-y:auto; overscroll-behavior:contain; -webkit-overflow-scrolling:touch; background:#E8EEF5; padding:18px 12px; border-radius:10px; max-height:78vh;'
     }, stageInner);
 
     function applyZoom(pct) {
@@ -10551,6 +10551,8 @@
 
     var mfState = {
       child_name_fr: savedMf.child_name_fr || '',
+      section_id: savedMf.section_id || '',
+      section_name_db: savedMf.section_name_db || '',
       age_fr: savedMf.age_fr || '',
       section_choices: Array.isArray(savedMf.section_choices) ? savedMf.section_choices.slice() : [],
       section_custom: Array.isArray(savedMf.section_custom) ? savedMf.section_custom.slice() : (customStore.section || []),
@@ -10623,6 +10625,23 @@
       })
     );
 
+    var secDbSel = h('select', { style: 'width:100%; padding:8px 10px; border:1.5px solid #101D35; border-radius:8px; font-weight:700; color:#0F172A; background:#FFF;' },
+      h('option', { value: '', text: '— Sélectionner la classe / section —' }),
+      (sections || []).map(function (sObj) {
+        var opt = h('option', { value: String(sObj.id), text: sObj.name || '' });
+        if (String(sObj.id) === String(mfState.section_id || (selKid0 && selKid0.section_id) || '')) opt.selected = true;
+        return opt;
+      })
+    );
+    secDbSel.onchange = function () {
+      mfState.section_id = secDbSel.value;
+      var matchedSec = (sections || []).filter(function (sObj) { return String(sObj.id) === String(secDbSel.value); })[0];
+      mfState.section_name_db = matchedSec ? matchedSec.name : '';
+    };
+    if (!mfState.section_id && selKid0 && selKid0.section_id) {
+      mfState.section_id = selKid0.section_id;
+      mfState.section_name_db = nameOf(sections, selKid0.section_id, 'name') || selKid0.section || '';
+    }
     var frNameInp = h('input', { type: 'text', value: mfState.child_name_fr || (selKid0 ? resolveChildFrenchName(selKid0) : ''), placeholder: 'Nom et prénom en français', style: 'width:100%; padding:7px 10px; border:1px solid #94A3B8; border-radius:6px; color:#0F172A; font-weight:700;' });
     var ageFrInp = h('input', { type: 'text', value: mfState.age_fr || (selKid0 ? calcFrenchAge(selKid0.dob) : ''), placeholder: 'ex: 09 ans', style: 'width:100%; padding:7px 10px; border:1px solid #94A3B8; border-radius:6px; color:#0F172A;' });
     var reportDateInp = h('input', { type: 'date', value: ev.report_date || new Date().toISOString().slice(0, 10), style: 'width:100%; padding:7px 10px; border:1px solid #94A3B8; border-radius:6px; color:#0F172A;' });
@@ -10635,6 +10654,11 @@
         mfState.child_name_fr = frNameInp.value;
         var aStr = calcFrenchAge(chosen.dob);
         if (aStr) { ageFrInp.value = aStr; mfState.age_fr = aStr; }
+        if (chosen.section_id) {
+          secDbSel.value = String(chosen.section_id);
+          mfState.section_id = chosen.section_id;
+          mfState.section_name_db = nameOf(sections, chosen.section_id, 'name') || chosen.section || '';
+        }
       }
     };
     frNameInp.oninput = function () { mfState.child_name_fr = frNameInp.value; };
@@ -10716,6 +10740,7 @@
     card.appendChild(makeSectionHead('I. INFORMATIONS PERSONNELLES', '#101D35'));
     card.appendChild(h('div', { style: 'display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:10px; margin-bottom:10px; background:#F8FAFC; padding:12px; border-radius:10px; border:1px solid #CBD5E1;' },
       h('div', null, h('label', { style: 'display:block; font-weight:800; color:#1B365D; font-size:12.5px; margin-bottom:3px;', text: 'Enfant (Base de données) :' }), kidSel),
+      h('div', null, h('label', { style: 'display:block; font-weight:800; color:#101D35; font-size:12.5px; margin-bottom:3px;', text: 'Classe / Section :' }), secDbSel),
       h('div', null, h('label', { style: 'display:block; font-weight:800; color:#0F172A; font-size:12.5px; margin-bottom:3px;', text: 'Nom et prénom (Français) :' }), frNameInp),
       h('div', null, h('label', { style: 'display:block; font-weight:800; color:#0F172A; font-size:12.5px; margin-bottom:3px;', text: 'Âge :' }), ageFrInp),
       h('div', null, h('label', { style: 'display:block; font-weight:800; color:#0F172A; font-size:12.5px; margin-bottom:3px;', text: 'Date du rapport :' }), reportDateInp)
@@ -10947,7 +10972,7 @@
           medico_functional_fr: mfState
         },
         chosen: chosen,
-        secName: chosen ? (nameOf(sections, chosen.section_id, 'name') || chosen.section || '') : ''
+        secName: mfState.section_name_db || (chosen ? (nameOf(sections, chosen.section_id, 'name') || chosen.section || '') : '')
       };
     }
 
@@ -15500,6 +15525,7 @@
     S._lastCenter = S.activeCenter;
     S._lastFilterSec = S.filterSectionId || '';
     S.sec = sec;
+    if (window.DE_NAV && S.me && !opts.fromHistory) { DE_NAV.push({ sec: sec, center: S.activeCenter }); }
     var n = ++S.nav, v = $('#view');
     var appEl = $('#app');
     if (appEl) {
@@ -16438,6 +16464,20 @@
       document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !$('#modal').hidden) closeModal(); });
 
       /* دعم زر الرجوع في الهاتف (Hardware Back Button) للرجوع خطوة للخلف داخل الموقع وعدم الخروج منه */
+      
+      if (window.DE_NAV) {
+        DE_NAV.setup({
+          active: function () { return !!S.me; },
+          modalOpen: function () { var m = $('#modal'); return !!(m && !m.hidden && m.childNodes.length); },
+          closeModal: function () { closeModal(); },
+          apply: function (st) {
+            if (!st) return;
+            if (st.center && st.center !== S.activeCenter) S.activeCenter = st.center;
+            if (st.sec) return go(st.sec, { fromHistory: true });
+          }
+        });
+      }
+
       window.addEventListener('popstate', function () {
         if ($('#login') && !$('#login').hidden && mode !== 'creds') {
           C.cancelMfa();
