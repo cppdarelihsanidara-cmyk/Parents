@@ -482,3 +482,18 @@ table tbody tr:nth-child(even) { background: var(--ds-table-row-alt); }
   margin: 8px 0 14px 0 !important;
   width: 100% !important;
 }
+
+/* ══ v24: RESPONSIVE 1CM HORIZONTAL PADDING INSIDE REPORT & DOCUMENT FRAMES ══ */
+.pm-list-item-card,
+.child-details,
+.de-a4-sheet,
+.oep-written-page-box,
+.oep-quantitative-page-box,
+.modal-body {
+  padding-inline: clamp(16px, 4vw, 1cm) !important;
+  box-sizing: border-box !important;
+  overflow-wrap: break-word;
+}
+.pm-alert-banner {
+  display: none !important;
+}

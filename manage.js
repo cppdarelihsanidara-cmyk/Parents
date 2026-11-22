@@ -5321,30 +5321,39 @@
         }
 
         function makeRadioCell(choice, bg) {
-          var td = h('td', { style: 'padding:6px; border:1px solid #CBD5E1; text-align:center; background:' + (curVal === choice ? bg : '#FFF') + ';' });
+          var isSel = curVal === choice;
+          var td = h('td', { style: 'padding:6px; border:1px solid #CBD5E1; text-align:center; background:' + (isSel ? bg : '#FFF') + ';' });
           var rad = h('input', {
             type: 'radio',
             name: 'rad_' + key,
             value: choice,
-            style: 'transform:scale(1.3); cursor:pointer;'
+            style: 'width:16px; height:16px; accent-color:#101D35; cursor:pointer; flex-shrink:0;'
           });
-          if (curVal === choice) rad.checked = true;
+          if (isSel) rad.checked = true;
+          var lblTxt = h('span', {
+            style: 'color:#101D35; font-weight:800; font-size:12.5px; line-height:1.2; user-select:none;',
+            text: choice
+          });
+          var lblWrap = h('label', {
+            style: 'display:inline-flex; align-items:center; justify-content:center; gap:6px; padding:5px 10px; border-radius:8px; cursor:pointer; width:100%; box-sizing:border-box; border:1.5px solid ' + (isSel ? '#101D35' : 'transparent') + ';'
+          }, rad, lblTxt);
           rad.onchange = function () {
             reinState[key] = choice;
             var parentTr = td.parentElement;
             if (parentTr) {
-              parentTr.children[1].style.background = (choice === 'شديدة' ? '#DCFCE7' : '#FFF');
-              parentTr.children[2].style.background = (choice === 'متوسطة' ? '#FEF3C7' : '#FFF');
-              parentTr.children[3].style.background = (choice === 'قليلة' ? '#F1F5F9' : '#FFF');
+              var bgs = ['', '#DCEAF5', '#FEF3C7', '#E2E8F0'];
+              var choices = ['', 'شديدة', 'متوسطة', 'قليلة'];
+              for (var ci = 1; ci <= 3; ci++) {
+                var cTd = parentTr.children[ci];
+                if (!cTd) continue;
+                var active = (choice === choices[ci]);
+                cTd.style.background = active ? bgs[ci] : '#FFFFFF';
+                var cLbl = cTd.querySelector('label');
+                if (cLbl) cLbl.style.borderColor = active ? '#101D35' : 'transparent';
+              }
             }
           };
-          td.appendChild(rad);
-          td.onclick = function (e) {
-            if (e.target !== rad) {
-              rad.checked = true;
-              rad.onchange();
-            }
-          };
+          td.appendChild(lblWrap);
           return td;
         }
 
@@ -16226,20 +16235,52 @@
     } catch (e) {}
   }
 
+  async function markAdminNotificationReadDb(n) {
+    if (!n || n.is_read) return;
+    n.is_read = true;
+    setLocalNotifications(NOTIF_STATE.items);
+    updateNotificationBadges();
+    if (n.id && DE.isUuid(String(n.id)) && S.me) {
+      try {
+        await C.rest('PATCH', '/notifications?id=eq.' + uid(n.id) + '&recipient_user_id=eq.' + uid(S.me), { is_read: true });
+      } catch (e) {}
+    }
+  }
+
+  async function markAllAdminNotificationsReadDb() {
+    (NOTIF_STATE.items || []).forEach(function (n) { n.is_read = true; });
+    setLocalNotifications(NOTIF_STATE.items);
+    updateNotificationBadges();
+    renderNotificationDropdown();
+    if (S.me) {
+      try {
+        await C.rest('PATCH', '/notifications?recipient_user_id=eq.' + uid(S.me) + '&is_read=eq.false', { is_read: true });
+      } catch (e) {}
+    }
+  }
+
   async function fetchNotifications() {
     var dbList = [];
     try {
-      var rows = await C.rest('GET', '/notifications?order=created_at.desc&limit=50');
+      var q = S.me
+        ? ('/notifications?recipient_user_id=eq.' + uid(S.me) + '&order=created_at.desc&limit=50')
+        : '/notifications?order=created_at.desc&limit=50';
+      var rows = await C.rest('GET', q);
       if (Array.isArray(rows)) dbList = rows;
     } catch (e) {}
 
-    var localList = getLocalNotifications();
-    var merged = localList.slice();
+    var byId = {};
     dbList.forEach(function (dItem) {
-      if (!merged.some(function (m) { return m.id === dItem.id; })) {
-        merged.push(dItem);
+      dItem.category = dItem.category || dItem.notification_type || 'general';
+      byId[dItem.id] = dItem;
+    });
+    var localList = getLocalNotifications();
+    localList.forEach(function (m) {
+      if (!byId[m.id] && !DE.isUuid(String(m.id || ''))) {
+        byId[m.id] = m;
       }
     });
+    var merged = Object.keys(byId).map(function (k) { return byId[k]; });
     merged.sort(function (a, b) { return new Date(b.created_at || 0) - new Date(a.created_at || 0); });
     NOTIF_STATE.items = merged;
     setLocalNotifications(merged);
@@ -16286,9 +16327,7 @@
       var item = h('div', {
         class: 'notif-drop-item' + (!n.is_read ? ' is-unread' : ''),
         onclick: function () {
-          n.is_read = true;
-          setLocalNotifications(NOTIF_STATE.items);
-          updateNotificationBadges();
+          markAdminNotificationReadDb(n);
           var drop = document.getElementById('notifDropdown');
           if (drop) drop.hidden = true;
           if (n.related_url) go(n.related_url);
@@ -16329,10 +16368,7 @@
     if (btnMarkAll && !btnMarkAll._bound) {
       btnMarkAll._bound = true;
       btnMarkAll.addEventListener('click', function () {
-        (NOTIF_STATE.items || []).forEach(function (n) { n.is_read = true; });
-        setLocalNotifications(NOTIF_STATE.items);
-        updateNotificationBadges();
-        renderNotificationDropdown();
+        markAllAdminNotificationsReadDb();
         toast('تم تحديد جميع الإشعارات كمقروءة.', 'ok');
       });
     }
@@ -16434,10 +16470,7 @@
           type: 'button',
           class: 'btn gold',
           onclick: function () {
-            (NOTIF_STATE.items || []).forEach(function (n) { n.is_read = true; });
-            setLocalNotifications(NOTIF_STATE.items);
-            updateNotificationBadges();
-            renderList();
+            markAllAdminNotificationsReadDb().then(function () { renderList(); });
             toast('تم تحديد جميع الإشعارات كمقروءة.', 'ok');
           }
         }, makeSvgIcon('s-check'), h('span', { text: 'تحديد الكل كمقروء' })),

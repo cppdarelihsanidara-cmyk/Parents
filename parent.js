@@ -497,7 +497,7 @@
   }
 
   
-  var VAPID_PUBLIC_KEY = 'BP5NQl5SsJ7Vf43R815QfXeJYgf6vJdAv80YgFPbO8DbKjCXUzrPtd5V0XyNlUAe0uA00DC-tvqaOruwXwUgvKs';
+  var VAPID_PUBLIC_KEY = 'BKS9I5zdBUYc2P3UIiyiMa9cPl8qcQ6bSz6RaauctEsjPITvmLxIXLbdyQSGquQ8OjnHGpLu_ewOfk4jHFikTO0';
 
   function urlBase64ToUint8Array(base64String) {
     var padding = '='.repeat((4 - base64String.length % 4) % 4);
@@ -1003,6 +1003,17 @@
     return unreadCount() + getNewReportsCount() + getNewEvaluationsCount();
   }
 
+
+  async function markParentDbNotifsRead(relatedRecordId) {
+    if (!S.me) return;
+    try {
+      var filter = relatedRecordId
+        ? ('/notifications?recipient_user_id=eq.' + uid(S.me) + '&related_record_id=eq.' + uid(relatedRecordId) + '&is_read=eq.false')
+        : ('/notifications?recipient_user_id=eq.' + uid(S.me) + '&is_read=eq.false');
+      await C.rest('PATCH', filter, { is_read: true });
+    } catch (e) {}
+  }
+
   function updateNotifBadge() {
     var b = $('#notifBadge');
     if (!b) return;
@@ -1047,7 +1058,7 @@
               if (S.d && S.d.reports) {
                 S.d.reports.forEach(function (r) {
                   if (isEvalReport(r)) safeSetItem('local', 'de_seen_ev_' + r.id, '1');
-                  else safeSetItem('local', 'de_seen_rep_' + r.id, '1');
+                  else safeSetItem('local', 'de_seen_rep_' + r.id, '1'); markParentDbNotifsRead(r.id);
                 });
               }
               updateNotifBadge();
@@ -1055,7 +1066,8 @@
               closeModal();
               render();
               if (failed > 0) toast('تعذر تحديث بعض الإشعارات في قاعدة البيانات، يرجى المحاولة لاحقاً.', 'err');
-              else toast('تم تعليم كل الإشعارات كمقروءة وحفظها بنجاح.', 'ok');
+              else await markParentDbNotifsRead(null);
+              toast('تم تعليم كل الإشعارات كمقروءة وحفظها بنجاح.', 'ok');
             } finally {
               S._markingAllNotifs = false;
             }
@@ -1164,7 +1176,7 @@
             class: 'btn-pm-gold',
             text: 'عرض ورقة التقييم',
             onclick: function () {
-              safeSetItem('local', 'de_seen_ev_' + e.id, '1');
+              safeSetItem('local', 'de_seen_ev_' + e.id, '1'); markParentDbNotifsRead(e.id);
               updateNotifBadge();
               closeModal();
               S.tab = 'evaluations';
@@ -1193,7 +1205,7 @@
             class: 'btn-pm-primary',
             text: 'عرض التقرير',
             onclick: function () {
-              safeSetItem('local', 'de_seen_rep_' + r.id, '1');
+              safeSetItem('local', 'de_seen_rep_' + r.id, '1'); markParentDbNotifsRead(r.id);
               updateNotifBadge();
               closeModal();
               S.tab = 'reports';
@@ -3773,7 +3785,7 @@ function renderParentOfficialEvaluationSheet(r, childFullName, secName, kd, init
         class: 'btn-pm-primary',
         text: 'التفاصيل',
         onclick: function () {
-          safeSetItem('local', 'de_seen_ev_' + e.id, '1');
+          safeSetItem('local', 'de_seen_ev_' + e.id, '1'); markParentDbNotifsRead(e.id);
           updateNotifBadge();
           isExpanded = !isExpanded;
           detailsBtn.textContent = isExpanded ? 'إخفاء التفاصيل' : 'التفاصيل';
@@ -3834,7 +3846,7 @@ function renderParentOfficialEvaluationSheet(r, childFullName, secName, kd, init
         h('div', { class: 'pm-lic-right' },
           h('div', { class: 'pm-lic-icon-box' }, icon('i-report')),
           h('div', { class: 'pm-lic-info' },
-            h('h3', { class: 'pm-lic-title', text: (r.title && r.title.indexOf('قياس السلوك') >= 0) ? r.title : ('قياس السلوك — ' + (r.title || 'تقرير دوري')) }),
+            h('h3', { class: 'pm-lic-title', text: r.title || 'تقرير دوري' }),
             h('div', { class: 'pm-lic-meta' },
               h('span', { text: 'تاريخ التقرير: ' + fmtDate(r.report_date) }),
               r.attachment_path ? h('span', { class: 'badge ok', text: 'يحتوي على مرفق للتحميل' }) : null,
@@ -3848,9 +3860,9 @@ function renderParentOfficialEvaluationSheet(r, childFullName, secName, kd, init
             class: 'btn-pm-primary',
             text: 'التفاصيل',
             onclick: function () {
-              safeSetItem('local', 'de_seen_rep_' + r.id, '1');
+              safeSetItem('local', 'de_seen_rep_' + r.id, '1'); markParentDbNotifsRead(r.id);
               updateNotifBadge();
-              var repDisplayTitle = (r.title && r.title.indexOf('قياس السلوك') >= 0) ? r.title : ('قياس السلوك — ' + (r.title || 'تقرير دوري'));
+              var repDisplayTitle = r.title || 'تقرير دوري';
               var body = h('div', { class: 'modal-body pm-regular-report-sheet' },
                 h('div', { class: 'pm-rep-head' },
                   h('h2', { style: 'margin:0; font-size:1.15rem; font-weight:900; color:#101D35;', text: repDisplayTitle }),
@@ -4112,6 +4124,41 @@ function renderParentOfficialEvaluationSheet(r, childFullName, secName, kd, init
     apply: function (st) { if (st.tab) S.tab = st.tab; render(); window.scrollTo(0, 0); }
   });
 
+  function renderPushActivationCard() {
+    var permission = (typeof Notification !== 'undefined') ? Notification.permission : 'unsupported';
+    var box = h('section', {
+      class: 'pm-push-activation-card',
+      style: 'margin:12px 0 16px;padding:16px;border-radius:14px;background:linear-gradient(135deg,#0b315b,#17609a);color:#fff;box-shadow:0 5px 16px rgba(12,45,85,.18);'
+    });
+    var title = permission === 'granted' ? '🔔 إشعارات الهاتف' : '🔔 فعّل إشعارات الهاتف';
+    var desc = permission === 'granted'
+      ? 'تحقق من تسجيل هذا الجهاز لاستقبال التنبيهات حتى عند إغلاق فضاء الأولياء.'
+      : 'فعّل الإشعارات على هذا الجهاز لتصلك رسائل وتقارير المركز حتى عندما يكون التطبيق مغلقاً.';
+    box.appendChild(h('strong', { style: 'display:block;font-size:1rem;margin-bottom:6px;', text: title }));
+    box.appendChild(h('p', { style: 'margin:0 0 12px;font-size:.86rem;line-height:1.7;', text: desc }));
+    var btn = h('button', {
+      type: 'button', class: 'btn',
+      style: 'background:#fff;color:#123e73;font-weight:800;border:0;',
+      text: permission === 'granted' ? 'تسجيل هذا الجهاز / إعادة المزامنة' : 'تفعيل الإشعارات الآن 🔔',
+      onclick: async function () {
+        btn.disabled = true;
+        try {
+          var ok = await requestPhoneNotificationPermission();
+          if (ok) {
+            await syncExistingPushSubscription();
+            toast('تم تسجيل هذا الجهاز للإشعارات. يمكنك الآن اختبار وصولها.', 'ok');
+            render();
+          }
+        } finally { btn.disabled = false; }
+      }
+    });
+    box.appendChild(btn);
+    if (permission === 'denied') {
+      box.appendChild(h('p', { style: 'margin:10px 0 0;font-size:.78rem;line-height:1.6;', text: 'الإذن محظور من إعدادات المتصفح. افتح إعدادات الموقع وغيّر الإشعارات إلى سماح، ثم أعد المحاولة.' }));
+    }
+    return box;
+  }
+
   function render() {
     checkAndHideInstallButtons();
     if (window.DE_NAV) DE_NAV.push({ tab: S.tab });
@@ -4120,6 +4167,7 @@ function renderParentOfficialEvaluationSheet(r, childFullName, secName, kd, init
     // الواجهة الترحيبية والبطاقة العلوية تظهر فقط في تبويب معلومات الطفل
     // وفي باقي الأقسام (التقارير، التقييم، الرسائل، الوثائق...) يتم نزع الواجهة والدخول مباشرة للمحتوى
     if (S.tab === 'children') {
+      if (S.me && S.me !== 'demo-parent-id') v.appendChild(renderPushActivationCard());
       v.appendChild(renderParentHeroCard());
     }
     var handlers = {
