@@ -3,18 +3,28 @@
   'use strict';
   var secure = location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
   if (secure && 'serviceWorker' in navigator) {
-      // تفريغ الكاش التلقائي للنسخة 90
-  try {
-    if (localStorage.getItem('de_pwa_ver') !== '90') {
-      if ('caches' in window) {
-        caches.keys().then(function (names) {
-          names.forEach(function (n) { caches.delete(n); });
-        });
+    // تفريغ الكاش التلقائي عند كل إصدار جديد وإجبار المتصفح على جلب sw.js دون كاش HTTP
+    try {
+      if (localStorage.getItem('de_pwa_ver') !== '20261122_v23') {
+        if ('caches' in window) {
+          caches.keys().then(function (names) {
+            names.forEach(function (n) { caches.delete(n); });
+          });
+        }
+        localStorage.setItem('de_pwa_ver', '20261122_v23');
       }
-      localStorage.setItem('de_pwa_ver', '90');
-    }
-  } catch (e) {}
-  window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
+    } catch (e) {}
+    var _reloadedForSw = false;
+    navigator.serviceWorker.addEventListener('controllerchange', function () {
+      if (_reloadedForSw) return;
+      _reloadedForSw = true;
+      window.location.reload();
+    });
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('sw.js?v=20261122_v23', { updateViaCache: 'none' }).then(function (reg) {
+        try { reg.update(); } catch (e) {}
+      }).catch(function () {});
+    });
   }
   var standalone = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
 

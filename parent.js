@@ -1513,26 +1513,8 @@
       )
     );
 
-    // بانر تنبيه في حال وجود إشعارات جديدة غير مقروءة
-    var totalNotifs = getTotalNotificationsCount();
-    var alertBanner = null;
-    if (totalNotifs > 0) {
-      alertBanner = h('div', { class: 'pm-alert-banner' },
-        h('div', { class: 'pm-alert-banner-content' },
-          icon('i-bell'),
-          h('span', { text: 'لديك ' + totalNotifs + ' إشعار جديد في ملف طفلك (رسائل، تقارير أو تقييمات جديدة)!' })
-        ),
-        h('button', {
-          type: 'button',
-          class: 'pm-alert-btn',
-          text: 'اطّلع عليها الآن',
-          onclick: openNotificationsModal
-        })
-      );
-    }
-
+    // تمت إزالة البطاقة الصفراء بناءً على طلب الإدارة
     var host = h('div', null, hero);
-    if (alertBanner) host.appendChild(alertBanner);
     return host;
   }
 
