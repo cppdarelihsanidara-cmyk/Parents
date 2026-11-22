@@ -16164,33 +16164,40 @@
 
   /* ══ إرسال إشعارات Web Push الحقيقية إلى هواتف الأولياء عبر Supabase Edge Function (send-push-notifications) ══ */
   async function sendWebPushToParents(opts) {
-    var payload = {
-      title: (opts && opts.title) || 'دار الإحسان',
-      body: (opts && opts.body) || 'لديك إشعار جديد من المركز',
-      url: (opts && opts.url) || './parent.html',
-      tag: (opts && opts.tag) || ('de-admin-push-' + Date.now()),
-      child_id: (opts && opts.childId) || null,
-      parent_user_id: (opts && opts.parentUserId) || null,
-      audience: (opts && opts.audience) || 'parents',
-      push_only: true
+    var o = opts || {};
+    var targetType = o.parentUserId || o.childId ? "single_parent" : (o.sectionId ? "section_parents" : "all_parents");
+    var outboxRow = {
+      target_type: targetType,
+      target_child_id: o.childId || null,
+      target_parent_id: o.parentUserId || null,
+      target_section_id: o.sectionId || null,
+      event_type: o.eventType || "manual_push",
+      title: o.title || "دار الإحسان",
+      body: o.body || "لديك إشعار جديد من المركز",
+      url: o.url || "./parent.html",
+      tag: o.tag || ("de-admin-push-" + Date.now()),
+      status: "pending",
+      scheduled_at: new Date().toISOString()
     };
+    await C.rest("POST", "/notification_outbox", outboxRow);
+
     var cfg = window.DE_CMS || window.CMS || {};
-    var baseUrl = (cfg.url || 'https://qgjddtylriqdwvpihvmi.supabase.co').replace(/\/$/, '');
-    var anonKey = cfg.anonKey || cfg.key || '';
-    var token = (C && typeof C.token === 'function' ? C.token() : (C && C.accessToken)) || anonKey;
-    var res = await fetch(baseUrl + '/functions/v1/send-push-notifications', {
-      method: 'POST',
+    var baseUrl = (cfg.url || "https://qgjddtylriqdwvpihvmi.supabase.co").replace(/\/$/, "");
+    var anonKey = cfg.anonKey || cfg.key || "";
+    var token = (C && typeof C.token === "function" ? C.token() : (C && C.accessToken)) || anonKey;
+    var res = await fetch(baseUrl + "/functions/v1/send-push-notifications", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        'apikey': anonKey,
-        'Authorization': 'Bearer ' + token
+        "Content-Type": "application/json",
+        "apikey": anonKey,
+        "Authorization": "Bearer " + token
       },
-      body: JSON.stringify(payload)
+      body: JSON.stringify({ limit: 25 })
     });
     if (!res.ok) {
-      var errTxt = '';
+      var errTxt = "";
       try { errTxt = await res.text(); } catch (e) {}
-      throw new Error('فشل إرسال Push (' + res.status + '): ' + (errTxt || res.statusText));
+      throw new Error("فشل إرسال Push (" + res.status + "): " + (errTxt || res.statusText));
     }
     try { return await res.json(); } catch (e) { return { ok: true }; }
   }

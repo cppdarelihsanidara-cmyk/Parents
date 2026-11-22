@@ -541,6 +541,7 @@
               auth: subJson.keys ? subJson.keys.auth : '',
               user_agent: navigator.userAgent,
               device_type: /mobi/i.test(navigator.userAgent) ? 'mobile' : 'desktop',
+              role: 'parent',
               is_active: true
             };
             await C.rest('POST', '/push_subscriptions', subBody, { Prefer: 'resolution=merge-duplicates' }).catch(function () {});
@@ -585,6 +586,7 @@
         auth: subJson.keys ? subJson.keys.auth : '',
         user_agent: navigator.userAgent,
         device_type: /mobi/i.test(navigator.userAgent) ? 'mobile' : 'desktop',
+        role: 'parent',
         is_active: true
       }, { Prefer: 'resolution=merge-duplicates' }).catch(function () {});
     } catch (e) {}
