@@ -553,13 +553,41 @@
         toast('تم تفعيل إشعارات الهاتف مع الرنة الصوتية بنجاح!', 'ok');
         return true;
       } else {
-        toast('تم رفض إذن الإشعارات من إعدادات المتصفح.', 'err');
+        toast('تم رفض إذن الإشعارات. لتفعيلها لاحقاً: افتح إعدادات المتصفح ← إعدادات الموقع ← الإشعارات ← سماح لدار الإحسان.', 'err');
         return false;
       }
     } catch (e) {
       toast('تعذّر تفعيل الإشعارات: ' + e.message, 'err');
       return false;
     }
+  }
+
+
+  async function syncExistingPushSubscription() {
+    if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
+    if (!('serviceWorker' in navigator) || !('PushManager' in window) || !S.me) return;
+    try {
+      var reg = await navigator.serviceWorker.ready;
+      var sub = await reg.pushManager.getSubscription();
+      if (!sub) {
+        sub = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+        });
+      }
+      var subJson = sub.toJSON();
+      var kid0 = (S.d && S.d.children && S.d.children[0]) || null;
+      await C.rest('POST', '/push_subscriptions', {
+        parent_user_id: S.me,
+        child_id: kid0 ? kid0.id : null,
+        endpoint: sub.endpoint,
+        p256dh: subJson.keys ? subJson.keys.p256dh : '',
+        auth: subJson.keys ? subJson.keys.auth : '',
+        user_agent: navigator.userAgent,
+        device_type: /mobi/i.test(navigator.userAgent) ? 'mobile' : 'desktop',
+        is_active: true
+      }, { Prefer: 'resolution=merge-duplicates' }).catch(function () {});
+    } catch (e) {}
   }
 
   function resolveParentLoginEmail(raw) {
@@ -985,6 +1013,7 @@
                 });
               }
               updateNotifBadge();
+    if (!S._pushSyncedOnce && S.me) { S._pushSyncedOnce = true; syncExistingPushSubscription(); }
               closeModal();
               render();
               if (failed > 0) toast('تعذر تحديث بعض الإشعارات في قاعدة البيانات، يرجى المحاولة لاحقاً.', 'err');
@@ -3801,11 +3830,12 @@ function renderParentOfficialEvaluationSheet(r, childFullName, secName, kd, init
             onclick: function () {
               safeSetItem('local', 'de_seen_rep_' + r.id, '1');
               updateNotifBadge();
-              var body = h('div', { class: 'modal-body' },
-                h('div', { class: 'bar-sub' },
+              var body = h('div', { class: 'modal-body pm-regular-report-sheet' },
+                h('div', { class: 'bar-sub', style: 'border-bottom:none; padding-bottom:4px;' },
                   h('h2', { text: r.title }),
                   h('span', { class: 'badge ok', text: fmtDate(r.report_date) })
-                )
+                ),
+                h('hr', { class: 'pm-rep-hr' })
               );
               if (r.achievements) body.appendChild(h('div', { style: 'margin-bottom:12px;' }, h('h3', { text: 'المكتسبات والمهارات المحققة:' }), h('p', { class: 'txt', text: r.achievements })));
               if (r.activities) body.appendChild(h('div', { style: 'margin-bottom:12px;' }, h('h3', { text: 'الأنشطة والورشات المنجزة:' }), h('p', { class: 'txt', text: r.activities })));

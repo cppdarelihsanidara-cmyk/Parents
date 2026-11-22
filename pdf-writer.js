@@ -266,9 +266,9 @@
     // Zone 2 (Orange: 6–10 / متوسط): -PI/3 -> -2*PI/3
     // Zone 3 (Red: 11+ / مرتفع): -2*PI/3 -> -PI
     var zones = [
-      { start: -Math.PI / 3, end: 0, color: '#8CB9DC', label: 'منخفض (1-5)' },
-      { start: -(2 * Math.PI) / 3, end: -Math.PI / 3, color: '#263F65', label: 'متوسط (6-10)' },
-      { start: -Math.PI, end: -(2 * Math.PI) / 3, color: '#101D35', label: 'مرتفع (11+)' }
+      { start: -Math.PI / 3, end: 0, color: '#16A34A', label: 'منخفض (1-5)' },
+      { start: -(2 * Math.PI) / 3, end: -Math.PI / 3, color: '#F97316', label: 'متوسط (6-10)' },
+      { start: -Math.PI, end: -(2 * Math.PI) / 3, color: '#DC2626', label: 'مرتفع (11+)' }
     ];
 
     zones.forEach(function (z) {
@@ -311,11 +311,11 @@
 
     // Zone text labels
     ctx.font = 'bold 13.5px "Cairo", "IBM Plex Sans Arabic", sans-serif';
-    ctx.fillStyle = '#263F65';
+    ctx.fillStyle = '#15803D';
     ctx.fillText('منخفض', cx + radius - 6, cy + 26);
-    ctx.fillStyle = '#263F65';
+    ctx.fillStyle = '#C2410C';
     ctx.fillText('متوسط', cx, cy - radius - 34);
-    ctx.fillStyle = '#101D35';
+    ctx.fillStyle = '#DC2626';
     ctx.fillText('مرتفع', cx - radius + 6, cy + 26);
 
     // Map value accurately to 3 zones:
@@ -355,11 +355,11 @@
     ctx.fill();
 
     // Determine level badge
-    var lvlText = 'منخفض', lvlBg = '#DCEAF5', lvlFg = '#263F65';
+    var lvlText = 'منخفض', lvlBg = '#DCFCE7', lvlFg = '#15803D';
     if (val >= 11) {
-      lvlText = 'مرتفع'; lvlBg = '#DCEAF5'; lvlFg = '#101D35';
+      lvlText = 'مرتفع'; lvlBg = '#FEE2E2'; lvlFg = '#DC2626';
     } else if (val >= 6) {
-      lvlText = 'متوسط'; lvlBg = '#DCEAF5'; lvlFg = '#263F65';
+      lvlText = 'متوسط'; lvlBg = '#FFEDD5'; lvlFg = '#C2410C';
     }
 
     var displayVal = (Math.round(val * 10) / 10).toString();
@@ -385,9 +385,9 @@
     var legY = cy + 132;
     ctx.font = 'bold 12px "Cairo", "IBM Plex Sans Arabic", sans-serif';
     var legItems = [
-      { c: '#8CB9DC', t: '1-5 منخفض', ox: 120 },
-      { c: '#263F65', t: '6-10 متوسط', ox: 0 },
-      { c: '#101D35', t: '+11 مرتفع', ox: -120 }
+      { c: '#16A34A', t: '1-5 منخفض', ox: 120 },
+      { c: '#F97316', t: '6-10 متوسط', ox: 0 },
+      { c: '#DC2626', t: '+11 مرتفع', ox: -120 }
     ];
     legItems.forEach(function (li) {
       ctx.fillStyle = li.c;

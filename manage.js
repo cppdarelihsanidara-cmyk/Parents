@@ -4591,6 +4591,50 @@
      6. التقارير التربوية الدورية واستمارات التقييم البيداغوجي (مفصولة ومطابقة للصورة الرسمية)
      ===================================================================== */
 
+
+  function confirmModal(messageText, onConfirm) {
+    var busy = false;
+    var okBtn = h('button', {
+      type: 'button',
+      class: 'btn danger',
+      style: 'font-weight:800; min-width:110px;',
+      text: 'تأكيد الحذف'
+    });
+    var cancelBtn = h('button', {
+      type: 'button',
+      class: 'btn light',
+      style: 'font-weight:700; min-width:90px;',
+      text: 'إلغاء',
+      onclick: function () { if (!busy) closeModal(); }
+    });
+    okBtn.onclick = async function () {
+      if (busy) return;
+      busy = true;
+      okBtn.disabled = true;
+      cancelBtn.disabled = true;
+      okBtn.textContent = 'جارٍ التنفيذ...';
+      try {
+        if (typeof onConfirm === 'function') await onConfirm();
+        closeModal();
+      } catch (err) {
+        toast('تعذر تنفيذ العملية: ' + ((err && err.message) || err), 'bad');
+        busy = false;
+        okBtn.disabled = false;
+        cancelBtn.disabled = false;
+        okBtn.textContent = 'تأكيد الحذف';
+      }
+    };
+    var box = h('div', {
+      class: 'modal card',
+      style: 'max-width:440px; width:92%; padding:20px; border-radius:14px; background:#FFFFFF; color:#101D35;'
+    },
+      h('h3', { style: 'margin:0 0 10px; color:#991B1B; font-size:1.08rem; font-weight:900;', text: 'تأكيد العملية' }),
+      h('p', { style: 'margin:0 0 18px; color:#334155; font-size:0.93rem; line-height:1.6;', text: String(messageText || 'هل أنت متأكد من المتابعة؟') }),
+      h('div', { style: 'display:flex; justify-content:flex-end; gap:10px; flex-wrap:wrap;' }, cancelBtn, okBtn)
+    );
+    openModal(box);
+  }
+
   /* ══ مساعدات التمدد التلقائي للحقول ومعاينة الوثائق الكاملة مع التكبير/التصغير ══ */
   function attachAutoResizeTextarea(ta) {
     if (!ta || ta.tagName !== 'TEXTAREA') return ta;
@@ -8450,13 +8494,30 @@
 
     var tableMount = h('div', { style: 'overflow-x:auto; margin-bottom:16px;' });
 
+    function parseLocalDateNoon(isoStr) {
+      var p = String(isoStr || '').split('-');
+      if (p.length !== 3) return null;
+      var d = new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10), 12, 0, 0);
+      return isNaN(d.getTime()) ? null : d;
+    }
+    function formatLocalIsoDate(dObj) {
+      var y = dObj.getFullYear();
+      var m = String(dObj.getMonth() + 1).padStart(2, '0');
+      var day = String(dObj.getDate()).padStart(2, '0');
+      return y + '-' + m + '-' + day;
+    }
+    function dayNameFromIso(isoStr) {
+      var d = parseLocalDateNoon(isoStr);
+      return d ? (ARABIC_DAYS_NAMES[d.getDay()] || '') : '';
+    }
+
     function rebuildDaysFromDateRange() {
       var sVal = startDateInp.value;
       var eVal = endDateInp.value;
       if (!sVal || !eVal) return;
-      var dStart = new Date(sVal + 'T00:00:00');
-      var dEnd = new Date(eVal + 'T00:00:00');
-      if (isNaN(dStart.getTime()) || isNaN(dEnd.getTime()) || dEnd < dStart) return;
+      var dStart = parseLocalDateNoon(sVal);
+      var dEnd = parseLocalDateNoon(eVal);
+      if (!dStart || !dEnd || dEnd < dStart) return;
 
       var existingByDate = {};
       daysList.forEach(function (d) {
@@ -8471,7 +8532,7 @@
         var dayOfWeek = cur.getDay();
         var skip = skipWeekendChk.checked && (dayOfWeek === 5 || dayOfWeek === 6);
         if (!skip) {
-          var iso = cur.toISOString().slice(0, 10);
+          var iso = formatLocalIsoDate(cur);
           var dayAr = ARABIC_DAYS_NAMES[dayOfWeek] || '';
           var disp = formatDateDDMMYYYY(iso);
           if (existingByDate[iso]) {
@@ -8484,8 +8545,8 @@
               day_name: dayAr,
               date_display: disp,
               rows: [
-                { main_behavior: '', sub_behavior: '', time_duration: '', frequency: '', location: '', antecedents: '' },
-                { main_behavior: '', sub_behavior: '', time_duration: '', frequency: '', location: '', antecedents: '' }
+                { main_behavior: '', sub_behavior: '', behavior_time: '', behavior_duration: '', frequency: '', location: '', antecedents: '' },
+                { main_behavior: '', sub_behavior: '', behavior_time: '', behavior_duration: '', frequency: '', location: '', antecedents: '' }
               ]
             });
           }
@@ -8618,7 +8679,12 @@
       ));
 
       var tbody = h('tbody');
-      daysList.forEach(function (dayObj) {
+      daysList.sort(function (a, b) { return String(a.date || '').localeCompare(String(b.date || '')); });
+      daysList.forEach(function (dayObj, dayIdx) {
+        if (dayObj.date) {
+          dayObj.day_name = dayNameFromIso(dayObj.date) || dayObj.day_name;
+          dayObj.date_display = formatDateDDMMYYYY(dayObj.date) || dayObj.date_display;
+        }
         if (!Array.isArray(dayObj.rows) || !dayObj.rows.length) {
           dayObj.rows = [
             { main_behavior: '', sub_behavior: '', time_duration: '', frequency: '', location: '', antecedents: '' },
@@ -8634,9 +8700,36 @@
               rowspan: rCount,
               style: 'border:1.5px solid #000; padding:6px; font-weight:800; vertical-align:middle; background:#FFFFFF;'
             },
-              h('div', { style: 'font-size:13.5px; font-weight:900; color:#0F172A;', text: dayObj.day_name }),
-              h('div', { style: 'font-size:12px; color:#334155; margin-bottom:5px;', text: dayObj.date_display }),
-              h('div', { class: 'no-print', style: 'display:flex; justify-content:center; gap:4px;' },
+              h('div', { style: 'font-size:13.5px; font-weight:900; color:#0F172A;', text: dayObj.day_name || '—' }),
+              h('input', {
+                type: 'date',
+                class: 'no-print',
+                value: dayObj.date || '',
+                title: 'تعديل تاريخ هذا اليوم (يمكن تخطي أيام بحرية)',
+                style: 'width:100%; max-width:128px; font-size:11px; padding:2px 4px; margin:3px auto 5px; border:1px solid #CBD5E1; border-radius:5px; text-align:center;',
+                onchange: function (evDate) {
+                  var nv = evDate.target.value;
+                  if (!nv) return;
+                  dayObj.date = nv;
+                  dayObj.day_name = dayNameFromIso(nv);
+                  dayObj.date_display = formatDateDDMMYYYY(nv);
+                  renderTargetBehaviorTable();
+                  triggerLiveRefresh();
+                }
+              }),
+              h('div', { class: 'no-print', style: 'display:flex; justify-content:center; flex-wrap:wrap; gap:3px;' },
+                daysList.length > 1 ? h('button', {
+                  type: 'button',
+                  class: 'btn small danger',
+                  style: 'padding:2px 5px; font-size:10px; min-height:22px;',
+                  title: 'تخطي / حذف هذا اليوم من الجدول',
+                  text: '✕ يوم',
+                  onclick: function () {
+                    daysList.splice(dayIdx, 1);
+                    renderTargetBehaviorTable();
+                    triggerLiveRefresh();
+                  }
+                }) : null,
                 h('button', {
                   type: 'button',
                   class: 'btn small light',
@@ -8709,6 +8802,29 @@
 
       tbl.appendChild(tbody);
       tableMount.appendChild(tbl);
+      var addCustomDateInp = h('input', { type: 'date', value: formatLocalIsoDate(new Date()), style: 'padding:5px 8px; border:1px solid #B8C2D0; border-radius:7px; font-size:12px;' });
+      tableMount.appendChild(h('div', { class: 'no-print', style: 'display:flex; align-items:center; gap:8px; margin-top:8px; flex-wrap:wrap;' },
+        addCustomDateInp,
+        h('button', {
+          type: 'button',
+          class: 'btn small light',
+          style: 'font-weight:800; font-size:12px;',
+          text: '+ إضافة يوم مخصص للجدول',
+          onclick: function () {
+            var dt = addCustomDateInp.value;
+            if (!dt) return toast('اختر تاريخاً أولاً.', 'bad');
+            if (daysList.some(function (d) { return d.date === dt; })) return toast('هذا التاريخ موجود مسبقاً في الجدول.', 'bad');
+            daysList.push({
+              date: dt,
+              day_name: dayNameFromIso(dt),
+              date_display: formatDateDDMMYYYY(dt),
+              rows: [{ main_behavior: '', sub_behavior: '', behavior_time: '', behavior_duration: '', frequency: '', location: '', antecedents: '' }]
+            });
+            renderTargetBehaviorTable();
+            triggerLiveRefresh();
+          }
+        })
+      ));
     }
 
     function packTargetBehaviorData() {
@@ -10616,14 +10732,31 @@
 
     // Sélecteur de l'enfant (remplit automatiquement le nom en français et l'âge)
     var selKid0 = kids.filter(function (k) { return String(k.id) === String(ev.child_id); })[0] || null;
-    var kidSel = h('select', { style: 'width:100%; padding:8px 10px; border:1.5px solid #1B365D; border-radius:8px; font-weight:700; color:#0F172A; background:#FFF;' },
-      h('option', { value: '', text: '— Sélectionner un enfant —' }),
-      kids.map(function (k) {
+    var kidSel = h('select', { style: 'width:100%; padding:8px 10px; border:1.5px solid #101D35; border-radius:8px; font-weight:700; color:#0F172A; background:#FFF;' });
+    function populateFrKidsBySection(secIdVal, keepChildId) {
+      kidSel.textContent = '';
+      if (!secIdVal) {
+        kidSel.appendChild(h('option', { value: '', text: "— Veuillez d'abord choisir la classe —" }));
+        kidSel.disabled = true;
+        return;
+      }
+      kidSel.disabled = false;
+      var secObj = (sections || []).filter(function (sObj) { return String(sObj.id) === String(secIdVal); })[0];
+      var secNameStr = secObj ? secObj.name : '';
+      var filteredKids = (kids || []).filter(function (k) {
+        return childMatchesSection(k, secIdVal, secNameStr, sections);
+      });
+      kidSel.appendChild(h('option', { value: '', text: filteredKids.length ? ('— Sélectionner un élève (' + filteredKids.length + ') —') : '— Aucun élève dans cette classe —' }));
+      filteredKids.forEach(function (k) {
         var opt = h('option', { value: k.id, text: resolveChildFrenchName(k) + ' (' + k.full_name + ')' });
-        if (String(k.id) === String(ev.child_id)) opt.selected = true;
-        return opt;
-      })
-    );
+        if (keepChildId && String(k.id) === String(keepChildId)) opt.selected = true;
+        kidSel.appendChild(opt);
+      });
+      if (!filteredKids.some(function (k) { return String(k.id) === String(kidSel.value); })) {
+        kidSel.value = '';
+        ev.child_id = '';
+      }
+    }
 
     var secDbSel = h('select', { style: 'width:100%; padding:8px 10px; border:1.5px solid #101D35; border-radius:8px; font-weight:700; color:#0F172A; background:#FFF;' },
       h('option', { value: '', text: '— Sélectionner la classe / section —' }),
@@ -10637,7 +10770,11 @@
       mfState.section_id = secDbSel.value;
       var matchedSec = (sections || []).filter(function (sObj) { return String(sObj.id) === String(secDbSel.value); })[0];
       mfState.section_name_db = matchedSec ? matchedSec.name : '';
+      populateFrKidsBySection(secDbSel.value, '');
+      frNameInp.value = '';
+      mfState.child_name_fr = '';
     };
+    populateFrKidsBySection(secDbSel.value || (selKid0 && selKid0.section_id) || '', ev.child_id);
     if (!mfState.section_id && selKid0 && selKid0.section_id) {
       mfState.section_id = selKid0.section_id;
       mfState.section_name_db = nameOf(sections, selKid0.section_id, 'name') || selKid0.section || '';
@@ -10739,8 +10876,8 @@
     // ── SECTION I ──
     card.appendChild(makeSectionHead('I. INFORMATIONS PERSONNELLES', '#101D35'));
     card.appendChild(h('div', { style: 'display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:10px; margin-bottom:10px; background:#F8FAFC; padding:12px; border-radius:10px; border:1px solid #CBD5E1;' },
-      h('div', null, h('label', { style: 'display:block; font-weight:800; color:#1B365D; font-size:12.5px; margin-bottom:3px;', text: 'Enfant (Base de données) :' }), kidSel),
-      h('div', null, h('label', { style: 'display:block; font-weight:800; color:#101D35; font-size:12.5px; margin-bottom:3px;', text: 'Classe / Section :' }), secDbSel),
+      h('div', null, h('label', { style: 'display:block; font-weight:800; color:#101D35; font-size:12.5px; margin-bottom:3px;', text: '1. Classe / Section :' }), secDbSel),
+      h('div', null, h('label', { style: 'display:block; font-weight:800; color:#101D35; font-size:12.5px; margin-bottom:3px;', text: '2. Élève de la classe :' }), kidSel),
       h('div', null, h('label', { style: 'display:block; font-weight:800; color:#0F172A; font-size:12.5px; margin-bottom:3px;', text: 'Nom et prénom (Français) :' }), frNameInp),
       h('div', null, h('label', { style: 'display:block; font-weight:800; color:#0F172A; font-size:12.5px; margin-bottom:3px;', text: 'Âge :' }), ageFrInp),
       h('div', null, h('label', { style: 'display:block; font-weight:800; color:#0F172A; font-size:12.5px; margin-bottom:3px;', text: 'Date du rapport :' }), reportDateInp)
@@ -12158,7 +12295,7 @@
           if (key === 'publish' && !x.achievements && !x.activities && !x.notes && !x.file && !(r && r.attachment_path)) {
             throw new Error('لا يمكن نشر تقرير فارغ تماماً.');
           }
-          if (x.file && x.file.size > MAX_FILE) throw new Error('حجم الملف يتجاوز 5 ميغابايت.');
+          if (x.file && x.file.size > (DE.MAX_FILE || (5 * 1024 * 1024))) throw new Error('حجم الملف يتجاوز 5 ميغابايت.');
           var body = {
             child_id: x.child_id, title: x.title, report_date: x.report_date,
             period_start: r ? r.period_start : x.report_date, period_end: r ? r.period_end : x.report_date,
@@ -15995,6 +16132,17 @@
     NOTIF_STATE.items = list;
     updateNotificationBadges();
 
+    // إذا كان الإشعار موجهاً للأولياء، أرسل Web Push فعلياً عبر Edge Function send-push-notifications
+    if (audience === 'parents' || audience === 'parent' || audience === 'all') {
+      sendWebPushToParents({
+        title: title,
+        body: body,
+        childId: childId || null,
+        audience: audience,
+        url: './parent.html'
+      }).catch(function (pe) { console.warn('[DarElIhsan] Web Push dispatch warning:', pe); });
+    }
+
     // حفظ في قاعدة البيانات سحابياً
     try {
       await C.rest('POST', '/notifications', {
@@ -16011,6 +16159,40 @@
 
     // تنبيه صوتي وتنبيه Toast فوري
     toast('🔔 ' + title + ': ' + body, 'ok');
+  }
+
+
+  /* ══ إرسال إشعارات Web Push الحقيقية إلى هواتف الأولياء عبر Supabase Edge Function (send-push-notifications) ══ */
+  async function sendWebPushToParents(opts) {
+    var payload = {
+      title: (opts && opts.title) || 'دار الإحسان',
+      body: (opts && opts.body) || 'لديك إشعار جديد من المركز',
+      url: (opts && opts.url) || './parent.html',
+      tag: (opts && opts.tag) || ('de-admin-push-' + Date.now()),
+      child_id: (opts && opts.childId) || null,
+      parent_user_id: (opts && opts.parentUserId) || null,
+      audience: (opts && opts.audience) || 'parents',
+      push_only: true
+    };
+    var cfg = window.DE_CMS || window.CMS || {};
+    var baseUrl = (cfg.url || 'https://qgjddtylriqdwvpihvmi.supabase.co').replace(/\/$/, '');
+    var anonKey = cfg.anonKey || cfg.key || '';
+    var token = (C && typeof C.token === 'function' ? C.token() : (C && C.accessToken)) || anonKey;
+    var res = await fetch(baseUrl + '/functions/v1/send-push-notifications', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': anonKey,
+        'Authorization': 'Bearer ' + token
+      },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) {
+      var errTxt = '';
+      try { errTxt = await res.text(); } catch (e) {}
+      throw new Error('فشل إرسال Push (' + res.status + '): ' + (errTxt || res.statusText));
+    }
+    try { return await res.json(); } catch (e) { return { ok: true }; }
   }
 
   async function fetchNotifications() {

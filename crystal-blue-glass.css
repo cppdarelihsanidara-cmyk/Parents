@@ -363,3 +363,100 @@ table tbody tr:nth-child(even) { background: var(--ds-table-row-alt); }
   .de-a4-preview-stack { background: #FFFFFF !important; padding: 0 !important; gap: 0 !important; }
   .de-a4-sheet, .oep-written-page-box { border: none !important; box-shadow: none !important; page-break-after: always; }
 }
+
+/* ══ v20: REGULAR REPORT 1CM HORIZONTAL LINE MARGIN (PARENTS-MAIN) ══ */
+.pm-regular-report-sheet .bar-sub {
+  border-bottom: none !important;
+}
+.pm-rep-hr {
+  border: none !important;
+  border-top: 1.5px solid #CBD5E1 !important;
+  margin: 10px 1cm 14px 1cm !important;
+  width: calc(100% - 2cm) !important;
+  box-sizing: border-box;
+}
+
+/* ══ v20: COMPLETE VISUAL REDESIGN OF ATTENDANCE SECTION (.att) ══ */
+.att {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.att .att-hero {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding: 20px 24px !important;
+  background: linear-gradient(135deg, #101D35 0%, #263F65 100%) !important;
+  color: #FFFFFF !important;
+  border-radius: 16px !important;
+  box-shadow: 0 8px 24px rgba(16, 29, 53, 0.14) !important;
+}
+.att .att-hero h1 {
+  margin: 0 0 6px;
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #FFFFFF !important;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.att .att-hero p {
+  margin: 0;
+  font-size: 0.88rem;
+  color: #DCEAF5 !important;
+}
+.att .att-stats {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(175px, 1fr)) !important;
+  gap: 12px !important;
+}
+.att .att-panel {
+  background: #FFFFFF !important;
+  border: 1px solid #D5DFEC !important;
+  border-radius: 14px !important;
+  padding: 16px 18px !important;
+  box-shadow: 0 3px 12px rgba(16, 29, 53, 0.05) !important;
+}
+.att .att-filters {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)) !important;
+  gap: 12px !important;
+  margin-bottom: 12px;
+}
+.att .att-filters label {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #101D35;
+  margin-bottom: 5px;
+}
+.att .att-listhead {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 10px 14px;
+  background: #DCEAF5;
+  border-radius: 12px;
+  margin-bottom: 10px;
+  color: #101D35;
+  font-weight: 800;
+}
+.att .att-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  padding-top: 8px;
+}
+.att .att-btn.save {
+  background: linear-gradient(135deg, #101D35 0%, #263F65 100%) !important;
+  color: #FFFFFF !important;
+  padding: 11px 20px !important;
+  border-radius: 10px !important;
+  font-weight: 800 !important;
+}
