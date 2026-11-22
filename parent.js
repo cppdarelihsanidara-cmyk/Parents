@@ -601,15 +601,35 @@
   }
 
   async function syncExistingPushSubscription() {
+    // Silent migration: reuse the already-granted browser permission; never prompt again.
     if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
     if (!('serviceWorker' in navigator) || !('PushManager' in window) || !S.me) return;
     try {
       var reg = await navigator.serviceWorker.ready;
+      var expectedKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
       var sub = await reg.pushManager.getSubscription();
+      if (sub) {
+        var currentKey = sub.options && sub.options.applicationServerKey;
+        var currentBytes = currentKey ? new Uint8Array(currentKey) : null;
+        var sameKey = !!currentBytes && currentBytes.length === expectedKey.length;
+        if (sameKey) {
+          for (var ki = 0; ki < expectedKey.length; ki++) {
+            if (currentBytes[ki] !== expectedKey[ki]) { sameKey = false; break; }
+          }
+        }
+        if (!sameKey) {
+          // Disable the stale DB row before replacing its browser subscription.
+          try {
+            await C.rest('PATCH', '/push_subscriptions?endpoint=eq.' + encodeURIComponent(sub.endpoint), { is_active: false });
+          } catch (dbOldErr) { console.warn('Could not deactivate previous push endpoint:', dbOldErr); }
+          await sub.unsubscribe();
+          sub = null;
+        }
+      }
       if (!sub) {
         sub = await reg.pushManager.subscribe({
           userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+          applicationServerKey: expectedKey
         });
       }
       var subJson = sub.toJSON();
@@ -624,8 +644,11 @@
         device_type: /mobi/i.test(navigator.userAgent) ? 'mobile' : 'desktop',
         role: 'parent',
         is_active: true
-      }, { Prefer: 'resolution=merge-duplicates' }).catch(function () {});
-    } catch (e) {}
+      }, { Prefer: 'resolution=merge-duplicates' });
+      console.info('Push subscription synchronized with current VAPID key.');
+    } catch (e) {
+      console.warn('Automatic push subscription migration will retry on next parent login:', e);
+    }
   }
 
   function resolveParentLoginEmail(raw) {
@@ -926,6 +949,12 @@
 
       if (S.d.children.length && !S.selectedChildId) {
         S.selectedChildId = S.d.children[0].id;
+      }
+
+      // Migrate old VAPID subscriptions automatically for parents who already granted permission.
+      if (!S._pushSyncedOnce && S.me) {
+        S._pushSyncedOnce = true;
+        syncExistingPushSubscription();
       }
 
       show('app');
