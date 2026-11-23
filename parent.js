@@ -32,8 +32,8 @@
   }
 
   try {
-    if (typeof window !== 'undefined' && safeGetItem('local', 'de_parent_app_ver') !== 'v99') {
-      safeSetItem('local', 'de_parent_app_ver', 'v99');
+    if (typeof window !== 'undefined' && safeGetItem('local', 'de_parent_app_ver') !== 'v100') {
+      safeSetItem('local', 'de_parent_app_ver', 'v100');
       if (window.caches && caches.keys) {
         caches.keys().then(function (ks) { ks.forEach(function (k) { caches.delete(k); }); });
       }
@@ -44,7 +44,7 @@
       }
     }
   } catch (eVer) {}
-  var FILE_BUILD = '2026-11-23.1';
+  var FILE_BUILD = '2026-11-23.2';
   if (window.top !== window.self) { document.body.textContent = ''; return; }
 
   var DEFAULT_CFG = {
@@ -556,7 +556,7 @@
       if (!synced) throw new Error('لم يكتمل حفظ اشتراك الإشعارات في الخادم. حاول مجدداً.');
       safeSetItem('local', 'de_phone_notif_enabled', '1');
       S._pushSyncedOnce = true;
-      triggerPhoneNotification('دار الإحسان — تم التفعيل بنجاح 🔔', 'تم حفظ اشتراك هذا الجهاز لاستقبال تنبيهات المركز.', './parent.html');
+      triggerPhoneNotification('دار الإحسان — تم التفعيل بنجاح 🔔', 'تم حفظ اشتراك هذا الجهاز لاستقبال تنبيهات المركز.', 'de-push-enrollment-test', { url: './parent.html' });
       toast('تم حفظ اشتراك هذا الجهاز في خادم الإشعارات بنجاح.', 'ok');
       return true;
     } catch (e) {
@@ -4271,11 +4271,11 @@ function renderParentOfficialEvaluationSheet(r, childFullName, secName, kd, init
 async function init() {
       // التحقق من تحديث النسخة وتفريغ الذاكرة المؤقتة التلقائي
       try {
-        var APP_VER = 'v99';
+        var APP_VER = 'v100';
         if (safeGetItem('local', 'de_parent_app_ver') !== APP_VER) {
           if ('caches' in window) {
             caches.keys().then(function (names) {
-              names.forEach(function (nm) { caches.delete(nm); });
+              names.forEach(function (nm) { if (nm.indexOf('de-parents-') === 0) caches.delete(nm); });
             });
           }
           if ('serviceWorker' in navigator) {

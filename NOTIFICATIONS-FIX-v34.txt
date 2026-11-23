@@ -1,25 +1,30 @@
-Dar El-Ihsan – Notification Fix v34
+دار الإحسان — سجل إصلاحات إشعارات فضاء الأولياء
 
-Frontend changes included in both the project root and dist/:
-- Admin test button now calls the existing authenticated DE client (C.fn), which refreshes the admin session and attaches the active JWT.
-- Removed direct browser calls to the batch outbox worker. Admin-created parent notifications are queued only; the scheduled worker processes them.
-- Queue processing stores successful recipient deliveries and skips them on retry to avoid duplicate notifications.
-- Temporary push errors are retried; permanent/expired or old-VAPID subscriptions are deactivated rather than retried forever.
-- Parent subscription writes now use the endpoint unique key with an explicit PostgREST upsert and correct Prefer header.
-- Corrected Android/mobile device classification; login now renews locally stored subscriptions that the server marked inactive/expired, and failed enrollment synchronization is retryable.
-- Cache-busting and independent Parent/Admin version keys updated to avoid stale assets and cache resets between the two apps.
+الإصدار الحالي: v36
+معرّف بناء الواجهة: 20261123_pushfix3
 
-Supabase Edge Functions deployed:
-- send-push-notifications: version 16 (active)
-- send-push-test: version 2 (active)
+الإصلاحات المتضمنة في النسخة الحالية
+- توحيد صفحتي index.html و parent.html وإزالة التحميل المكرر لملف pwa.js.
+- توحيد إصدار ملفات الواجهة وملف Service Worker.
+- تسجيل Service Worker فور تنفيذ سكربت PWA المؤجل بدلاً من تأجيل التسجيل إلى حدث window.load.
+- تحديد scope ديناميكياً من مسار الصفحة، لدعم النشر في جذر النطاق أو داخل مجلد فرعي.
+- حصر حذف الكاش في الأسماء التي تبدأ بـ de-parents- وعدم حذف كاش تطبيقات أخرى.
+- قصر اعتراض طلبات Service Worker على مسار فضاء الأولياء.
+- إضافة ملف logo-sq.png المفقود والمستخدم في واجهة الولي وإشعارات الهاتف.
+- تحسين التوجيه عند النقر على الإشعار، ومنع توجيه الإشعار إلى نطاق خارجي أو خارج مسار التطبيق.
+- تصحيح معاملات إشعار التأكيد المحلي بعد حفظ الاشتراك.
 
-Safety:
-- The existing outbox cutoff is intentionally retained. Historical pending rows before 2026-11-22 13:18:55.538694 UTC are not replayed automatically.
-- Existing historical failed rows are not re-sent.
-- VAPID secrets/public key values were not rotated.
-- The WhatsApp Cron job and its schedule were not changed.
+إصلاحات سابقة محفوظة كما هي
+- تسجيل اشتراك الولي باستخدام upsert على endpoint مع Prefer المناسب.
+- تصنيف الهاتف/الحاسوب عند حفظ الاشتراك.
+- إعادة مزامنة الاشتراك عند اختلاف مفتاح VAPID أو عند تعطيل الاشتراك في قاعدة البيانات.
+- معالجة إرسال صندوق الإشعارات وإعادة المحاولة وإيقاف الاشتراكات المنتهية وفق النسخ السابقة.
 
-Deployment:
-- Replace the six listed frontend files under Parents-main/ and the corresponding copies under Parents-main/dist/.
-- Or replace the whole Parents-main folder with the complete archive.
-- Do not deploy only one of the two copies; hosting may serve either path.
+لم يتم في v36
+- تدوير مفاتيح VAPID أو تغيير قيمها.
+- تعديل SQL أو سياسات RLS أو نشر Edge Functions.
+- إعادة إرسال سجلات outbox التاريخية أو تشغيل إرسال جماعي.
+- تعديل Cron الخاص بواتساب أو جدوله.
+
+مهم: نجاح التسجيل في الواجهة لا يعني أن كل الأولياء أصبحوا مشتركين تلقائياً. يلزم تفعيل إذن الإشعارات والاشتراك من كل جهاز وليّ، كما يلزم التحقق من وصول إشعار جديد فعلياً بعد النشر.
+راجع README-DEPLOY-v36.txt لخطوات رفع الملفات والتحقق.

@@ -1,38 +1,62 @@
-/* تسجيل التطبيق (PWA) + شريط «ثبّت التطبيق». بدون innerHTML ولا سكربت مضمَّن (متوافق مع CSP). */
+/* PWA registration and install prompt — Dar El-Ihsan Parents portal. */
 (function () {
   'use strict';
-  var secure = location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
-  if (secure && 'serviceWorker' in navigator) {
-    // تفريغ الكاش التلقائي عند كل إصدار جديد وإجبار المتصفح على جلب sw.js دون كاش HTTP
-    try {
-      if (localStorage.getItem('de_pwa_ver') !== '20261123_pushfix1') {
-        if ('caches' in window) {
-          caches.keys().then(function (names) {
-            names.forEach(function (n) { caches.delete(n); });
-          });
-        }
-        localStorage.setItem('de_pwa_ver', '20261123_pushfix1');
-      }
-    } catch (e) {}
-    var _reloadedForSw = false;
-    navigator.serviceWorker.addEventListener('controllerchange', function () {
-      if (_reloadedForSw) return;
-      _reloadedForSw = true;
-      window.location.reload();
-    });
-    window.addEventListener('load', function () {
-      navigator.serviceWorker.register('sw.js?v=20261123_pushfix1', { updateViaCache: 'none' }).then(function (reg) {
-        try { reg.update(); } catch (e) {}
-      }).catch(function () {});
+
+  var BUILD = '20261123_pushfix3';
+  var CACHE_PREFIX = 'de-parents-';
+  var secure = window.isSecureContext || location.protocol === 'https:' ||
+    location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+
+  function clearOwnedCaches() {
+    if (!('caches' in window)) return Promise.resolve();
+    return caches.keys().then(function (names) {
+      return Promise.all(names.map(function (name) {
+        return name.indexOf(CACHE_PREFIX) === 0 ? caches.delete(name) : false;
+      }));
     });
   }
-  var standalone = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
 
-  /* ── أزرار التثبيت الصريحة ([data-install]) — تُستعمل في لوحة الإدارة ── */
+  /* Register once, as soon as this deferred script runs; do not wait for window.load. */
+  if (secure && 'serviceWorker' in navigator) {
+    try {
+      if (localStorage.getItem('de_parents_pwa_ver') !== BUILD) {
+        clearOwnedCaches();
+        localStorage.setItem('de_parents_pwa_ver', BUILD);
+      }
+    } catch (e) {}
+
+    var reloadedForController = false;
+    navigator.serviceWorker.addEventListener('controllerchange', function () {
+      if (reloadedForController) return;
+      reloadedForController = true;
+      window.location.reload();
+    });
+
+    var appBase = new URL('.', document.baseURI || location.href);
+    var swUrl = new URL('sw.js?v=' + BUILD, appBase);
+    window.DE_PWA_REGISTRATION = navigator.serviceWorker.register(swUrl.href, {
+      scope: appBase.pathname,
+      updateViaCache: 'none'
+    }).then(function (reg) {
+      return reg.update().catch(function () {}).then(function () { return reg; });
+    }).catch(function (err) {
+      window.DE_PWA_REGISTRATION_ERROR = err;
+      console.warn('Dar El-Ihsan service worker registration failed:', err);
+      throw err;
+    });
+    /* Avoid an unhandled rejection while keeping the promise available for diagnostics. */
+    window.DE_PWA_REGISTRATION.catch(function () {});
+  }
+
+  var standalone = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
   var installBtns = [].slice.call(document.querySelectorAll('[data-install]'));
+
   if (installBtns.length && !standalone) {
     var savedPrompt = null;
-    window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); savedPrompt = e; });
+    window.addEventListener('beforeinstallprompt', function (e) {
+      e.preventDefault();
+      savedPrompt = e;
+    });
     window.addEventListener('appinstalled', function () {
       savedPrompt = null;
       installBtns.forEach(function (b) { b.hidden = true; });
@@ -40,62 +64,91 @@
     installBtns.forEach(function (b) {
       b.hidden = false;
       b.addEventListener('click', function () {
-        if (savedPrompt) {
-          savedPrompt.prompt();
-          savedPrompt.userChoice.then(function () { savedPrompt = null; });
-          return;
-        }
-        showInstallHint();
+        if (!savedPrompt) return showInstallHint();
+        savedPrompt.prompt();
+        savedPrompt.userChoice.then(function () { savedPrompt = null; }).catch(function () { savedPrompt = null; });
       });
     });
   }
+
   function showInstallHint() {
-    var old = document.querySelector('.pwa-bar.pwa-hint'); if (old) old.remove();
-    var box = document.createElement('div'); box.className = 'pwa-bar pwa-hint'; box.setAttribute('role', 'status');
-    var msg = document.createElement('span'); msg.className = 'pwa-msg';
-    msg.textContent = 'إن لم تظهر نافذة التثبيت: من قائمة المتصفح (⋮ أو ⋯) اختر «تثبيت» أو «إنشاء اختصار»، وعلى Mac اختر من قائمة ملف «إضافة إلى الرصيف».';
-    var x = document.createElement('button'); x.type = 'button'; x.className = 'pwa-x'; x.textContent = '×'; x.setAttribute('aria-label', 'إغلاق');
-    x.addEventListener('click', function () { box.remove(); });
-    box.appendChild(msg); box.appendChild(x); document.body.appendChild(box);
+    var old = document.querySelector('.pwa-bar.pwa-hint');
+    if (old) old.remove();
+    var box = document.createElement('div');
+    box.className = 'pwa-bar pwa-hint';
+    box.setAttribute('role', 'status');
+    var msg = document.createElement('span');
+    msg.className = 'pwa-msg';
+    msg.textContent = 'إن لم تظهر نافذة التثبيت: من قائمة المتصفح (⋮ أو ⋯) اختر «تثبيت» أو «إنشاء اختصار»، وعلى Mac اختر من قائمة ملف «إضافة إلى الرصيف». ';
+    var close = document.createElement('button');
+    close.type = 'button';
+    close.className = 'pwa-x';
+    close.textContent = '×';
+    close.setAttribute('aria-label', 'إغلاق');
+    close.addEventListener('click', function () { box.remove(); });
+    box.appendChild(msg);
+    box.appendChild(close);
+    document.body.appendChild(box);
     setTimeout(function () { if (box.parentNode) box.remove(); }, 15000);
   }
 
-  if (/qr\.html$/.test(location.pathname)) return;                     // صفحة التحقق العامة: لا شريط
-  if (standalone) return;
-  if (installBtns.length) return;                                      // لوحة الإدارة: لها أزرار التثبيت، بلا شريط عام
+  if (/qr\.html$/.test(location.pathname) || standalone || installBtns.length) return;
+
   var KEY = 'de-install-dismissed';
-  try { var t = +localStorage.getItem(KEY); if (t && Date.now() - t < 14 * 864e5) return; } catch (e) {}
-  var fr = (document.documentElement.lang || 'ar').slice(0, 2) === 'fr';
-  var T = fr
+  try {
+    var dismissedAt = +localStorage.getItem(KEY);
+    if (dismissedAt && Date.now() - dismissedAt < 14 * 864e5) return;
+  } catch (e) {}
+
+  var french = (document.documentElement.lang || 'ar').slice(0, 2) === 'fr';
+  var T = french
     ? { msg: 'Installez l’application sur votre téléphone', btn: 'Installer', close: 'Fermer', ios: 'Appuyez sur Partager puis « Sur l’écran d’accueil »' }
     : { msg: 'ثبّت التطبيق على هاتفك للوصول السريع', btn: 'تثبيت', close: 'إغلاق', ios: 'اضغط زر المشاركة ثم «إضافة إلى الشاشة الرئيسية»' };
   var isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
-  var deferred = null, bar = null;
+  var deferred = null;
+  var bar = null;
 
-  function el(tag, cls, text) { var n = document.createElement(tag); if (cls) n.className = cls; if (text) n.textContent = text; return n; }
+  function el(tag, cls, text) {
+    var node = document.createElement(tag);
+    if (cls) node.className = cls;
+    if (text) node.textContent = text;
+    return node;
+  }
   function hide(remember) {
     if (bar) { bar.remove(); bar = null; }
-    if (remember) { try { localStorage.setItem(KEY, String(Date.now())); } catch (e) {} }
+    if (remember) {
+      try { localStorage.setItem(KEY, String(Date.now())); } catch (e) {}
+    }
   }
   function show(iosHint) {
     if (bar) return;
-    bar = el('div', 'pwa-bar'); bar.setAttribute('role', 'region'); bar.setAttribute('aria-label', T.msg);
+    bar = el('div', 'pwa-bar');
+    bar.setAttribute('role', 'region');
+    bar.setAttribute('aria-label', T.msg);
     bar.appendChild(el('span', 'pwa-msg', iosHint ? T.ios : T.msg));
     if (!iosHint) {
-      var b = el('button', 'pwa-btn', T.btn); b.type = 'button';
-      b.addEventListener('click', function () {
+      var button = el('button', 'pwa-btn', T.btn);
+      button.type = 'button';
+      button.addEventListener('click', function () {
         if (!deferred) return hide(true);
         deferred.prompt();
-        deferred.userChoice.then(function () { deferred = null; hide(true); });
+        deferred.userChoice.then(function () { deferred = null; hide(true); }).catch(function () { deferred = null; hide(true); });
       });
-      bar.appendChild(b);
+      bar.appendChild(button);
     }
-    var x = el('button', 'pwa-x', '×'); x.type = 'button'; x.setAttribute('aria-label', T.close);
-    x.addEventListener('click', function () { hide(true); });
-    bar.appendChild(x);
+    var close = el('button', 'pwa-x', '×');
+    close.type = 'button';
+    close.setAttribute('aria-label', T.close);
+    close.addEventListener('click', function () { hide(true); });
+    bar.appendChild(close);
     document.body.appendChild(bar);
   }
-  window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); deferred = e; show(false); });
+
+  window.addEventListener('beforeinstallprompt', function (e) {
+    e.preventDefault();
+    deferred = e;
+    show(false);
+  });
   window.addEventListener('appinstalled', function () { deferred = null; hide(true); });
   if (isIOS) window.addEventListener('load', function () { setTimeout(function () { show(true); }, 2500); });
 })();
