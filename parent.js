@@ -32,8 +32,8 @@
   }
 
   try {
-    if (typeof window !== 'undefined' && safeGetItem('local', 'de_app_ver') !== 'v98') {
-      safeSetItem('local', 'de_app_ver', 'v98');
+    if (typeof window !== 'undefined' && safeGetItem('local', 'de_parent_app_ver') !== 'v99') {
+      safeSetItem('local', 'de_parent_app_ver', 'v99');
       if (window.caches && caches.keys) {
         caches.keys().then(function (ks) { ks.forEach(function (k) { caches.delete(k); }); });
       }
@@ -44,7 +44,7 @@
       }
     }
   } catch (eVer) {}
-  var FILE_BUILD = '2026-10-24.2';
+  var FILE_BUILD = '2026-11-23.1';
   if (window.top !== window.self) { document.body.textContent = ''; return; }
 
   var DEFAULT_CFG = {
@@ -509,6 +509,35 @@
     return outputArray;
   }
 
+  function currentPushDeviceType() {
+    var ua = String(navigator.userAgent || '');
+    var mobileHint = navigator.userAgentData && navigator.userAgentData.mobile;
+    return mobileHint || /(android|iphone|ipad|ipod|mobile|tablet|silk|kindle)/i.test(ua) ? 'mobile' : 'desktop';
+  }
+
+  async function saveCurrentPushSubscription(sub) {
+    if (!sub || !sub.endpoint || !S.me) throw new Error('جلسة الولي غير متاحة لتسجيل جهاز الإشعارات.');
+    var json = sub.toJSON();
+    if (!json.keys || !json.keys.p256dh || !json.keys.auth) throw new Error('بيانات اشتراك الإشعارات غير مكتملة.');
+    var kid = (S.d && S.d.children && S.d.children[0]) || null;
+    var body = {
+      parent_user_id: S.me,
+      child_id: kid ? kid.id : null,
+      endpoint: sub.endpoint,
+      p256dh: json.keys.p256dh,
+      auth: json.keys.auth,
+      user_agent: navigator.userAgent,
+      device_type: currentPushDeviceType(),
+      device_label: currentPushDeviceType() === 'mobile' ? 'هاتف محمول' : 'حاسوب',
+      role: 'parent',
+      is_active: true,
+      last_used_at: new Date().toISOString()
+    };
+    // endpoint has a UNIQUE constraint: specify it explicitly for a true upsert.
+    await C.rest('POST', '/push_subscriptions?on_conflict=endpoint', body, 'resolution=merge-duplicates,return=minimal');
+    return true;
+  }
+
   async function requestPhoneNotificationPermission() {
     if (typeof Notification === 'undefined') {
       toast('المتصفح لا يدعم إشعارات النظام المباشرة.', 'err');
@@ -516,48 +545,24 @@
     }
     try {
       var perm = await Notification.requestPermission();
-      if (perm === 'granted') {
-        safeSetItem('local', 'de_phone_notif_enabled', '1');
-        
-        // تسجيل اشتراك Web Push الرسمي مع خادم Supabase
-        if ('serviceWorker' in navigator && 'PushManager' in window) {
-          try {
-            var reg = await navigator.serviceWorker.ready;
-            var sub = await reg.pushManager.getSubscription();
-            if (!sub) {
-              sub = await reg.pushManager.subscribe({
-                userVisibleOnly: true,
-                applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
-              });
-            }
-            var subJson = sub.toJSON();
-            var kid0 = (S.d && S.d.children && S.d.children[0]) || null;
-            var subBody = {
-              parent_user_id: S.me || null,
-              child_id: kid0 ? kid0.id : null,
-              endpoint: sub.endpoint,
-              p256dh: subJson.keys ? subJson.keys.p256dh : '',
-              auth: subJson.keys ? subJson.keys.auth : '',
-              user_agent: navigator.userAgent,
-              device_type: /mobi/i.test(navigator.userAgent) ? 'mobile' : 'desktop',
-              role: 'parent',
-              is_active: true
-            };
-            await C.rest('POST', '/push_subscriptions', subBody, { Prefer: 'resolution=merge-duplicates' }).catch(function () {});
-          } catch (eSub) {
-            console.warn('Push registration warning:', eSub);
-          }
-        }
-
-        triggerPhoneNotification('دار الإحسان — تم التفعيل بنجاح 🔔', 'ستصلك الآن تنبيهات ورسائل المركز مباشرة على الهاتف حتى عندما يكون التطبيق مغلقاً.', './parent.html');
-        toast('تم تسجيل هذا الجهاز لاستقبال إشعارات الهاتف بنجاح!', 'ok');
-        return true;
-      } else {
-        toast('تم رفض إذن الإشعارات. لتفعيلها لاحقاً: افتح إعدادات المتصفح ← إعدادات الموقع ← الإشعارات ← سماح لدار الإحسان.', 'err');
+      if (perm !== 'granted') {
+        toast('تم رفض إذن الإشعارات. لتفعيله لاحقاً: إعدادات المتصفح ← إعدادات الموقع ← الإشعارات ← سماح لدار الإحسان.', 'err');
         return false;
       }
+      if (!('serviceWorker' in navigator) || !('PushManager' in window) || !S.me) {
+        throw new Error('يتعذر تسجيل هذا الجهاز الآن. تأكد من فتح فضاء الأولياء بعد تسجيل الدخول في Chrome.');
+      }
+      var synced = await syncExistingPushSubscription();
+      if (!synced) throw new Error('لم يكتمل حفظ اشتراك الإشعارات في الخادم. حاول مجدداً.');
+      safeSetItem('local', 'de_phone_notif_enabled', '1');
+      S._pushSyncedOnce = true;
+      triggerPhoneNotification('دار الإحسان — تم التفعيل بنجاح 🔔', 'تم حفظ اشتراك هذا الجهاز لاستقبال تنبيهات المركز.', './parent.html');
+      toast('تم حفظ اشتراك هذا الجهاز في خادم الإشعارات بنجاح.', 'ok');
+      return true;
     } catch (e) {
-      toast('تعذّر تفعيل الإشعارات: ' + e.message, 'err');
+      S._pushSyncedOnce = false;
+      console.warn('Push registration warning:', e);
+      toast('لم يكتمل تسجيل الإشعارات: ' + (e && e.message ? e.message : 'خطأ غير معروف'), 'err');
       return false;
     }
   }
@@ -601,14 +606,15 @@
 
   async function syncExistingPushSubscription() {
     // Silent migration: reuse the already-granted browser permission; never prompt again.
-    // Return true only after the current subscription is confirmed in the database.
-    if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return false;
-    if (!('serviceWorker' in navigator) || !('PushManager' in window) || !S.me) return false;
+    if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return true;
+    if (!('serviceWorker' in navigator) || !('PushManager' in window) || !S.me) return true;
     try {
       var reg = await navigator.serviceWorker.ready;
       var expectedKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
       var sub = await reg.pushManager.getSubscription();
       if (sub) {
+        var savedRows = await C.rest('GET', '/push_subscriptions?select=id,is_active&parent_user_id=eq.' + encodeURIComponent(S.me) + '&endpoint=eq.' + encodeURIComponent(sub.endpoint) + '&limit=1');
+        var serverMarkedInactive = Array.isArray(savedRows) && savedRows.length > 0 && savedRows[0].is_active === false;
         var currentKey = sub.options && sub.options.applicationServerKey;
         var currentBytes = currentKey ? new Uint8Array(currentKey) : null;
         var sameKey = !!currentBytes && currentBytes.length === expectedKey.length;
@@ -617,8 +623,8 @@
             if (currentBytes[ki] !== expectedKey[ki]) { sameKey = false; break; }
           }
         }
-        if (!sameKey) {
-          // Disable only this exact old endpoint before replacing its browser subscription.
+        if (!sameKey || serverMarkedInactive) {
+          // Replace old-key and server-deactivated (expired/410 or invalid/403) subscriptions.
           try {
             await C.rest('PATCH', '/push_subscriptions?endpoint=eq.' + encodeURIComponent(sub.endpoint), { is_active: false });
           } catch (dbOldErr) { console.warn('Could not deactivate previous push endpoint:', dbOldErr); }
@@ -632,23 +638,12 @@
           applicationServerKey: expectedKey
         });
       }
-      var subJson = sub.toJSON();
-      var kid0 = (S.d && S.d.children && S.d.children[0]) || null;
-      await C.rest('POST', '/push_subscriptions', {
-        parent_user_id: S.me,
-        child_id: kid0 ? kid0.id : null,
-        endpoint: sub.endpoint,
-        p256dh: subJson.keys ? subJson.keys.p256dh : '',
-        auth: subJson.keys ? subJson.keys.auth : '',
-        user_agent: navigator.userAgent,
-        device_type: /mobi/i.test(navigator.userAgent) ? 'mobile' : 'desktop',
-        role: 'parent',
-        is_active: true
-      }, { Prefer: 'resolution=merge-duplicates' });
+      await saveCurrentPushSubscription(sub);
       console.info('Push subscription synchronized with current VAPID key.');
       return true;
     } catch (e) {
-      console.warn('Automatic push subscription migration will retry on next parent data refresh:', e);
+      S._pushSyncedOnce = false;
+      console.warn('Automatic push subscription migration will retry:', e);
       return false;
     }
   }
@@ -955,12 +950,8 @@
 
       // Migrate old VAPID subscriptions automatically for parents who already granted permission.
       if (!S._pushSyncedOnce && S.me) {
-        // Do not mark complete before the asynchronous registration and database write succeed.
-        syncExistingPushSubscription().then(function (ok) {
-          S._pushSyncedOnce = !!ok;
-        }).catch(function () {
-          S._pushSyncedOnce = false;
-        });
+        S._pushSyncedOnce = true;
+        syncExistingPushSubscription().then(function (ok) { if (!ok) S._pushSyncedOnce = false; });
       }
 
       show('app');
@@ -1104,7 +1095,11 @@
                 }
               }
               updateNotifBadge();
-    if (!S._pushSyncedOnce && S.me) { S._pushSyncedOnce = true; syncExistingPushSubscription(); startParentLivePolling(); }
+    if (!S._pushSyncedOnce && S.me) {
+      S._pushSyncedOnce = true;
+      syncExistingPushSubscription().then(function (ok) { if (!ok) S._pushSyncedOnce = false; });
+      startParentLivePolling();
+    }
               closeModal();
               render();
               if (failed > 0) toast('تعذر تحديث بعض الإشعارات في قاعدة البيانات، يرجى المحاولة لاحقاً.', 'err');
@@ -1118,6 +1113,26 @@
       )
     );
 
+    // Keep the enrollment action inside the existing notifications screen (no persistent banner).
+    card.appendChild(h('div', { class: 'card', style: 'display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:0 0 14px;padding:12px 14px;' },
+      h('p', { style: 'margin:0;flex:1;min-width:180px;font-size:0.9rem;', text: 'فعّل إشعارات الهاتف لتصلك تنبيهات المركز حتى عند إغلاق فضاء الأولياء.' }),
+      h('button', {
+        type: 'button',
+        class: 'btn small gold',
+        text: (typeof Notification !== 'undefined' && Notification.permission === 'granted') ? 'تحديث اشتراك الإشعارات' : 'تفعيل إشعارات الهاتف',
+        onclick: async function () {
+          var btn = this;
+          var oldText = btn.textContent;
+          btn.disabled = true;
+          btn.textContent = 'جارٍ التفعيل…';
+          try { await requestPhoneNotificationPermission(); }
+          finally {
+            btn.disabled = false;
+            btn.textContent = (typeof Notification !== 'undefined' && Notification.permission === 'granted') ? 'تحديث اشتراك الإشعارات' : (oldText || 'تفعيل إشعارات الهاتف');
+          }
+        }
+      })
+    ));
 
     var list = h('div', { class: 'dynamic-items-container', style: 'max-height: 400px; overflow-y: auto;' });
     var itemsCount = 0;
@@ -4256,8 +4271,8 @@ function renderParentOfficialEvaluationSheet(r, childFullName, secName, kd, init
 async function init() {
       // التحقق من تحديث النسخة وتفريغ الذاكرة المؤقتة التلقائي
       try {
-        var APP_VER = 'v98';
-        if (safeGetItem('local', 'de_app_ver') !== APP_VER) {
+        var APP_VER = 'v99';
+        if (safeGetItem('local', 'de_parent_app_ver') !== APP_VER) {
           if ('caches' in window) {
             caches.keys().then(function (names) {
               names.forEach(function (nm) { caches.delete(nm); });
@@ -4268,7 +4283,7 @@ async function init() {
               regs.forEach(function (r) { r.update(); });
             });
           }
-          safeSetItem('local', 'de_app_ver', APP_VER);
+          safeSetItem('local', 'de_parent_app_ver', APP_VER);
         }
       } catch (eVer) {}
 

@@ -1,7 +1,7 @@
 /* Service worker — دار الإحسان.
    الاستراتيجية: الشبكة أولاً مع تجاوز الكاش القديم لتطبيق كافة التعديلات فوراً. */
 'use strict';
-var CACHE = 'de-parents-dev-20261122-v27';
+var CACHE = 'de-parents-prod-20261123-pushfix1';
 var SHELL = [
   "./", "index.html", "navback.js", "icons.js", "icons.css", "parent.html",
   "manage.html", "portal.css", "crystal-blue-glass.css", "manage-theme.css", "parent-modern.css", "pdf-writer.js", "zip-builder.js",
@@ -60,7 +60,12 @@ self.addEventListener('notificationclick', function (e) {
       for (var i = 0; i < clientList.length; i++) {
         var client = clientList[i];
         if (client.url.indexOf('parent.html') !== -1 && 'focus' in client) {
-          return client.focus();
+          // Navigate the existing PWA window to the notification's destination before focusing it.
+          return Promise.resolve(
+            (client.url !== targetUrl && 'navigate' in client) ? client.navigate(targetUrl) : client
+          ).then(function (navigatedClient) {
+            return (navigatedClient || client).focus();
+          });
         }
       }
       if (self.clients.openWindow) return self.clients.openWindow(targetUrl);
