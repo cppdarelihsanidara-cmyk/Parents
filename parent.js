@@ -982,6 +982,7 @@
       // في فضاء الأولياء تبقى الجلسة مسجلة دائماً دون تسجيل خروج تلقائي عند الخمول
       try { safeSetItem('local', 'de_parent_saved', '1'); } catch (eIdle) {}
       render();
+      applyParentHashRoute();
 
       var params = new URLSearchParams(window.location.search);
       if (params.get('child')) {
@@ -1064,6 +1065,36 @@
     }
   }
 
+
+  function applyParentHashRoute() {
+    if (!S.me || !S.d) return;
+    var rawHash = String(window.location.hash || '').replace(/^#/, '').toLowerCase();
+    if (!rawHash || rawHash.indexOf('access_token=') >= 0 || rawHash.indexOf('type=') >= 0) return;
+    var route = rawHash.split(':')[0].split('?')[0];
+    var map = {
+      msgs: 'msgs', messages: 'msgs',
+      evaluations: 'evaluations', evals: 'evaluations',
+      reports: 'reports',
+      appointments: 'appts', appts: 'appts',
+      documents: 'docs', docs: 'docs',
+      attendance: 'attendance',
+      programs: 'programs',
+      children: 'children',
+      contact: 'contact'
+    };
+    if (route === 'notifications' || route === 'notif') {
+      if (typeof openNotificationsModal === 'function') openNotificationsModal();
+      return;
+    }
+    var targetTab = map[route];
+    if (targetTab && S.tab !== targetTab) {
+      S.tab = targetTab;
+      if (typeof render === 'function') render();
+      window.scrollTo(0, 0);
+    }
+  }
+  window.addEventListener('hashchange', applyParentHashRoute);
+
   function updateNotifBadge() {
     var b = $('#notifBadge');
     if (!b) return;
@@ -1071,8 +1102,11 @@
     if (count > 0) {
       b.textContent = String(count);
       b.hidden = false;
+      b.style.display = 'flex';
     } else {
+      b.textContent = '';
       b.hidden = true;
+      b.style.display = 'none';
     }
   }
 
@@ -1161,7 +1195,7 @@
       var unreadMsgs = S.d.msgs.filter(function (m) { return !S.reads[m.id]; });
       unreadMsgs.forEach(function (m) {
         itemsCount++;
-        var itemEl = h('div', { class: 'pm-list-item-card', style: 'padding:10px 14px; margin-bottom:8px;' },
+        var itemEl = h('div', { class: 'pm-list-item-card', style: 'padding:10px 14px; margin-bottom:8px; cursor:pointer;', onclick: function (ev) { if (ev && ev.target && ev.target.closest && ev.target.closest('button')) return; var btn = itemEl.querySelector('button'); if (btn) btn.click(); } },
           h('div', { class: 'pm-lic-right' },
             h('div', { class: 'pm-lic-icon-box' }, icon('i-mail')),
             h('div', { class: 'pm-lic-info' },
@@ -1209,7 +1243,7 @@
       var newEvals = S.d.reports.filter(function (r) { return isEvalReport(r) && safeGetItem('local', 'de_seen_ev_' + r.id) !== '1'; });
       newEvals.forEach(function (e) {
         itemsCount++;
-        var itemEl = h('div', { class: 'pm-list-item-card', style: 'padding:10px 14px; margin-bottom:8px;' },
+        var itemEl = h('div', { class: 'pm-list-item-card', style: 'padding:10px 14px; margin-bottom:8px; cursor:pointer;', onclick: function (ev) { if (ev && ev.target && ev.target.closest && ev.target.closest('button')) return; var btn = itemEl.querySelector('button'); if (btn) btn.click(); } },
           h('div', { class: 'pm-lic-right' },
             h('div', { class: 'pm-lic-icon-box gold' }, icon('i-eval')),
             h('div', { class: 'pm-lic-info' },
@@ -1238,7 +1272,7 @@
       var newReps = S.d.reports.filter(function (r) { return !isEvalReport(r) && safeGetItem('local', 'de_seen_rep_' + r.id) !== '1'; });
       newReps.forEach(function (r) {
         itemsCount++;
-        var itemEl = h('div', { class: 'pm-list-item-card', style: 'padding:10px 14px; margin-bottom:8px;' },
+        var itemEl = h('div', { class: 'pm-list-item-card', style: 'padding:10px 14px; margin-bottom:8px; cursor:pointer;', onclick: function (ev) { if (ev && ev.target && ev.target.closest && ev.target.closest('button')) return; var btn = itemEl.querySelector('button'); if (btn) btn.click(); } },
           h('div', { class: 'pm-lic-right' },
             h('div', { class: 'pm-lic-icon-box' }, icon('i-report')),
             h('div', { class: 'pm-lic-info' },

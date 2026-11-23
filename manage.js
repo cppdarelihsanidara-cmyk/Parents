@@ -16294,14 +16294,16 @@
 
     var bellBadge = document.getElementById('notifBellBadge');
     if (bellBadge) {
-      bellBadge.textContent = String(unread);
+      bellBadge.textContent = unread > 0 ? String(unread) : '';
       bellBadge.hidden = unread === 0;
+      bellBadge.style.display = unread > 0 ? 'flex' : 'none';
     }
 
     var navBadge = document.getElementById('notifNavBadge');
     if (navBadge) {
-      navBadge.textContent = String(unread);
+      navBadge.textContent = unread > 0 ? String(unread) : '';
       navBadge.hidden = unread === 0;
+      navBadge.style.display = unread > 0 ? 'flex' : 'none';
     }
   }
 
