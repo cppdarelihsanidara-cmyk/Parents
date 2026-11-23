@@ -16189,7 +16189,7 @@
       target_child_id: o.childId || null,
       target_parent_id: o.parentUserId || null,
       target_section_id: o.sectionId || null,
-      event_type: o.eventType || "manual_push",
+      event_type: o.eventType || "announcement",
       title: o.title || "دار الإحسان",
       body: o.body || "لديك إشعار جديد من المركز",
       url: o.url || "./parent.html",
@@ -16530,6 +16530,37 @@
 
     var toolbar = h('div', { class: 'notif-filters-toolbar' }, tabsGroup, searchInput);
     root.appendChild(toolbar);
+
+    var pushDiagBar = h('div', {
+      class: 'card',
+      style: 'display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;padding:10px 14px;margin-bottom:12px;font-size:0.85rem;'
+    }, h('span', { style: 'opacity:0.75;', text: 'جارٍ فحص حالة نظام Push…' }));
+    root.appendChild(pushDiagBar);
+
+    C.rpc('get_push_diagnostics', {}).then(function (d) {
+      if (!d) return;
+      pushDiagBar.textContent = '';
+      var items = [
+        ['اشتراكات نشطة', String(d.active_subscriptions || 0) + ' (هاتف: ' + String(d.active_mobile_subscriptions || 0) + ')'],
+        ['منتهية', String(d.expired_subscriptions || 0)],
+        ['مرسلة', String(d.sent_count || 0)],
+        ['فاشلة', String(d.failed_count || 0)],
+        ['قيد المعالجة', String(d.processing_count || 0)]
+      ];
+      items.forEach(function (pair) {
+        pushDiagBar.appendChild(h('span', { style: 'background:rgba(18,62,115,0.08);padding:4px 9px;border-radius:8px;' },
+          h('strong', { text: pair[0] + ': ' }), h('span', { text: pair[1] })
+        ));
+      });
+      if (d.last_success_at) {
+        pushDiagBar.appendChild(h('span', { style: 'opacity:0.8;', text: 'آخر إرسال ناجح: ' + new Date(d.last_success_at).toLocaleString('ar-DZ') }));
+      }
+      if (d.last_error) {
+        pushDiagBar.appendChild(h('span', { style: 'color:#b45309;width:100%;font-size:0.8rem;', text: 'آخر ملاحظة: ' + String(d.last_error).slice(0, 140) }));
+      }
+    }).catch(function () {
+      pushDiagBar.remove();
+    });
 
     var listHost = h('div', { class: 'notif-items-list' });
     root.appendChild(listHost);

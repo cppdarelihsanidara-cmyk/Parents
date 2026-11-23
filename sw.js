@@ -1,37 +1,43 @@
-/* Service worker — Dar El-Ihsan Parents portal. */
+/* Service worker — Dar El-Ihsan Portal (Parents-main). */
 'use strict';
 
 var CACHE_PREFIX = 'de-parents-';
-var CACHE = CACHE_PREFIX + 'prod-20261123-pushfix3';
+var CACHE = CACHE_PREFIX + 'prod-20261123-pushfix4';
 var APP_SCOPE = new URL(self.registration.scope);
 var SHELL = [
-  './',
-  'index.html',
-  'parent.html',
-  'navback.js',
-  'icons.js',
-  'icons.css',
-  'portal.css',
-  'crystal-blue-glass.css',
-  'parent-modern.css',
-  'pdf-writer.js',
-  'pwa.css',
-  'pwa.js',
-  'cms-config.js',
-  'parent.js',
-  'de-core.js',
-  'username.js',
-  'fr-names.js',
-  'qr-gen.js',
-  'logo.png',
-  'logo-sq.png',
-  'icon-192.png',
-  'icon-512.png',
-  'icon-maskable-512.png',
-  'apple-touch-icon.png',
-  'parent.webmanifest',
-  'manifest.webmanifest'
+  './', 'index.html', 'parent.html', 'navback.js', 'icons.js', 'icons.css',
+  'portal.css', 'crystal-blue-glass.css', 'parent-modern.css', 'pdf-writer.js',
+  'pwa.css', 'pwa.js', 'cms-config.js', 'parent.js', 'de-core.js', 'username.js',
+  'fr-names.js', 'qr-gen.js', 'logo.png', 'logo-sq.png', 'icon-192.png',
+  'icon-512.png', 'icon-maskable-512.png', 'apple-touch-icon.png',
+  'parent.webmanifest', 'manifest.webmanifest'
 ];
+
+function resolveScopedUrl(rawUrl, fallbackFile) {
+  var fallback = new URL(fallbackFile || 'parent.html', APP_SCOPE);
+  if (!rawUrl) return fallback;
+  try {
+    var resolved = new URL(String(rawUrl), APP_SCOPE);
+    if (resolved.origin !== self.location.origin || resolved.pathname.indexOf(APP_SCOPE.pathname) !== 0) {
+      return fallback;
+    }
+    return resolved;
+  } catch (e) {
+    return fallback;
+  }
+}
+
+function resolveAssetUrl(rawAsset, fallbackFile) {
+  var fallback = new URL(fallbackFile, APP_SCOPE).href;
+  if (!rawAsset) return fallback;
+  try {
+    var resolved = new URL(String(rawAsset), APP_SCOPE);
+    if (resolved.origin !== self.location.origin) return fallback;
+    return resolved.href;
+  } catch (e) {
+    return fallback;
+  }
+}
 
 self.addEventListener('install', function (event) {
   event.waitUntil(
@@ -91,16 +97,8 @@ self.addEventListener('fetch', function (event) {
 
 self.addEventListener('notificationclick', function (event) {
   event.notification.close();
-  var rawTarget = event.notification.data && event.notification.data.url;
-  var target;
-  try {
-    target = new URL(rawTarget || 'parent.html', APP_SCOPE);
-    if (target.origin !== self.location.origin || target.pathname.indexOf(APP_SCOPE.pathname) !== 0) {
-      target = new URL('parent.html', APP_SCOPE);
-    }
-  } catch (error) {
-    target = new URL('parent.html', APP_SCOPE);
-  }
+  var rawTarget = (event.notification.data && event.notification.data.url) || event.notification.url;
+  var target = resolveScopedUrl(rawTarget, 'parent.html');
 
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (clients) {
@@ -121,26 +119,54 @@ self.addEventListener('notificationclick', function (event) {
 });
 
 self.addEventListener('push', function (event) {
-  var payload = { title: 'دار الإحسان', body: 'لديك إشعار جديد في فضاء الأولياء' };
+  var payload = {};
   try {
     if (event.data) {
-      var data = event.data.json();
-      if (data && typeof data === 'object') payload = Object.assign(payload, data);
+      var parsed = event.data.json();
+      if (parsed && typeof parsed === 'object') payload = parsed;
     }
   } catch (error) {
-    if (event.data) payload.body = event.data.text();
+    try {
+      if (event.data) payload = { body: event.data.text() };
+    } catch (e2) {}
   }
 
+  var title = String(payload.title || 'دار الإحسان').trim() || 'دار الإحسان';
+  var body = String(payload.body || 'لديك إشعار جديد في فضاء الأولياء').trim() || 'لديك إشعار جديد في فضاء الأولياء';
+  var rawUrl = (payload.data && payload.data.url) || payload.url || 'parent.html';
+  var targetUrl = resolveScopedUrl(rawUrl, 'parent.html').href;
+
   var options = {
-    body: String(payload.body || 'لديك إشعار جديد في فضاء الأولياء'),
-    icon: new URL('logo-sq.png', APP_SCOPE).href,
-    badge: new URL('logo-sq.png', APP_SCOPE).href,
+    body: body,
+    icon: resolveAssetUrl(payload.icon, 'icon-192.png'),
+    badge: resolveAssetUrl(payload.badge, 'logo-sq.png'),
     vibrate: [200, 100, 200, 100, 400],
     tag: String(payload.tag || ('de-push-' + Date.now())),
     renotify: true,
-    requireInteraction: true,
-    data: { url: payload.url || new URL('parent.html', APP_SCOPE).href }
+    requireInteraction: payload.requireInteraction !== false,
+    data: Object.assign({}, payload.data && typeof payload.data === 'object' ? payload.data : {}, { url: targetUrl })
   };
-  var title = String(payload.title || 'دار الإحسان');
+
   event.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener('pushsubscriptionchange', function (event) {
+  event.waitUntil((async function () {
+    try {
+      var appServerKey = event.oldSubscription && event.oldSubscription.options
+        ? event.oldSubscription.options.applicationServerKey
+        : null;
+      if (!appServerKey) return;
+      var newSub = await self.registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: appServerKey
+      });
+      var clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+      for (var i = 0; i < clients.length; i++) {
+        clients[i].postMessage({ type: 'DE_PUSH_SUBSCRIPTION_CHANGED', subscription: newSub.toJSON() });
+      }
+    } catch (err) {
+      console.warn('pushsubscriptionchange renewal deferred:', err);
+    }
+  })());
 });

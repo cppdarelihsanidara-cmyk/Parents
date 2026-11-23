@@ -34,9 +34,7 @@
   try {
     if (typeof window !== 'undefined' && safeGetItem('local', 'de_parent_app_ver') !== 'v100') {
       safeSetItem('local', 'de_parent_app_ver', 'v100');
-      if (window.caches && caches.keys) {
-        caches.keys().then(function (ks) { ks.forEach(function (k) { caches.delete(k); }); });
-      }
+      /* Cache cleanup is handled safely by sw.js activate using CACHE_PREFIX. */
       if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) {
         navigator.serviceWorker.getRegistrations().then(function (regs) {
           regs.forEach(function (r) { r.update(); });
@@ -533,8 +531,20 @@
       is_active: true,
       last_used_at: new Date().toISOString()
     };
-    // endpoint has a UNIQUE constraint: specify it explicitly for a true upsert.
-    await C.rest('POST', '/push_subscriptions?on_conflict=endpoint', body, 'resolution=merge-duplicates,return=minimal');
+    try {
+      await C.rpc('upsert_my_push_subscription', {
+        p_endpoint: body.endpoint,
+        p_p256dh: body.p256dh,
+        p_auth: body.auth,
+        p_child_id: body.child_id,
+        p_user_agent: body.user_agent,
+        p_device_type: body.device_type,
+        p_device_label: body.device_label
+      });
+    } catch (rpcErr) {
+      // Fallback for older DB instances: endpoint has a UNIQUE constraint.
+      await C.rest('POST', '/push_subscriptions?on_conflict=endpoint', body, 'resolution=merge-duplicates,return=minimal');
+    }
     return true;
   }
 
@@ -646,6 +656,15 @@
       console.warn('Automatic push subscription migration will retry:', e);
       return false;
     }
+  }
+
+
+  if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
+    navigator.serviceWorker.addEventListener('message', function (ev) {
+      if (ev && ev.data && ev.data.type === 'DE_PUSH_SUBSCRIPTION_CHANGED' && S.me) {
+        if (typeof syncExistingPushSubscription === 'function') syncExistingPushSubscription();
+      }
+    });
   }
 
   function resolveParentLoginEmail(raw) {
