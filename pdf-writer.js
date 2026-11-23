@@ -693,7 +693,9 @@
     };
   }
 
-  function drawOfficialHeader(ctx, w, titleAr, logoImg) {
+  function drawOfficialHeader(ctx, w, titleAr, logoImg, lang) {
+    var docLang = String(lang || (typeof document !== 'undefined' && document.documentElement && document.documentElement.lang) || 'ar').slice(0, 2).toLowerCase();
+    var isFr = (docLang === 'fr');
     ctx.fillStyle = '#FFFFFF';
     ctx.fillRect(0, 0, w, 1754);
 
@@ -702,13 +704,17 @@
     ctx.lineWidth = 2.5;
     ctx.strokeRect(36, 36, w - 72, 1682);
 
-    // الشعار على اليسار كما في الوثيقة الرسمية (55043.jpg)
+    // الشعار الرسمي: أعلى اليمين للوثائق العربية، وأعلى اليسار للوثائق الفرنسية
     if (logoImg && logoImg.width) {
-      drawLogoAspect(ctx, logoImg, w - 180, 48, 115, 115, true);
+      if (isFr) {
+        drawLogoAspect(ctx, logoImg, 65, 48, 115, 115, false);
+      } else {
+        drawLogoAspect(ctx, logoImg, w - 180, 48, 115, 115, true);
+      }
     }
 
     ctx.textAlign = 'center';
-    ctx.direction = 'rtl';
+    ctx.direction = isFr ? 'ltr' : 'rtl';
     ctx.fillStyle = '#0F172A';
     ctx.font = 'bold 22px "IBM Plex Sans Arabic", "Cairo", sans-serif';
     ctx.fillText('جمعية أولياء الأطفال المعاقين ذهنيًا', w / 2, 74);

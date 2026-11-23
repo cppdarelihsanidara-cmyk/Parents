@@ -972,6 +972,7 @@
         S._pushSyncedOnce = true;
         syncExistingPushSubscription().then(function (ok) { if (!ok) S._pushSyncedOnce = false; });
       }
+      if (typeof startParentLivePolling === 'function') startParentLivePolling();
 
       show('app');
       applyLang();

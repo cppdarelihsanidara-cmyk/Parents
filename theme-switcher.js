@@ -26,10 +26,38 @@
     btn.setAttribute('aria-pressed', isDark ? 'true' : 'false');
     btn.setAttribute('title', isDark ? 'التبديل إلى الوضع النهاري' : 'التبديل إلى الوضع الليلي الزجاجي');
     btn.setAttribute('aria-label', isDark ? 'التبديل إلى الوضع النهاري' : 'التبديل إلى الوضع الليلي الزجاجي');
-    // أيقونة شمس في النهاري وقمر في الليلي (SVG خطي موحد)
-    btn.innerHTML = isDark
-      ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg><span class="de-theme-lbl">ليلي</span>'
-      : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg><span class="de-theme-lbl">نهاري</span>';
+    // بناء DOM آمن بدون innerHTML (متوافق مع CSP)
+    btn.textContent = '';
+    var NS = 'http://www.w3.org/2000/svg';
+    var svg = document.createElementNS(NS, 'svg');
+    svg.setAttribute('width', '18');
+    svg.setAttribute('height', '18');
+    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.setAttribute('fill', 'none');
+    svg.setAttribute('stroke', 'currentColor');
+    svg.setAttribute('stroke-width', '1.9');
+    svg.setAttribute('stroke-linecap', 'round');
+    svg.setAttribute('stroke-linejoin', 'round');
+    svg.setAttribute('aria-hidden', 'true');
+    if (isDark) {
+      var p = document.createElementNS(NS, 'path');
+      p.setAttribute('d', 'M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z');
+      svg.appendChild(p);
+    } else {
+      var c = document.createElementNS(NS, 'circle');
+      c.setAttribute('cx', '12');
+      c.setAttribute('cy', '12');
+      c.setAttribute('r', '4');
+      svg.appendChild(c);
+      var rays = document.createElementNS(NS, 'path');
+      rays.setAttribute('d', 'M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41');
+      svg.appendChild(rays);
+    }
+    var lbl = document.createElement('span');
+    lbl.className = 'de-theme-lbl';
+    lbl.textContent = isDark ? 'ليلي' : 'نهاري';
+    btn.appendChild(svg);
+    btn.appendChild(lbl);
   }
 
   function toggleTheme() {
