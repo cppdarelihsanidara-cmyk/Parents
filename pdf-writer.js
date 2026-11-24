@@ -704,13 +704,9 @@
     ctx.lineWidth = 2.5;
     ctx.strokeRect(36, 36, w - 72, 1682);
 
-    // الشعار الرسمي: أعلى اليمين للوثائق العربية، وأعلى اليسار للوثائق الفرنسية
+    // الشعار الرسمي في أعلى اليمين لجميع الوثائق، بما فيها النماذج الفرنسية.
     if (logoImg && logoImg.width) {
-      if (isFr) {
-        drawLogoAspect(ctx, logoImg, 65, 48, 115, 115, false);
-      } else {
-        drawLogoAspect(ctx, logoImg, w - 180, 48, 115, 115, true);
-      }
+      drawLogoAspect(ctx, logoImg, w - 180, 48, 115, 115, true);
     }
 
     ctx.textAlign = 'center';

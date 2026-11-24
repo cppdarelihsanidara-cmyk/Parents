@@ -2,11 +2,11 @@
 'use strict';
 
 var CACHE_PREFIX = 'de-parents-';
-var CACHE = CACHE_PREFIX + 'prod-20261123-pushfix10';
+var CACHE = CACHE_PREFIX + 'prod-20261124-pastel1';
 var APP_SCOPE = new URL(self.registration.scope);
 var SHELL = [
   './', 'index.html', 'parent.html', 'navback.js', 'icons.js', 'icons.css',
-  'portal.css', 'crystal-blue-glass.css', 'parent-modern.css', 'pdf-writer.js',
+  'portal.css', 'crystal-blue-glass.css', 'pastel-glass.css', 'parent-modern.css', 'pdf-writer.js',
   'pwa.css', 'pwa.js', 'cms-config.js', 'parent.js', 'de-core.js', 'username.js',
   'fr-names.js', 'qr-gen.js', 'logo.png', 'logo-sq.png', 'icon-192.png',
   'icon-512.png', 'icon-maskable-512.png', 'apple-touch-icon.png',
