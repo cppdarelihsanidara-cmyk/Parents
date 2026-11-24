@@ -4,6 +4,42 @@
    كل النصوص تُدرج بـ textContent لحماية تامة من XSS. */
 (function () {
   'use strict';
+  function uid(id) {
+    if (!DE || !DE.isUuid || !DE.isUuid(id)) throw new Error('معرّف غير صالح.');
+    return id;
+  }
+
+  function openFullscreenViewer(contentNode, titleTxt) {
+    var old = document.getElementById('deFullscreenViewer');
+    if (old && old.parentNode) old.parentNode.removeChild(old);
+    var ov = document.createElement('div');
+    ov.id = 'deFullscreenViewer';
+    ov.className = 'de-fs-viewer';
+    ov.setAttribute('role', 'dialog');
+    ov.setAttribute('aria-modal', 'true');
+
+    var bar = document.createElement('div');
+    bar.className = 'de-fs-bar';
+    var ttl = document.createElement('strong');
+    ttl.textContent = titleTxt || 'معاينة كاملة';
+    var closeBtn = document.createElement('button');
+    closeBtn.type = 'button';
+    closeBtn.className = 'btn small light';
+    closeBtn.textContent = '✕ إغلاق';
+    closeBtn.onclick = function () {
+      if (ov.parentNode) ov.parentNode.removeChild(ov);
+    };
+    bar.appendChild(ttl);
+    bar.appendChild(closeBtn);
+
+    var stage = document.createElement('div');
+    stage.className = 'de-fs-stage';
+    if (contentNode) stage.appendChild(contentNode);
+
+    ov.appendChild(bar);
+    ov.appendChild(stage);
+    document.body.appendChild(ov);
+  }
 
   function getCurrentAcademicYear() {
     var now = new Date();
@@ -1439,7 +1475,7 @@
       h('button', { class: 'btn gold', type: 'button', text: 'تم وفهمت الطريقة', onclick: closeModal })
     ));
 
-    openModal(body);
+    openFullscreenViewer(body, repDisplayTitle);
   }
 
   // التقاط حدث التثبيت المبكر PWA

@@ -2304,15 +2304,21 @@
           }
         }
 
-        var repsHost = h('div', { class: 'child-sub-section' },
-          h('div', { class: 'child-sub-section-title' },
-            makeSvgIcon('s-report'),
-            h('span', { text: 'التقارير التربوية الدورية للطفل (' + childReps.length + ')' })
-          )
-        );
+        var repsListWrap = h('div', { hidden: childReps.length > 0 });
+        var repsToggleBtn = h('button', {
+          type: 'button',
+          class: 'de-acc-toggle',
+          'aria-expanded': 'false',
+          onclick: function () {
+            var exp = repsToggleBtn.getAttribute('aria-expanded') === 'true';
+            repsToggleBtn.setAttribute('aria-expanded', exp ? 'false' : 'true');
+            repsListWrap.hidden = exp;
+          }
+        }, h('span', { style: 'display:inline-flex;align-items:center;gap:8px;' }, makeSvgIcon('s-report'), h('span', { text: 'التقارير التربوية الدورية للطفل (' + childReps.length + ')' })), h('span', { class: 'de-acc-arrow', text: '▾' }));
+        var repsHost = h('div', { class: 'child-sub-section' }, repsToggleBtn, repsListWrap);
 
         if (!childReps.length) {
-          repsHost.appendChild(h('p', { class: 'muted small', text: 'لا توجد تقارير دورية مسجلة لهذا الطفل بعد.' }));
+          repsListWrap.appendChild(h('p', { class: 'muted small', text: 'لا توجد تقارير دورية مسجلة لهذا الطفل بعد.' }));
         } else {
           childReps.forEach(function (rep) {
             var repCard = h('div', { class: 'child-sub-item-card' },
@@ -2375,7 +2381,7 @@
                 }, 'light') : null
               )
             );
-            repsHost.appendChild(repCard);
+            repsListWrap.appendChild(repCard);
           });
         }
         if (archivedChildReps.length) {
@@ -2403,15 +2409,21 @@
         var childEvals = childEvalsAll.filter(function (rep) { return rep.is_archived !== true; });
         var archivedChildEvals = childEvalsAll.filter(function (rep) { return rep.is_archived === true; });
 
-        var evalsHost = h('div', { class: 'child-sub-section' },
-          h('div', { class: 'child-sub-section-title' },
-            makeSvgIcon('s-card'),
-            h('span', { text: 'استمارات وتقارير التقييم للطفل (' + childEvals.length + ')' })
-          )
-        );
+        var evalsListWrap = h('div', { hidden: childEvals.length > 0 });
+        var evalsToggleBtn = h('button', {
+          type: 'button',
+          class: 'de-acc-toggle',
+          'aria-expanded': 'false',
+          onclick: function () {
+            var exp = evalsToggleBtn.getAttribute('aria-expanded') === 'true';
+            evalsToggleBtn.setAttribute('aria-expanded', exp ? 'false' : 'true');
+            evalsListWrap.hidden = exp;
+          }
+        }, h('span', { style: 'display:inline-flex;align-items:center;gap:8px;' }, makeSvgIcon('s-card'), h('span', { text: 'استمارات وتقارير التقييم للطفل (' + childEvals.length + ')' })), h('span', { class: 'de-acc-arrow', text: '▾' }));
+        var evalsHost = h('div', { class: 'child-sub-section' }, evalsToggleBtn, evalsListWrap);
 
         if (!childEvals.length) {
-          evalsHost.appendChild(h('p', { class: 'muted small', text: 'لا توجد استمارات تقييم مسجلة لهذا الطفل بعد.' }));
+          evalsListWrap.appendChild(h('p', { class: 'muted small', text: 'لا توجد استمارات تقييم مسجلة لهذا الطفل بعد.' }));
         } else {
           childEvals.forEach(function (evRep) {
             var ev = parseEvaluationReport(evRep);
@@ -2484,7 +2496,7 @@
                 }, 'gold'),
               )
             );
-            evalsHost.appendChild(evCard);
+            evalsListWrap.appendChild(evCard);
           });
         }
         if (archivedChildEvals.length) {

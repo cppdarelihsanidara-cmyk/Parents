@@ -54,16 +54,40 @@
     line-height: 1.65;
   }
 
-  /* تباين قوي وواضح للنصوص دون أي شفافية */
-  h1, h2, h3, h4, strong, .ttl strong, .pm-title {
-    color: var(--di-navy) !important;
-  }
-  p, td, th, li, .txt, .muted, .small, .pm-lic-meta, .pm-sub {
-    color: var(--di-ink) !important;
-    opacity: 1 !important;
+  /* تباين قوي وواضح للنصوص دون إفساد البطاقات الداكنة أو الأزرار */
+  body { color: var(--di-ink); }
+  .card:not(.att-glass-hero):not(.children-hero):not(.sec-hero):not(.arch-clean-hero) h1,
+  .card:not(.att-glass-hero):not(.children-hero):not(.sec-hero):not(.arch-clean-hero) h2,
+  .card:not(.att-glass-hero):not(.children-hero):not(.sec-hero):not(.arch-clean-hero) h3,
+  .card:not(.att-glass-hero):not(.children-hero):not(.sec-hero):not(.arch-clean-hero) h4,
+  .ttl strong, .pm-title {
+    color: var(--di-navy);
   }
   .muted, .small {
-    color: var(--di-ink-sub) !important;
+    color: var(--di-ink-sub);
+    opacity: 1 !important;
+  }
+  /* إبقاء النصوص بيضاء تماماً فوق الخلفيات الكحلية والزرقاء */
+  .children-hero, .children-hero *,
+  .sec-hero, .sec-hero *,
+  .arch-clean-hero, .arch-clean-hero *,
+  .att-glass-hero, .att-glass-hero *,
+  .btn.primary, .btn.primary *,
+  .btn.gold, .btn.gold *,
+  .btn.danger, .btn.danger *,
+  .btn-pm-primary, .btn-pm-primary * {
+    color: #FFFFFF !important;
+  }
+  .children-hero .btn.light, .children-hero .btn.light *,
+  .sec-hero .btn.light, .sec-hero .btn.light *,
+  .att-glass-hero .btn.light, .att-glass-hero .btn.light * {
+    color: var(--di-navy) !important;
+  }
+  /* إزالة اللون الأخضر من أزرار الواتساب داخل تفاصيل الطفل */
+  a[href*="wa.me"], .wa-btn, .wa-inline-btn, .btn-wa {
+    background: var(--di-royal) !important;
+    border-color: var(--di-navy) !important;
+    color: #FFFFFF !important;
   }
 
   /* ── شاشة تسجيل الدخول ── */
@@ -695,3 +719,127 @@
     z-index: 20 !important;
   }
 }
+
+  /* ── إصلاح عرض النوافذ المنبثقة والمعاينة الكاملة (منع انضغاط النافذة) ── */
+  #modal.modal {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 9999 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 12px !important;
+  }
+  #modal.modal[hidden] {
+    display: none !important;
+  }
+  #modal #modalCard.modal-card {
+    width: min(1040px, 96vw) !important;
+    max-width: 96vw !important;
+    max-height: 92dvh !important;
+    min-height: 160px !important;
+    height: auto !important;
+    display: block !important;
+    overflow-y: auto !important;
+    overflow-x: auto !important;
+    padding: 20px !important;
+  }
+  #modal #modalCard .modal.card,
+  #modal #modalCard .modal-body {
+    position: static !important;
+    inset: auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: none !important;
+    height: auto !important;
+    overflow: visible !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* ── إبقاء شريط الأيقونات المصغر ظاهراً دائماً عند طي القائمة الجانبية ── */
+  @media (max-width: 860px) {
+    #app.shell.side-collapsed .side {
+      position: fixed !important;
+      inset-block: 0 !important;
+      inset-inline-start: 0 !important;
+      width: 60px !important;
+      transform: translateX(0) !important;
+      display: flex !important;
+      flex-direction: column !important;
+      padding: 8px 4px !important;
+      z-index: 45 !important;
+    }
+    #app.shell.side-collapsed .main {
+      margin-inline-start: 60px !important;
+      width: calc(100% - 60px) !important;
+    }
+    #app.shell.side-collapsed .side .brand { justify-content: center !important; padding: 8px 2px !important; }
+    #app.shell.side-collapsed .side .brand-txt,
+    #app.shell.side-collapsed .side .side-close-btn,
+    #app.shell.side-collapsed .side .spp-info,
+    #app.shell.side-collapsed .side .nav-group-label,
+    #app.shell.side-collapsed .side #nav button span:not(.nav-badge),
+    #app.shell.side-collapsed .side .side-foot span {
+      display: none !important;
+    }
+    #app.shell.side-collapsed .side .side-profile-pill { justify-content: center !important; padding: 6px 2px !important; }
+    #app.shell.side-collapsed .side #nav button { justify-content: center !important; padding: 10px 4px !important; }
+    #app.shell.side-collapsed .side .side-signout-btn { justify-content: center !important; padding: 10px 4px !important; }
+  }
+
+  /* ── عارض ملء الشاشة القابل للتكبير اليدوي في فضاء الأولياء ── */
+  .de-fs-viewer {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100dvh;
+    z-index: 10000;
+    background: var(--di-ivory);
+    display: flex;
+    flex-direction: column;
+  }
+  .de-fs-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 16px;
+    background: rgba(255, 255, 255, 0.94);
+    border-bottom: 1.5px solid var(--di-sand);
+    flex-shrink: 0;
+  }
+  .de-fs-stage {
+    flex: 1;
+    overflow: auto;
+    padding: 12px;
+    touch-action: pan-x pan-y pinch-zoom;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* ── أسهم الطي والفتح للأرشيف والتقارير والتقييمات ── */
+  .de-acc-toggle {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    border-radius: 10px;
+    background: var(--di-ivory);
+    border: 1.5px solid var(--di-sand);
+    color: var(--di-navy);
+    font-weight: 800;
+    font-size: 14px;
+    cursor: pointer;
+    margin-bottom: 8px;
+  }
+  .de-acc-arrow {
+    font-size: 14px;
+    transition: transform 0.2s ease;
+  }
+  .de-acc-toggle[aria-expanded="true"] .de-acc-arrow {
+    transform: rotate(180deg);
+  }
