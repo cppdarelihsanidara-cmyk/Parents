@@ -1,23 +1,36 @@
-/* card.js — بطاقة انخراط التلميذ (85.6 × 54 مم أفقية) بدقة 300 dpi على Canvas.
-   العناصر المطلوبة فقط: شعار المركز الأصلي، اسم المركز، اسم التلميذ، رقم المنخرط الرسمي،
-   تاريخ الميلاد (خانة مستقلة)، ورمز QR خاص بالتلميذ يفتح صفحته.
-   لا innerHTML. الصورة تُولَّد داخل المتصفح فقط ولا تُرفع إلى أي خادم.
-   الاستعمال: DECARD.render(info) ← { jpeg, url, width, height }
-              DECARD.toPdf(card) ← Blob(PDF)   |   DECARD.print(card.url)
-   info = { full_name, membership_no, dob, center, url } */
+/* card.js — بطاقة انخراط المنخرط الرسمية (85.6 × 54 مم أفقية) بدقة 300 dpi على Canvas.
+   مطابقة للتصميم الرسمي المعتمد: ترويسة وتذييل بموجات كحلي وذهبي، الشعار الأصلي أعلى اليمين
+   مع علامة مائية خفيفة بالوسط، حقول مستديرة بحافة كحلي يمنى، رمز QR ديناميكي على اليسار،
+   وخانة اسم المستخدم وكلمة المرور أسفل البطاقة. */
 (function (root) {
   'use strict';
 
-  var W = 1011, H = 638;                       // 85.6 × 54 مم عند 300 dpi
-  var NAVY = '#0c2d55', GOLD = '#b4873a', INK = '#14263d', MUTED = '#55657a', LINE = '#c9d3e0', PALE = '#f4f7fb';
-  var FONT = 'IBM Plex Sans Arabic, "Segoe UI", Tahoma, sans-serif';
+  var W = 1011, H = 638;
+  var NAVY = '#172F50', GOLD = '#C9A449', GOLD_LIGHT = '#E6C97A', INK = '#172F50', WHITE = '#FFFFFF';
+  var FONT = '"IBM Plex Sans Arabic", "Cairo", "Tajawal", "Segoe UI", Tahoma, sans-serif';
 
-  function dateLabel(iso) {                    // YYYY-MM-DD → DD/MM/YYYY (أرقام لاتينية)
+  function dateLabel(iso) {
     var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso || ''));
     return m ? m[3] + '/' + m[2] + '/' + m[1] : '—';
   }
-  // رقم المنخرط الرسمي كما هو (مع الأصفار الأولى)، وليس معرّف قاعدة البيانات
-  function memberLabel(n) { return n == null || String(n).trim() === '' ? '—' : String(n).trim(); }
+
+  function memberLabel(n) {
+    var s = n == null ? '' : String(n).trim();
+    s = s.replace(/^N°\s*/i, '').trim();
+    return s || '—';
+  }
+
+  function disabilityCode(raw) {
+    var s = String(raw || '').trim();
+    if (!s) return '—';
+    var upper = s.toUpperCase();
+    if (/\bTSA\b/.test(upper) || s.indexOf('توحد') >= 0) return 'TSA';
+    if (/T\.?\s*21/.test(upper) || s.indexOf('داون') >= 0) return 'T21';
+    if (/R\.?\s*M\.?/.test(upper) || s.indexOf('تأخر ذهني') >= 0) return 'R.M';
+    if (s.indexOf('متعدد') >= 0) return 'POLY';
+    if (s.indexOf('دراسي') >= 0) return 'TD';
+    return s.length <= 10 ? s : s.slice(0, 10);
+  }
 
   function loadImage(src) {
     return new Promise(function (res) {
@@ -28,41 +41,39 @@
     });
   }
 
-  // لفّ النص إلى أسطر بحدّ عرض (يحافظ على الكلمات)
-  function wrap(ctx, text, maxW, maxLines) {
-    var words = String(text || '').split(/\s+/).filter(Boolean), lines = [], cur = '';
-    words.forEach(function (w) {
-      var t = cur ? cur + ' ' + w : w;
-      if (ctx.measureText(t).width <= maxW || !cur) cur = t;
-      else { lines.push(cur); cur = w; }
-    });
-    if (cur) lines.push(cur);
-    if (lines.length > maxLines) {               // قصّ السطر الأخير بعلامة …
-      lines = lines.slice(0, maxLines);
-      var last = lines[maxLines - 1];
-      while (ctx.measureText(last + '…').width > maxW && last.length > 1) last = last.slice(0, -1);
-      lines[maxLines - 1] = last + '…';
-    }
-    return lines;
-  }
-
-  // تصغير الخط حتى يتسع النص في المساحة المحددة
   function fitFont(ctx, text, weight, startPx, maxW) {
     var px = startPx;
     ctx.font = weight + ' ' + px + 'px ' + FONT;
-    while (ctx.measureText(text).width > maxW && px > 18) { px -= 2; ctx.font = weight + ' ' + px + 'px ' + FONT; }
+    while (ctx.measureText(text).width > maxW && px > 17) {
+      px -= 1;
+      ctx.font = weight + ' ' + px + 'px ' + FONT;
+    }
   }
 
   function roundRect(ctx, x, y, w, h, r) {
-    ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
-    ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
   }
 
-  // QR بوحدات صحيحة (حواف حادة) مع هامش أبيض 4 وحدات حوله
-  function drawQr(ctx, text, x, y, box) {
-    ctx.fillStyle = '#ffffff'; ctx.fillRect(x, y, box, box);
+  function roundRightTab(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.arcTo(x + w, y, x + w, y + r, r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+    ctx.lineTo(x, y + h);
+    ctx.closePath();
+  }
 
-    // 1. الأولوية الأولى: استعمال DE_QR.drawToCanvas من qr-gen.js (يدعم أي طول رابط تلقائياً بلا قيود)
+  function drawQr(ctx, text, x, y, box) {
+    ctx.fillStyle = WHITE;
+    ctx.fillRect(x, y, box, box);
     if (root.DE_QR && typeof root.DE_QR.drawToCanvas === 'function') {
       try {
         var tempCanvas = (typeof document !== 'undefined') ? document.createElement('canvas') : null;
@@ -73,8 +84,6 @@
         }
       } catch (e1) {}
     }
-
-    // 2. الأولوية الثانية: DEQR.encode من qr-encoder.js
     var enc = root.DEQR || (root.DE_QR && root.DE_QR.encode ? root.DE_QR : null);
     if (enc && typeof enc.encode === 'function') {
       try {
@@ -88,175 +97,254 @@
         return;
       } catch (e2) {}
     }
-
     ctx.fillStyle = NAVY;
     ctx.font = '700 18px ' + FONT;
     ctx.textAlign = 'center';
-    ctx.fillText('رمز التحقق QR', x + box / 2, y + box / 2);
+    ctx.fillText('QR', x + box / 2, y + box / 2);
   }
 
   function fontsReady() {
-    if (!(document.fonts && document.fonts.load)) return Promise.resolve();
-    return Promise.all([document.fonts.load('800 40px IBM Plex Sans Arabic'), document.fonts.load('700 28px IBM Plex Sans Arabic'), document.fonts.load('400 26px IBM Plex Sans Arabic')])
-      .catch(function () { /* الخط الاحتياطي يكفي */ });
+    if (typeof document === 'undefined' || !(document.fonts && document.fonts.load)) return Promise.resolve();
+    return Promise.all([
+      document.fonts.load('800 38px IBM Plex Sans Arabic'),
+      document.fonts.load('700 24px IBM Plex Sans Arabic'),
+      document.fonts.load('400 22px IBM Plex Sans Arabic')
+    ]).catch(function () {});
   }
 
   function checkUrl(u) {
-    if (!u) return 'https://cppdarelihsanidara-cmyk.github.io/Admin/parent.html';
+    if (!u) return 'https://cppdarelihsanidara-cmyk.github.io/Parents/parent.html';
     try {
-      var x = new URL(u, (typeof window !== 'undefined' && window.location) ? window.location.href : 'https://cppdarelihsanidara-cmyk.github.io/Admin/');
+      var x = new URL(u, (typeof window !== 'undefined' && window.location) ? window.location.href : 'https://cppdarelihsanidara-cmyk.github.io/Parents/');
       return x.href;
-    } catch (e) {
-      return String(u);
-    }
+    } catch (e) { return String(u); }
   }
 
   function render(info) {
     return Promise.resolve().then(function () {
       if (!info || !info.url) throw new Error('رابط البطاقة مفقود.');
       var url = checkUrl(info.url);
-      var centers = root.DE_CENTERS || {};
-      var center = centers[info.center] || centers.main || { name: 'المركز النفسي البيداغوجي دار الإحسان', logo: 'logo-sq.png' };
+      var officialTitle = 'المركز النفسي البيداغوجي دار الإحسان';
       return fontsReady().then(function () {
-        return loadImage(center.logo).then(function (lg) {
-          return lg || loadImage('logo-sq.png');
-        }).then(function (lg) {
-          return lg || loadImage('logo.png');
-        });
+        return loadImage('logo-sq.png').then(function (lg) { return lg || loadImage('logo.png'); });
       }).then(function (logo) {
-
         var cv = document.createElement('canvas');
         cv.width = W; cv.height = H;
         var ctx = cv.getContext('2d');
         ctx.direction = 'rtl';
         ctx.textBaseline = 'alphabetic';
 
-        // الخلفية والترويسة الزرقاء والشريط الذهبي
-        ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, W, H);
-        ctx.fillStyle = NAVY; ctx.fillRect(0, 0, W, 178);
-        ctx.fillStyle = GOLD; ctx.fillRect(0, 178, W, 8);
+        // خلفية بيضاء مع إطار ذهبي وكحلي خارجي
+        ctx.fillStyle = WHITE;
+        ctx.fillRect(0, 0, W, H);
 
-        // شعار المركز في دائرة بيضاء (الشعار الأصلي بلا تشويه: نسبة الطول والعرض محفوظة)
-        var lx = W - 118, ly = 89, lr = 78;
-        ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(lx, ly, lr, 0, Math.PI * 2); ctx.fill();
+        // موجة الترويسة الذهبية ثم الكحلية
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(W, 0);
+        ctx.lineTo(W, 148);
+        ctx.bezierCurveTo(W * 0.72, 198, W * 0.25, 130, 0, 92);
+        ctx.closePath();
+        var goldGrad = ctx.createLinearGradient(0, 0, W, 160);
+        goldGrad.addColorStop(0, GOLD_LIGHT);
+        goldGrad.addColorStop(0.5, GOLD);
+        goldGrad.addColorStop(1, '#B3882B');
+        ctx.fillStyle = goldGrad;
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(W, 0);
+        ctx.lineTo(W, 136);
+        ctx.bezierCurveTo(W * 0.72, 184, W * 0.25, 118, 0, 74);
+        ctx.closePath();
+        ctx.fillStyle = NAVY;
+        ctx.fill();
+
+        // موجة التذييل الذهبية ثم الكحلية
+        ctx.beginPath();
+        ctx.moveTo(0, H);
+        ctx.lineTo(W, H);
+        ctx.lineTo(W, H - 96);
+        ctx.bezierCurveTo(W * 0.72, H - 140, W * 0.28, H - 64, 0, H - 102);
+        ctx.closePath();
+        ctx.fillStyle = goldGrad;
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.moveTo(0, H);
+        ctx.lineTo(W, H);
+        ctx.lineTo(W, H - 82);
+        ctx.bezierCurveTo(W * 0.72, H - 124, W * 0.28, H - 52, 0, H - 86);
+        ctx.closePath();
+        ctx.fillStyle = NAVY;
+        ctx.fill();
+
+        // علامة مائية خفيفة للشعار في الوسط
         if (logo && logo.width && logo.height) {
-          var s = Math.min((lr * 2 - 8) / logo.width, (lr * 2 - 8) / logo.height);
-          ctx.save(); ctx.beginPath(); ctx.arc(lx, ly, lr - 4, 0, Math.PI * 2); ctx.clip();
-          ctx.drawImage(logo, lx - (logo.width * s) / 2, ly - (logo.height * s) / 2, logo.width * s, logo.height * s);
+          ctx.save();
+          ctx.globalAlpha = 0.08;
+          var ws = Math.min(300 / logo.width, 300 / logo.height);
+          ctx.drawImage(logo, W / 2 - (logo.width * ws) / 2, H / 2 - (logo.height * ws) / 2 + 12, logo.width * ws, logo.height * ws);
           ctx.restore();
-        } else {
-          ctx.fillStyle = NAVY;
-          ctx.beginPath(); ctx.arc(lx, ly, lr - 6, 0, Math.PI * 2); ctx.fill();
-          ctx.fillStyle = GOLD;
-          ctx.font = '800 24px ' + FONT;
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.fillText('دار الإحسان', lx, ly);
-          ctx.textBaseline = 'alphabetic';
         }
 
-        // عنوان البطاقة واسم المركز (يسار الشعار)
-        var tx = lx - lr - 28, maxTextW = tx - 40;
-        ctx.textAlign = 'right';
-        ctx.fillStyle = GOLD; ctx.font = '700 30px ' + FONT;
-        ctx.fillText('بطاقة انخراط تلميذ', tx, 58);
-        ctx.fillStyle = '#ffffff'; ctx.font = '800 38px ' + FONT;
-        wrap(ctx, center.name, maxTextW, 2).forEach(function (ln, i) { ctx.fillText(ln, tx, 118 + i * 48); });
+        // الشعار الرسمي أعلى اليمين داخل دائرة بيضاء بإطار ذهبي دون قص أي كتابة
+        var lx = W - 90, ly = 86, lr = 66;
+        ctx.fillStyle = WHITE;
+        ctx.beginPath();
+        ctx.arc(lx, ly, lr, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = GOLD;
+        ctx.lineWidth = 4;
+        ctx.stroke();
 
-        // QR على يسار الجسم داخل إطار واضح بخلفية بيضاء
-        var qx = 58, qy = 226, qb = 330;
-        ctx.strokeStyle = LINE; ctx.lineWidth = 3; roundRect(ctx, qx - 14, qy - 14, qb + 28, qb + 28, 18); ctx.stroke();
-        drawQr(ctx, url, qx, qy, qb);
+        if (logo && logo.width && logo.height) {
+          var s = Math.min((lr * 2 - 14) / logo.width, (lr * 2 - 14) / logo.height);
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(lx, ly, lr - 4, 0, Math.PI * 2);
+          ctx.clip();
+          ctx.drawImage(logo, lx - (logo.width * s) / 2, ly - (logo.height * s) / 2, logo.width * s, logo.height * s);
+          ctx.restore();
+        }
+
+        // العنوان الرسمي في الترويسة
+        var titleCenterX = W / 2 - 20;
         ctx.textAlign = 'center';
-        ctx.fillStyle = MUTED; ctx.font = '700 24px ' + FONT;
-        ctx.fillText('امسح الرمز لدخول فضاء الأولياء', qx + qb / 2, qy + qb + 46);
+        ctx.fillStyle = WHITE;
+        ctx.font = '800 44px ' + FONT;
+        ctx.fillText('بطاقة منخرط', titleCenterX, 66);
 
-        // بيانات التلميذ (يمين): الاسم واللقب وتاريخ الميلاد فقط — بلا أي معلومات أخرى
-        var rx = W - 58, colL = 436;
-        ctx.textAlign = 'right';
-        ctx.fillStyle = MUTED; ctx.font = '400 26px ' + FONT;
-        ctx.fillText('الاسم واللقب', rx, 258);
-        ctx.fillStyle = INK;
-        fitFont(ctx, info.full_name || '—', '800', 60, rx - colL);
-        var nm = wrap(ctx, info.full_name || '—', rx - colL, 2);
-        nm.forEach(function (ln, i) { ctx.fillText(ln, rx, 326 + i * 66); });
+        ctx.fillStyle = WHITE;
+        ctx.font = '700 23px ' + FONT;
+        ctx.fillText(officialTitle, titleCenterX, 114);
 
-        // خانة مستقلة لتاريخ الميلاد
-        var by = 430, bh = 150, dobW = rx - colL;
-        ctx.fillStyle = PALE; roundRect(ctx, colL, by, dobW, bh, 16); ctx.fill();
-        ctx.strokeStyle = LINE; ctx.lineWidth = 2; roundRect(ctx, colL, by, dobW, bh, 16); ctx.stroke();
-        ctx.textAlign = 'right';
-        ctx.fillStyle = MUTED; ctx.font = '700 24px ' + FONT;
-        ctx.fillText('تاريخ الميلاد', rx - 24, by + 48);
-        ctx.fillStyle = INK;
-        var dob = dateLabel(info.dob);
-        fitFont(ctx, dob, '800', 58, dobW - 48);
-        ctx.fillText(dob, rx - 24, by + 124);
+        // خطان ذهبيان بجانب اسم المركز
+        ctx.strokeStyle = GOLD;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(titleCenterX - 310, 107);
+        ctx.lineTo(titleCenterX - 205, 107);
+        ctx.moveTo(titleCenterX + 205, 107);
+        ctx.lineTo(titleCenterX + 310, 107);
+        ctx.stroke();
 
-        // إطار ذهبي خارجي
-        ctx.strokeStyle = GOLD; ctx.lineWidth = 6; ctx.strokeRect(3, 3, W - 6, H - 6);
+        // رمز QR ديناميكي على اليسار
+        var qx = 58, qy = 200, qb = 248;
+        ctx.fillStyle = WHITE;
+        roundRect(ctx, qx - 10, qy - 10, qb + 20, qb + 20, 18);
+        ctx.fill();
+        ctx.strokeStyle = NAVY;
+        ctx.lineWidth = 3;
+        roundRect(ctx, qx - 10, qy - 10, qb + 20, qb + 20, 18);
+        ctx.stroke();
+        drawQr(ctx, url, qx, qy, qb);
 
-        return new Promise(function (res, rej) {
-          cv.toBlob(function (jpeg) {
-            if (!jpeg) return rej(new Error('تعذّر إنشاء صورة البطاقة.'));
-            res({ jpeg: jpeg, url: URL.createObjectURL(jpeg), width: W, height: H, qrUrl: url });
-          }, 'image/jpeg', 0.97);
+        ctx.textAlign = 'center';
+        ctx.fillStyle = NAVY;
+        ctx.font = '700 19px ' + FONT;
+        ctx.fillText('امسح الرمز للدخول إلى فضاء الأولياء', qx + qb / 2, qy + qb + 40);
+
+        // حقول البيانات المعتمدة على اليمين (تصميم الكبسولات باللون الكحلي والأبيض)
+        var rx = W - 40, colL = 370, rowW = rx - colL;
+        var rows = [
+          ['رقم التسجيل:', memberLabel(info.membership_no != null ? info.membership_no : info.member_no)],
+          ['الإسم واللقب:', info.full_name || '—'],
+          ['تاريخ الميلاد:', dateLabel(info.dob)],
+          ['نوع الإعاقة:', disabilityCode(info.disability)]
+        ];
+        rows.forEach(function (rw, idx) {
+          var ry = 196 + idx * 78;
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.96)';
+          ctx.strokeStyle = NAVY;
+          ctx.lineWidth = 2.2;
+          roundRect(ctx, colL, ry, rowW, 60, 18);
+          ctx.fill();
+          ctx.stroke();
+
+          // اللسان الكحلي على اليمين
+          ctx.fillStyle = NAVY;
+          roundRightTab(ctx, rx - 38, ry, 38, 60, 16);
+          ctx.fill();
+
+          ctx.textAlign = 'right';
+          ctx.fillStyle = NAVY;
+          ctx.font = '800 22px ' + FONT;
+          ctx.fillText(rw[0], rx - 52, ry + 38);
+
+          ctx.textAlign = 'left';
+          ctx.fillStyle = INK;
+          fitFont(ctx, rw[1], '800', idx === 3 ? 28 : 23, rowW - 220);
+          ctx.fillText(rw[1], colL + 22, ry + 38);
         });
+
+        // بيانات الدخول أسفل البطاقة (خانة اسم المستخدم وخانة كلمة المرور)
+        var userTxt = info.username ? String(info.username) : memberLabel(info.membership_no != null ? info.membership_no : info.member_no);
+        var passTxt = info.password_hint ? String(info.password_hint) : '••••••••';
+
+        ctx.fillStyle = WHITE;
+        ctx.strokeStyle = NAVY;
+        ctx.lineWidth = 2;
+        roundRect(ctx, W - 488, H - 72, 340, 48, 22);
+        ctx.fill(); ctx.stroke();
+        roundRect(ctx, 185, H - 72, 290, 48, 22);
+        ctx.fill(); ctx.stroke();
+
+        ctx.textAlign = 'right';
+        ctx.fillStyle = NAVY;
+        ctx.font = '800 19px ' + FONT;
+        ctx.fillText('اسم المستخدم: ' + userTxt, W - 168, H - 41);
+        ctx.fillText('كلمة المرور: ' + passTxt, 456, H - 41);
+
+        // إطار خارجي مزدوج بالذهبي والكحلي
+        ctx.strokeStyle = GOLD;
+        ctx.lineWidth = 6;
+        roundRect(ctx, 3, 3, W - 6, H - 6, 22);
+        ctx.stroke();
+        ctx.strokeStyle = NAVY;
+        ctx.lineWidth = 2;
+        roundRect(ctx, 8, 8, W - 16, H - 16, 18);
+        ctx.stroke();
+
+        return { jpeg: cv.toDataURL('image/jpeg', 0.96), url: url, width: W, height: H };
       });
     });
   }
 
-  /* PDF من صورة JPEG واحدة بحجم البطاقة بالضبط (85.6 × 54 مم = 242.6 × 153.1 نقطة) */
-  function toPdf(card) {
-    return card.jpeg.arrayBuffer().then(function (buf) {
-      var jpeg = new Uint8Array(buf), enc = new TextEncoder();
-      var pw = (W * 72 / 300).toFixed(2), ph = (H * 72 / 300).toFixed(2);
-      var content = 'q ' + pw + ' 0 0 ' + ph + ' 0 0 cm /Im0 Do Q';
-      var parts = [], offsets = [], pos = 0;
-      function add(b) { parts.push(b); pos += b.length; }
-      add(enc.encode('%PDF-1.4\n%âãÏÓ\n'));
-      var objs = [
-        '<< /Type /Catalog /Pages 2 0 R >>',
-        '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
-        '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ' + pw + ' ' + ph + '] /Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>'
-      ];
-      for (var i = 0; i < 5; i++) {
-        offsets.push(pos);
-        if (i < 3) add(enc.encode((i + 1) + ' 0 obj\n' + objs[i] + '\nendobj\n'));
-        else if (i === 3) {
-          add(enc.encode('4 0 obj\n<< /Type /XObject /Subtype /Image /Width ' + W + ' /Height ' + H +
-            ' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ' + jpeg.length + ' >>\nstream\n'));
-          add(jpeg);
-          add(enc.encode('\nendstream\nendobj\n'));
-        } else add(enc.encode('5 0 obj\n<< /Length ' + content.length + ' >>\nstream\n' + content + '\nendstream\nendobj\n'));
-      }
-      var xref = pos, x = 'xref\n0 6\n0000000000 65535 f \n';
-      offsets.forEach(function (o) { x += String(o).padStart(10, '0') + ' 00000 n \n'; });
-      x += 'trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n' + xref + '\n%%EOF\n';
-      add(enc.encode(x));
-      return new Blob(parts, { type: 'application/pdf' });
-    });
-  }
-
-  function download(blob, filename) {
-    var url = URL.createObjectURL(blob);
+  function download(dataUrl, filename) {
+    if (typeof document === 'undefined' || !dataUrl) return false;
     var a = document.createElement('a');
-    a.href = url; a.download = filename; a.rel = 'noopener';
-    document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(function () { URL.revokeObjectURL(url); }, 60000);
+    a.href = dataUrl;
+    a.download = filename || 'member-card.jpg';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    return true;
   }
 
-  /* الطباعة: عنصر #printArea (خارج الواجهة) يظهر وحده في وضع الطباعة بمقاس البطاقة */
-  function print(url) {
-    var area = document.getElementById('printArea'), img = document.getElementById('printImg');
-    if (!area || !img) return Promise.reject(new Error('عنصر الطباعة غير موجود في الصفحة.'));
-    return new Promise(function (res) {
-      function done() { img.removeAttribute('src'); window.removeEventListener('afterprint', done); res(); }
-      window.addEventListener('afterprint', done);
-      img.onload = function () { setTimeout(function () { window.print(); }, 60); };
-      img.src = url;
+  function toPdf(card) {
+    if (!root.DE_PDF || typeof root.DE_PDF.fromJpeg !== 'function') throw new Error('مكوّن PDF غير محمّل.');
+    return root.DE_PDF.fromJpeg(card.jpeg, card.width, card.height, { mmW: 85.6, mmH: 54 });
+  }
+
+  function printCard(cardUrl) {
+    return new Promise(function (resolve, reject) {
+      var w = window.open('', '_blank', 'width=520,height=380');
+      if (!w) return reject(new Error('يرجى السماح بالنوافذ المنبثقة للطباعة.'));
+      var doc = w.document;
+      doc.open(); doc.close();
+      doc.title = 'بطاقة منخرط — دار الإحسان';
+      var st = doc.createElement('style');
+      st.textContent = '@page{size:85.6mm 54mm;margin:0}body{margin:0;display:flex;align-items:center;justify-content:center;background:#fff}img{width:85.6mm;height:54mm;display:block}';
+      doc.head.appendChild(st);
+      var im = doc.createElement('img');
+      im.onload = function () { setTimeout(function () { w.focus(); w.print(); resolve(true); }, 150); };
+      im.onerror = function () { reject(new Error('تعذر تحميل صورة البطاقة للطباعة.')); };
+      im.src = cardUrl;
+      doc.body.appendChild(im);
     });
   }
 
-  root.DECARD = { render: render, toPdf: toPdf, download: download, print: print, memberLabel: memberLabel, dateLabel: dateLabel };
-})(typeof window !== 'undefined' ? window : globalThis);
+  root.DECARD = { render: render, download: download, toPdf: toPdf, print: printCard, disabilityCode: disabilityCode };
+})(window);

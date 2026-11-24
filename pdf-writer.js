@@ -4812,8 +4812,8 @@
     // 2. النتائج العامة
     y = drawSectionPillBanner(ctx, W, M, y, '2', 'النتائج العامة', 255);
 
-    // صندوق الرسم البياني لأبعاد دوافع السلوك + مقياس الساعة (3 مجالات)
-    var boxH = 510;
+    // صندوق الرسم البياني لأبعاد دوافع السلوك (مضبوط لمنع الفراغ الكبير بعد المنحنى)
+    var boxH = 445;
     ctx.fillStyle = '#F8FAFC';
     roundRect(ctx, M, y, CW, boxH, 18);
     ctx.fill();
@@ -4824,8 +4824,8 @@
 
     var chartLeft = M + 95;
     var chartRight = W - M - 45;
-    var chartTop = y + 48;
-    var chartBottom = y + 365;
+    var chartTop = y + 44;
+    var chartBottom = y + 315;
     var chartW = chartRight - chartLeft;
     var chartH = chartBottom - chartTop;
 
@@ -4883,7 +4883,7 @@
       var scoreBoxW = 114;
       var scoreBoxH = 46;
       var scoreBoxX = cx - scoreBoxW / 2;
-      var scoreBoxY = chartBottom + 86;
+      var scoreBoxY = chartBottom + 74;
       ctx.fillStyle = '#FFFFFF';
       roundRect(ctx, scoreBoxX, scoreBoxY, scoreBoxW, scoreBoxH, 8);
       ctx.fill();
@@ -4897,7 +4897,10 @@
       ctx.fillText(dm.score + ' / 100', cx, scoreBoxY + 30);
     });
 
-    // تم إزالة بطاقة مقياس الساعة من تقرير دوافع السلوك بناءً على التوجيه المعتمد
+    // وضع قسمي تحليل الحالة وأهم النتائج مباشرة بعد المنحنى لإزالة الفراغ غير الضروري
+    var nextY = y + boxH + 26;
+    nextY = drawDottedWritingSection(ctx, W, M, nextY, '3', 'تحليل الحالة', repData.caseAnalysis, 4);
+    nextY = drawDottedWritingSection(ctx, W, M, nextY, '4', 'أهم النتائج', repData.keyFindings, 4);
 
     // تذييل الصفحة الأولى
     ctx.strokeStyle = '#CBD5E1';
@@ -4942,10 +4945,8 @@
     ctx.stroke();
 
     y += 30;
-    y = drawDottedWritingSection(ctx, W, M, y, '3', 'تحليل الحالة', repData.caseAnalysis, 5);
-    y = drawDottedWritingSection(ctx, W, M, y, '4', 'أهم النتائج', repData.keyFindings, 5);
-    y = drawDottedWritingSection(ctx, W, M, y, '5', 'التوصيات', repData.recommendationsText, 5);
-    y = drawDottedWritingSection(ctx, W, M, y, '6', 'الخلاصة', repData.conclusionText, 4);
+    y = drawDottedWritingSection(ctx, W, M, y, '5', 'التوصيات', repData.recommendationsText, 6);
+    y = drawDottedWritingSection(ctx, W, M, y, '6', 'الخلاصة', repData.conclusionText, 5);
 
     // منطقة الإمضاء مفتوحة في أسفل اليسار دون خطوط أو مستطيلات توقيع.
     var sigY = Math.max(y + 45, H - 170);

@@ -395,7 +395,7 @@ body {
   align-items: center;
   gap: 6px;
   letter-spacing: 0.2px;
-  user-select: none;
+  user-select: text;
 }
 
 .nav-group-label::before {
@@ -3562,7 +3562,7 @@ table.sheet tbody tr:hover, table.tbl tbody tr:hover {
   justify-content: space-between;
   align-items: center;
   cursor: pointer;
-  user-select: none;
+  user-select: text;
 }
 .cag-title-group {
   display: flex;

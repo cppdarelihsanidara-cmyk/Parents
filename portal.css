@@ -246,7 +246,7 @@ button, input, textarea, select { font: inherit; color: inherit; }
   gap: 10px;
   font-size: 14px;
   cursor: pointer;
-  user-select: none;
+  user-select: text;
 }
 
 .chk input[type="checkbox"] {
@@ -2341,7 +2341,7 @@ table.wk-table td {
 .prog-day-hdr.clickable {
   cursor: pointer;
   transition: all var(--transition);
-  user-select: none;
+  user-select: text;
 }
 
 .prog-day-hdr.clickable:hover {

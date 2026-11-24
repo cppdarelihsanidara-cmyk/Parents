@@ -1,0 +1,697 @@
+/* ==========================================================================
+   دار الإحسان — الهوية البصرية الموحدة (Glassmorphism)
+   الألوان المعتمدة:
+   - البيج الرملي: #E9DDCC
+   - الخلفية العاجية: #F8F5EF
+   - الأزرق الملكي: #244B78
+   - الأزرق المتوسط: #3979B9
+   - الكحلي: #172F50
+   - النصوص الداكنة: #292D35
+   - الأبيض: #FFFFFF
+   ممنوع: الوردي، البنفسجي، الأخضر، الألوان الفاقعة، والنصوص الشفافة.
+   ========================================================================== */
+
+:root {
+  --di-sand: #E9DDCC;
+  --di-sand-soft: #F2EAE0;
+  --di-ivory: #F8F5EF;
+  --di-royal: #244B78;
+  --di-blue: #3979B9;
+  --di-navy: #172F50;
+  --di-ink: #292D35;
+  --di-ink-sub: #434B57;
+  --di-white: #FFFFFF;
+  --di-glass-bg: rgba(255, 255, 255, 0.80);
+  --di-glass-strong: rgba(255, 255, 255, 0.92);
+  --di-glass-sand: rgba(248, 245, 239, 0.82);
+  --di-glass-border: rgba(233, 221, 204, 0.95);
+  --di-border-blue: rgba(36, 75, 120, 0.16);
+  --di-shadow: 0 10px 30px rgba(23, 47, 80, 0.08);
+  --di-shadow-sm: 0 4px 14px rgba(23, 47, 80, 0.06);
+  --di-radius: 16px;
+  --di-radius-sm: 10px;
+}
+
+@media screen {
+  /* إتاحة تحديد ونسخ النصوص في جميع أنحاء الموقعين */
+  html, body, #app, .card, .table, table, th, td, p, span, strong, h1, h2, h3, h4, h5, label, .modal-card, .modal-body, .pm-list-item-card, .pm-kv-row, .txt {
+    -webkit-user-select: text !important;
+    -moz-user-select: text !important;
+    user-select: text !important;
+  }
+
+  html, body {
+    min-height: 100%;
+    background: var(--di-ivory) !important;
+    background-image:
+      radial-gradient(ellipse at 10% 8%, rgba(57, 121, 185, 0.12), transparent 40%),
+      radial-gradient(ellipse at 90% 12%, rgba(233, 221, 204, 0.75), transparent 44%),
+      radial-gradient(ellipse at 82% 88%, rgba(36, 75, 120, 0.08), transparent 42%),
+      linear-gradient(160deg, var(--di-ivory) 0%, #F3EEE4 55%, #EFE7DA 100%) !important;
+    background-attachment: fixed !important;
+    color: var(--di-ink) !important;
+    font-family: "IBM Plex Sans Arabic", "Tajawal", "Segoe UI", Tahoma, sans-serif !important;
+    line-height: 1.65;
+  }
+
+  /* تباين قوي وواضح للنصوص دون أي شفافية */
+  h1, h2, h3, h4, strong, .ttl strong, .pm-title {
+    color: var(--di-navy) !important;
+  }
+  p, td, th, li, .txt, .muted, .small, .pm-lic-meta, .pm-sub {
+    color: var(--di-ink) !important;
+    opacity: 1 !important;
+  }
+  .muted, .small {
+    color: var(--di-ink-sub) !important;
+  }
+
+  /* ── شاشة تسجيل الدخول ── */
+  main.login {
+    background: transparent !important;
+    padding: 24px 16px !important;
+  }
+  .login-card {
+    background: var(--di-glass-strong) !important;
+    backdrop-filter: blur(18px) !important;
+    -webkit-backdrop-filter: blur(18px) !important;
+    border: 1.5px solid var(--di-sand) !important;
+    border-radius: 22px !important;
+    box-shadow: 0 20px 50px rgba(23, 47, 80, 0.12) !important;
+    padding: 32px 28px !important;
+  }
+
+  /* ── البطاقات الزجاجية الموحدة ── */
+  .card, .modal-card, .pm-list-item-card, .pm-c-card, .pm-drawer-child-card, .di-glass-card {
+    background: var(--di-glass-bg) !important;
+    backdrop-filter: blur(14px) !important;
+    -webkit-backdrop-filter: blur(14px) !important;
+    border: 1px solid var(--di-glass-border) !important;
+    box-shadow: var(--di-shadow) !important;
+    border-radius: var(--di-radius) !important;
+    color: var(--di-ink) !important;
+  }
+  .card {
+    padding: 20px 22px !important;
+  }
+
+  /* ── الشريط العلوي الموحد (Admin & Parents) ── */
+  header.bar.glass-header,
+  header.parent-modern-bar {
+    background: rgba(255, 255, 255, 0.86) !important;
+    backdrop-filter: blur(16px) !important;
+    -webkit-backdrop-filter: blur(16px) !important;
+    border-bottom: 1.5px solid var(--di-sand) !important;
+    box-shadow: 0 4px 18px rgba(23, 47, 80, 0.06) !important;
+    min-height: 64px !important;
+    padding: 10px 20px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 12px !important;
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 40 !important;
+  }
+
+  /* ── القائمة الجانبية (Admin): تصغير تلقائي وسلس ── */
+  #app.shell {
+    background: transparent !important;
+  }
+  #app .side {
+    background: rgba(255, 255, 255, 0.88) !important;
+    backdrop-filter: blur(18px) !important;
+    -webkit-backdrop-filter: blur(18px) !important;
+    border-inline-end: 1.5px solid var(--di-sand) !important;
+    box-shadow: -6px 0 28px rgba(23, 47, 80, 0.07) !important;
+    transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1), transform 0.25s ease !important;
+    overflow-x: hidden !important;
+  }
+  @media (min-width: 861px) {
+    #app.shell:not(.side-collapsed) .side {
+      width: 268px !important;
+    }
+    #app.shell.side-collapsed .side {
+      width: 74px !important;
+      padding-inline: 8px !important;
+    }
+    #app.shell.side-collapsed .side .brand {
+      justify-content: center !important;
+      padding: 12px 4px !important;
+    }
+    #app.shell.side-collapsed .side .brand-txt,
+    #app.shell.side-collapsed .side .side-close-btn,
+    #app.shell.side-collapsed .side .spp-info,
+    #app.shell.side-collapsed .side .nav-group-label,
+    #app.shell.side-collapsed .side #nav button span:not(.nav-badge),
+    #app.shell.side-collapsed .side .side-foot span {
+      display: none !important;
+    }
+    #app.shell.side-collapsed .side .side-profile-pill {
+      justify-content: center !important;
+      padding: 8px 4px !important;
+    }
+    #app.shell.side-collapsed .side #nav button {
+      justify-content: center !important;
+      padding: 11px 8px !important;
+      position: relative !important;
+    }
+    #app.shell.side-collapsed .side #nav button .nav-badge {
+      position: absolute !important;
+      top: 4px !important;
+      inset-inline-end: 6px !important;
+      font-size: 10px !important;
+      padding: 1px 5px !important;
+    }
+    #app.shell.side-collapsed .side .side-signout-btn {
+      justify-content: center !important;
+      padding: 10px 8px !important;
+    }
+  }
+
+  #app .side #nav button {
+    border-radius: 11px !important;
+    padding: 10px 12px !important;
+    margin: 2px 0 !important;
+    color: var(--di-ink) !important;
+    font-weight: 700 !important;
+    gap: 10px !important;
+    transition: background 0.18s ease, color 0.18s ease, transform 0.15s ease !important;
+  }
+  #app .side #nav button:hover {
+    background: var(--di-sand-soft) !important;
+    color: var(--di-navy) !important;
+  }
+  #app .side #nav button.active,
+  #app .side #nav button[aria-current="page"] {
+    background: linear-gradient(135deg, var(--di-navy) 0%, var(--di-royal) 100%) !important;
+    color: var(--di-white) !important;
+    box-shadow: 0 6px 16px rgba(23, 47, 80, 0.20) !important;
+  }
+  #app .side #nav button.active span,
+  #app .side #nav button[aria-current="page"] span {
+    color: var(--di-white) !important;
+  }
+  .side-profile-pill {
+    background: var(--di-ivory) !important;
+    border: 1px solid var(--di-sand) !important;
+    border-radius: 12px !important;
+  }
+  .spp-avatar {
+    background: var(--di-royal) !important;
+    color: var(--di-white) !important;
+  }
+
+  /* ── فضاء الأولياء: القائمة الجانبية والتبويبات ── */
+  .pm-drawer {
+    background: rgba(255, 255, 255, 0.94) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    border-inline-start: 1.5px solid var(--di-sand) !important;
+  }
+  .pm-nav-tabs, .pm-desktop-tabs {
+    background: var(--di-glass-bg) !important;
+    backdrop-filter: blur(12px) !important;
+    border: 1px solid var(--di-sand) !important;
+    border-radius: 14px !important;
+    padding: 8px !important;
+  }
+  .pm-nav-tabs button.active,
+  .pm-drawer-nav button.active {
+    background: linear-gradient(135deg, var(--di-navy) 0%, var(--di-royal) 100%) !important;
+    color: var(--di-white) !important;
+    box-shadow: 0 4px 12px rgba(23, 47, 80, 0.18) !important;
+  }
+  .pm-nav-tabs button.active *,
+  .pm-drawer-nav button.active * {
+    color: var(--di-white) !important;
+  }
+
+  /* ── الأزرار الموحدة (بدون أخضر أو وردي أو بنفسجي) ── */
+  .btn, button.btn {
+    border-radius: 10px !important;
+    padding: 9px 16px !important;
+    min-height: 40px !important;
+    font-weight: 700 !important;
+    font-size: 14px !important;
+    line-height: 1.4 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    border: 1px solid transparent !important;
+    transition: transform 0.14s ease, box-shadow 0.18s ease, background 0.18s ease !important;
+  }
+  .btn.primary, .btn:not(.light):not(.danger):not(.gold):not(.ghost):not(.icon-btn), .btn-pm-primary {
+    background: linear-gradient(135deg, var(--di-navy) 0%, var(--di-royal) 100%) !important;
+    color: var(--di-white) !important;
+    box-shadow: 0 4px 12px rgba(36, 75, 120, 0.22) !important;
+  }
+  .btn.primary:hover, .btn-pm-primary:hover {
+    background: linear-gradient(135deg, var(--di-royal) 0%, var(--di-blue) 100%) !important;
+  }
+  .btn.gold {
+    background: linear-gradient(135deg, var(--di-royal) 0%, var(--di-blue) 100%) !important;
+    color: var(--di-white) !important;
+    box-shadow: 0 4px 12px rgba(57, 121, 185, 0.22) !important;
+  }
+  .btn.light {
+    background: var(--di-white) !important;
+    color: var(--di-navy) !important;
+    border: 1.5px solid var(--di-sand) !important;
+  }
+  .btn.light:hover {
+    background: var(--di-ivory) !important;
+    border-color: var(--di-royal) !important;
+  }
+  .btn.danger {
+    background: #B91C1C !important;
+    color: var(--di-white) !important;
+  }
+  .btn.small {
+    min-height: 34px !important;
+    padding: 6px 12px !important;
+    font-size: 13px !important;
+  }
+  .icon-btn, .pm-menu-btn, .pm-notif-btn {
+    background: var(--di-white) !important;
+    color: var(--di-navy) !important;
+    border: 1.5px solid var(--di-sand) !important;
+    border-radius: 10px !important;
+  }
+
+  /* ── الشارات (استبدال الأخضر والوردي والبنفسجي بالكحلي والأزرق والرملي) ── */
+  .badge, .chip, .pm-kid-chip, .top-center-pill {
+    border-radius: 999px !important;
+    padding: 4px 12px !important;
+    font-weight: 700 !important;
+    font-size: 12.5px !important;
+    line-height: 1.4 !important;
+  }
+  .badge.ok, .badge.good {
+    background: rgba(36, 75, 120, 0.12) !important;
+    color: var(--di-navy) !important;
+    border: 1px solid rgba(36, 75, 120, 0.25) !important;
+  }
+  .badge.gold, .badge.warn {
+    background: var(--di-sand) !important;
+    color: var(--di-navy) !important;
+    border: 1px solid rgba(23, 47, 80, 0.18) !important;
+  }
+  .badge.bad {
+    background: rgba(185, 28, 28, 0.12) !important;
+    color: #991B1B !important;
+    border: 1px solid rgba(185, 28, 28, 0.25) !important;
+  }
+  .tab-dot, .nav-badge, .notif-badge-bubble, .pm-notif-badge {
+    background: var(--di-royal) !important;
+    color: var(--di-white) !important;
+    font-weight: 800 !important;
+  }
+
+  /* ── الحقول والنماذج والقوائم المنسدلة (منع التصاق النص أو قصّه) ── */
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea,
+  .input {
+    background: var(--di-white) !important;
+    color: var(--di-ink) !important;
+    border: 1.5px solid #D5C8B5 !important;
+    border-radius: 10px !important;
+    padding: 10px 14px !important;
+    min-height: 42px !important;
+    font-size: 14.5px !important;
+    line-height: 1.5 !important;
+    box-sizing: border-box !important;
+    max-width: 100% !important;
+  }
+  select {
+    padding-inline-end: 30px !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+  input:focus, select:focus, textarea:focus, .input:focus {
+    outline: none !important;
+    border-color: var(--di-royal) !important;
+    box-shadow: 0 0 0 3px rgba(57, 121, 185, 0.16) !important;
+  }
+  label.fld {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 6px !important;
+    margin-bottom: 12px !important;
+  }
+  label.fld > span, .lbl {
+    font-weight: 700 !important;
+    color: var(--di-navy) !important;
+    font-size: 13.5px !important;
+  }
+
+  /* ── الجداول ── */
+  .table-wrap, .tbl-wrap {
+    overflow-x: auto !important;
+    border-radius: 14px !important;
+    border: 1px solid var(--di-sand) !important;
+    background: var(--di-glass-strong) !important;
+  }
+  table.tbl, .card table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  table.tbl th {
+    background: var(--di-ivory) !important;
+    color: var(--di-navy) !important;
+    font-weight: 800 !important;
+    padding: 12px 14px !important;
+    border-bottom: 1.5px solid var(--di-sand) !important;
+    text-align: start;
+  }
+  table.tbl td {
+    padding: 11px 14px !important;
+    border-bottom: 1px solid rgba(233, 221, 204, 0.6) !important;
+    color: var(--di-ink) !important;
+    vertical-align: middle;
+  }
+  table.tbl tbody tr:hover {
+    background: rgba(248, 245, 239, 0.7) !important;
+  }
+
+  /* ── إعادة تصميم الحضور والغيابات (Glassmorphism) ── */
+  .att-glass-hero {
+    background: linear-gradient(135deg, rgba(23, 47, 80, 0.94) 0%, rgba(36, 75, 120, 0.90) 100%) !important;
+    color: var(--di-white) !important;
+    border-radius: 18px !important;
+    padding: 20px 24px !important;
+    border: 1px solid rgba(233, 221, 204, 0.35) !important;
+    box-shadow: var(--di-shadow) !important;
+    margin-bottom: 16px !important;
+  }
+  .att-glass-hero h2, .att-glass-hero p, .att-glass-hero span {
+    color: var(--di-white) !important;
+  }
+  .att-stats-grid {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)) !important;
+    gap: 12px !important;
+    margin-bottom: 16px !important;
+  }
+  .att-stat-card {
+    background: var(--di-glass-bg) !important;
+    backdrop-filter: blur(14px) !important;
+    border: 1.5px solid var(--di-sand) !important;
+    border-radius: 16px !important;
+    padding: 16px 18px !important;
+    box-shadow: var(--di-shadow-sm) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 6px !important;
+  }
+  .att-stat-card .att-stat-val {
+    font-size: 28px !important;
+    font-weight: 800 !important;
+    color: var(--di-navy) !important;
+    line-height: 1.1 !important;
+  }
+  .att-stat-card .att-stat-lbl {
+    font-size: 13.5px !important;
+    font-weight: 700 !important;
+    color: var(--di-ink-sub) !important;
+  }
+  .att-stat-card.is-present { border-inline-start: 4px solid var(--di-royal) !important; }
+  .att-stat-card.is-absent { border-inline-start: 4px solid #B91C1C !important; }
+  .att-stat-card.is-unrecorded { border-inline-start: 4px solid var(--di-sand) !important; }
+  .att-stat-card.is-total { border-inline-start: 4px solid var(--di-navy) !important; }
+
+  .att-pill-btn {
+    padding: 7px 14px !important;
+    border-radius: 999px !important;
+    font-weight: 700 !important;
+    font-size: 13px !important;
+    border: 1.5px solid var(--di-sand) !important;
+    background: var(--di-white) !important;
+    color: var(--di-ink) !important;
+    cursor: pointer;
+    transition: all 0.15s ease !important;
+  }
+  .att-pill-btn.active-present {
+    background: var(--di-royal) !important;
+    border-color: var(--di-navy) !important;
+    color: var(--di-white) !important;
+  }
+  .att-pill-btn.active-absent {
+    background: #B91C1C !important;
+    border-color: #991B1B !important;
+    color: var(--di-white) !important;
+  }
+  .att-pill-btn.active-unrecorded {
+    background: var(--di-sand) !important;
+    border-color: var(--di-navy) !important;
+    color: var(--di-navy) !important;
+  }
+
+  /* ── التجاوب مع الهاتف ── */
+  @media (max-width: 720px) {
+    .card { padding: 14px 14px !important; border-radius: 14px !important; }
+    header.bar.glass-header, header.parent-modern-bar { padding: 8px 12px !important; }
+    .btn, button.btn { padding: 8px 12px !important; font-size: 13.5px !important; }
+  }
+}
+
+  /* ── إعادة تصميم الحضور والغيابات (صفوف .att-* الفعلية) ── */
+  .att-stats {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(175px, 1fr)) !important;
+    gap: 12px !important;
+    margin-bottom: 16px !important;
+  }
+  .att-stat {
+    background: var(--di-glass-bg) !important;
+    backdrop-filter: blur(14px) !important;
+    -webkit-backdrop-filter: blur(14px) !important;
+    border: 1.5px solid var(--di-sand) !important;
+    border-inline-start: 4px solid var(--c, var(--di-royal)) !important;
+    border-radius: 16px !important;
+    padding: 16px 18px !important;
+    box-shadow: var(--di-shadow-sm) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 10px !important;
+  }
+  .att-stat strong {
+    font-size: 26px !important;
+    font-weight: 800 !important;
+    color: var(--di-navy) !important;
+    display: block !important;
+  }
+  .att-stat span {
+    font-size: 13.5px !important;
+    font-weight: 700 !important;
+    color: var(--di-ink-sub) !important;
+  }
+  .att-chips {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    margin-bottom: 14px !important;
+  }
+  .att-chip {
+    background: var(--di-white) !important;
+    border: 1.5px solid var(--di-sand) !important;
+    color: var(--di-navy) !important;
+    border-radius: 999px !important;
+    padding: 7px 14px !important;
+    font-weight: 700 !important;
+    font-size: 13.5px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+  }
+  .att-chip[aria-pressed="true"] {
+    background: linear-gradient(135deg, var(--di-navy) 0%, var(--di-royal) 100%) !important;
+    color: var(--di-white) !important;
+    border-color: var(--di-navy) !important;
+  }
+  .att-chip[aria-pressed="true"] em {
+    background: rgba(255, 255, 255, 0.22) !important;
+    color: var(--di-white) !important;
+  }
+  .att-list {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+  }
+  .att-card-child, .att-row {
+    background: var(--di-glass-bg) !important;
+    backdrop-filter: blur(12px) !important;
+    border: 1px solid var(--di-sand) !important;
+    border-radius: 14px !important;
+    padding: 12px 16px !important;
+    box-shadow: var(--di-shadow-sm) !important;
+  }
+  .att-seg-btn {
+    border-radius: 10px !important;
+    padding: 7px 12px !important;
+    font-weight: 700 !important;
+    border: 1.5px solid var(--di-sand) !important;
+    background: var(--di-white) !important;
+    color: var(--di-ink) !important;
+  }
+  .att-seg-btn.is-active.seg-present,
+  .att-seg-btn.active.seg-present {
+    background: var(--di-royal) !important;
+    color: var(--di-white) !important;
+    border-color: var(--di-navy) !important;
+  }
+  .att-seg-btn.is-active.seg-absent,
+  .att-seg-btn.active.seg-absent {
+    background: #B91C1C !important;
+    color: var(--di-white) !important;
+    border-color: #991B1B !important;
+  }
+  .att-seg-btn.is-active.seg-none,
+  .att-seg-btn.active.seg-none {
+    background: var(--di-sand) !important;
+    color: var(--di-navy) !important;
+    border-color: var(--di-navy) !important;
+  }
+  .att-btn.save {
+    background: linear-gradient(135deg, var(--di-navy) 0%, var(--di-royal) 100%) !important;
+    color: var(--di-white) !important;
+    border-radius: 12px !important;
+    padding: 10px 20px !important;
+    font-weight: 800 !important;
+  }
+  .att-btn.send, .att-wa-direct-btn {
+    background: linear-gradient(135deg, var(--di-royal) 0%, var(--di-blue) 100%) !important;
+    color: var(--di-white) !important;
+    border-radius: 12px !important;
+    padding: 10px 18px !important;
+    font-weight: 800 !important;
+  }
+}
+
+  /* ── تنسيقات قسم الحضور والغيابات المعاد بناؤه (.att2-*) ── */
+  .att2-tabs {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    margin-bottom: 14px !important;
+  }
+  .att2-tab-btn {
+    background: var(--di-white) !important;
+    border: 1.5px solid var(--di-sand) !important;
+    color: var(--di-navy) !important;
+    border-radius: 12px !important;
+    padding: 9px 16px !important;
+    font-weight: 700 !important;
+    font-size: 14px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    cursor: pointer;
+  }
+  .att2-tab-btn.is-active {
+    background: linear-gradient(135deg, var(--di-navy) 0%, var(--di-royal) 100%) !important;
+    color: var(--di-white) !important;
+    border-color: var(--di-navy) !important;
+    box-shadow: 0 4px 14px rgba(23, 47, 80, 0.20) !important;
+  }
+  .att2-controls-grid {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)) !important;
+    gap: 12px !important;
+  }
+  .att2-notice-24h {
+    border-inline-start: 4px solid var(--di-royal) !important;
+    background: rgba(248, 245, 239, 0.92) !important;
+    margin-bottom: 14px !important;
+  }
+  .att2-sections-host {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 14px !important;
+    margin-bottom: 16px !important;
+  }
+  .att2-sec-head {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    flex-wrap: wrap !important;
+    gap: 12px !important;
+    padding-bottom: 12px !important;
+    margin-bottom: 12px !important;
+    border-bottom: 1.5px solid var(--di-sand) !important;
+  }
+  .att2-sec-badges {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+  }
+  .att2-kids-list {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+  .att2-kid-row {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    flex-wrap: wrap !important;
+    gap: 10px !important;
+    padding: 10px 14px !important;
+    border-radius: 12px !important;
+    background: rgba(255, 255, 255, 0.88) !important;
+    border: 1px solid var(--di-sand) !important;
+    border-inline-start: 4px solid transparent !important;
+  }
+  .att2-kid-row.is-present { border-inline-start-color: var(--di-royal) !important; }
+  .att2-kid-row.is-absent { border-inline-start-color: #B91C1C !important; }
+  .att2-kid-info {
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    min-width: 220px !important;
+  }
+  .att2-avatar-img, .att2-avatar-txt {
+    width: 40px !important;
+    height: 40px !important;
+    border-radius: 50% !important;
+    flex-shrink: 0 !important;
+    object-fit: cover !important;
+  }
+  .att2-avatar-txt {
+    background: var(--di-sand) !important;
+    color: var(--di-navy) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-weight: 800 !important;
+    font-size: 16px !important;
+  }
+  .att2-kid-meta {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    gap: 8px !important;
+    font-size: 12.5px !important;
+    color: var(--di-ink-sub) !important;
+    margin-top: 2px !important;
+  }
+  .att2-kid-actions {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    gap: 8px !important;
+  }
+  .att2-footer-bar {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    flex-wrap: wrap !important;
+    gap: 12px !important;
+    position: sticky !important;
+    bottom: 12px !important;
+    z-index: 20 !important;
+  }
+}

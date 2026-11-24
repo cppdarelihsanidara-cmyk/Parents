@@ -812,7 +812,7 @@
         fetchReportsResilient(),
         q('/appointments?select=id,title,description,starts_at,ends_at,location,audience,child_id,parent_id,status&order=starts_at.asc').catch(function () { return []; }),
         q('/messages?select=id,kind,title,body,published_at&order=published_at.desc').catch(function () { return []; }),
-        q('/message_reads?select=message_id').catch(function () { return []; }),
+        q('/message_reads?select=message_id&parent_id=eq.' + uid(S.me)).catch(function () { return []; }),
         q('/documents?select=id,title,category,child_id,storage_path,created_at,shared_with_parent&order=created_at.desc').catch(function () { return []; }),
         q('/educational_programs?select=id,section_id,title,description,goals,schedule,academic_year,published_at,status,is_archived&order=created_at.desc').catch(function () { return []; }),
         q('/sections?select=id,name').catch(function () { return []; }),
@@ -1707,7 +1707,7 @@
           c.section ? ['الفوج / القسم', c.section] : null,
           c.dob ? ['تاريخ الميلاد', fmtDate(c.dob)] : null,
           c.disability ? ['طبيعة الإعاقة', c.disability] : null,
-          c.academic_year ? ['الموسم الدراسي', c.academic_year] : ['الموسم الدراسي', '2026–2027']
+          c.academic_year ? ['الموسم الدراسي', c.academic_year] : ['الموسم الدراسي', getCurrentAcademicYear()]
         ].filter(Boolean).map(function (it) {
           return h('div', { class: 'cd-item' }, h('span', { text: it[0] }), h('b', { text: it[1] }));
         }))
@@ -3912,7 +3912,7 @@ function renderParentOfficialEvaluationSheet(r, childFullName, secName, kd, init
     }
 
     stdReports.forEach(function (r) {
-      var isNew = false; try { isNew = safeGetItem('local', 'de_seen_rep_' + r.id) !== '1'; } catch (errS) {}
+      var isNew = isParentRecordNew('report', r.id, 'de_seen_rep_');
 
       var card = h('div', { class: 'pm-list-item-card' },
         h('div', { class: 'pm-lic-right' },
@@ -3934,7 +3934,8 @@ function renderParentOfficialEvaluationSheet(r, childFullName, secName, kd, init
             onclick: async function () {
               safeSetItem('local', 'de_seen_rep_' + r.id, '1'); await markParentDbNotifsRead(r.id);
               updateNotifBadge();
-              var repDisplayTitle = r.title || 'تقرير دوري';
+              var rawRepTitle = String(r.title || '').trim();
+              var repDisplayTitle = /^(تقرير الأداء الحالي|تقييم الأداء الحالي|الاداء الحالي)$/.test(rawRepTitle) ? 'التقرير الدوري' : (rawRepTitle || 'التقرير الدوري');
               var body = h('div', { class: 'modal-body pm-regular-report-sheet' },
                 h('div', { class: 'pm-rep-head' },
                   h('h2', { style: 'margin:0; font-size:1.15rem; font-weight:900; color:#101D35;', text: repDisplayTitle }),
@@ -4002,11 +4003,34 @@ function renderParentOfficialEvaluationSheet(r, childFullName, secName, kd, init
   }
 
   /* تبويب الرسائل والإعلانات */
+  async function markMessageAsRead(m) {
+    if (!m || !m.id || !S.me) return;
+    if (!S._markingRead) S._markingRead = {};
+    if (S._markingRead[m.id]) return;
+    S._markingRead[m.id] = true;
+    try {
+      try {
+        await C.rest('POST', '/message_reads', { message_id: m.id, parent_id: S.me });
+      } catch (err) {
+        var em = String((err && err.message) || '');
+        if (em.indexOf('23505') < 0 && em.indexOf('409') < 0 && em.indexOf('duplicate') < 0) {
+          throw err;
+        }
+      }
+      S.reads[m.id] = true;
+      await markParentDbNotifsRead(m.id);
+      updateNotifBadge();
+      render();
+    } finally {
+      delete S._markingRead[m.id];
+    }
+  }
+
   function vMsgs(v) {
     if (!S.d.msgs.length) return v.appendChild(empty(t('emptyMsgs')));
     S.d.msgs.forEach(function (m) {
       var isUnread = !S.reads[m.id];
-      var card = h('div', { class: 'card' },
+      var card = h('div', { class: 'card', style: isUnread ? 'cursor:pointer; border-inline-start:4px solid #244B78;' : '' },
         h('h2', { text: m.title }),
         h('div', { class: 'meta' },
           h('span', { text: fmtDate(m.published_at) }),
@@ -4017,14 +4041,18 @@ function renderParentOfficialEvaluationSheet(r, childFullName, secName, kd, init
       );
       if (isUnread) {
         var markBtn = h('button', { class: 'btn small light', type: 'button', text: t('markAsRead') });
-        markBtn.addEventListener('click', function () {
+        markBtn.addEventListener('click', function (ev) {
+          ev.stopPropagation();
           lockBtn(markBtn, async function () {
             try {
-              await C.rest('POST', '/message_reads', { message_id: m.id, parent_id: S.me });
-              S.reads[m.id] = true;
-              render();
+              await markMessageAsRead(m);
             } catch (er) { toast(er.message, 'bad'); }
           });
+        });
+        card.addEventListener('click', function () {
+          var sel = window.getSelection ? String(window.getSelection()) : '';
+          if (sel && sel.length > 0) return;
+          markMessageAsRead(m).catch(function () {});
         });
         card.appendChild(h('div', { class: 'row-actions' }, markBtn));
       }
