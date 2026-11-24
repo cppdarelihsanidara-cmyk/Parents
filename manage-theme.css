@@ -5254,3 +5254,69 @@ html, body {
 }
 .audit-v2-pager button:disabled { opacity: 0.45; cursor: not-allowed; }
 #notifBellBadge[hidden], #notifNavBadge[hidden] { display: none !important; }
+
+
+/* v4.2 — تنسيق مدمج للنماذج وتحسين الحركة والملفات المؤرشفة */
+.hdr-search-wrap { display: none !important; }
+.compact-qual-child-card .compact-qual-grid {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+  align-items: end;
+}
+.compact-qual-child-card .compact-qual-grid .fld { min-width: 0; gap: 3px; }
+.compact-qual-child-card .compact-qual-grid .fld > span { font-size: 11px; line-height: 1.25; }
+.compact-qual-child-card .compact-qual-grid input,
+.compact-qual-child-card .compact-qual-grid select {
+  min-width: 0; width: 100%; padding: 6px 8px !important; min-height: 34px;
+  font-size: 12px !important; border-radius: 7px !important;
+}
+.child-archive-accordion summary { list-style-position: inside; }
+.child-archived-item { flex-wrap: wrap; }
+#view > * { animation: deViewEnter .16s ease-out both; }
+@keyframes deViewEnter { from { opacity: .72; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+@media (max-width: 760px) {
+  .compact-qual-child-card .compact-qual-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  .child-archived-item { align-items: flex-start; }
+  .child-archived-item .row-actions { width: 100%; }
+}
+
+
+/* Dar El Ihsan v4.2 responsive form and weekly timetable improvements */
+.compact-qual-grid { display:grid !important; grid-template-columns:repeat(4,minmax(0,1fr)) !important; gap:8px !important; align-items:end; }
+.compact-qual-grid > * { min-width:0; }
+.compact-qual-grid input,.compact-qual-grid select,.compact-qual-grid textarea { min-width:0 !important; width:100% !important; box-sizing:border-box; }
+.child-report-archive { margin-top:12px; border:1px solid #D8E3DD; border-radius:10px; background:#F8FBF9; padding:10px 12px; }
+.child-report-archive summary { cursor:pointer; font-weight:900; color:#24543D; }
+.oep-abilities-stack { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+.oep-abilities-stack > * { border:1px solid #DCE8E1; border-radius:10px; background:#F8FBF9; padding:10px 12px; }
+.wk-mobile-day-view { display:none; }
+.wk-mobile-session-card { appearance:none; width:100%; text-align:right; border:1px solid #DCE8E1; border-radius:12px; background:#FFFFFF; padding:12px; display:grid; grid-template-columns:1fr auto; gap:5px 10px; color:#1F2937; cursor:pointer; box-shadow:0 2px 6px rgba(22,59,41,.05); }
+.wk-mobile-session-card.is-empty { background:#F8FAF9; border-style:dashed; }
+.wk-mobile-session-time { font-weight:900; color:#166534; direction:ltr; text-align:left; }
+.wk-mobile-session-kind { color:#64748B; font-size:12px; }
+.wk-mobile-session-detail { grid-column:1/-1; font-size:15px; }
+.wk-mobile-session-edit { grid-column:1/-1; color:#166534; font-size:12px; font-weight:800; }
+.wk-mobile-day-cards { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+.wk-mobile-day-head { display:flex; justify-content:space-between; align-items:center; gap:10px; margin:8px 0; color:#1F513A; font-weight:900; }
+.wk-mobile-day-select { max-width:220px; }
+.wk-mobile-empty { padding:16px; text-align:center; color:#64748B; }
+.wk-program-signatures { color:#1F513A; }
+.wk-preview-canvas-host canvas { height:auto !important; }
+@media (max-width:760px) {
+ .compact-qual-grid { grid-template-columns:repeat(2,minmax(0,1fr)) !important; }
+ .wk-mobile-scroll-hint { display:none !important; }
+ .wk-week-table-wrap { display:none !important; }
+ .wk-mobile-day-view { display:block !important; }
+ .wk-mobile-day-cards { grid-template-columns:1fr; }
+ .wk-interactive-sheet-paper { overflow-x:hidden !important; padding:10px !important; }
+ .wk-sheet-header-grid { grid-template-columns:1fr !important; text-align:center !important; }
+ .wk-sheet-header-grid > div { text-align:center !important; }
+ .oep-abilities-stack { grid-template-columns:1fr; }
+}
+
+
+/* Weekly programme full-width editing mode: hide navigation to give the editor the whole canvas. */
+#app.is-week-program-editing .side { display: none !important; }
+#app.is-week-program-editing { grid-template-columns: minmax(0, 1fr) !important; }
+#app.is-week-program-editing .main { min-width: 0; width: 100%; }

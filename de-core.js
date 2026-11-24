@@ -319,7 +319,34 @@
       return { type: type || 'invite', email: email, token: tok };
     };
     api.setPassword = function (pw) { return authed('PUT', '/auth/v1/user', { password: pw }); };
-    api.rest = function (method, path, body, prefer) { return authed(method, '/rest/v1' + path, body, prefer ? { Prefer: prefer } : {}); };
+    var _postInFlight = Object.create(null);
+    var _postRecent = Object.create(null);
+    api.rest = function (method, path, body, prefer) {
+      var m = String(method || 'GET').toUpperCase();
+      var p = String(path || '');
+      if (m === 'POST' && p.indexOf('on_conflict=') === -1) {
+        var sig = p + '|' + (body ? JSON.stringify(body) : '');
+        if (body && typeof body === 'object' && !Array.isArray(body) && /^\/(progress_reports|educational_programs|messages|documents|appointments)/.test(p) && !body.idempotency_key) {
+          body = Object.assign({}, body, { idempotency_key: 'de_' + Date.now() + '_' + Math.random().toString(36).slice(2, 10) });
+        }
+        var now = Date.now();
+        if (_postInFlight[sig]) return _postInFlight[sig];
+        if (_postRecent[sig] && (now - _postRecent[sig].at) < 2500) {
+          return Promise.resolve(_postRecent[sig].res);
+        }
+        var prom = authed(m, '/rest/v1' + p, body, prefer ? { Prefer: prefer } : {}).then(function (res) {
+          _postRecent[sig] = { at: Date.now(), res: res };
+          delete _postInFlight[sig];
+          return res;
+        }, function (err) {
+          delete _postInFlight[sig];
+          throw err;
+        });
+        _postInFlight[sig] = prom;
+        return prom;
+      }
+      return authed(m, '/rest/v1' + p, body, prefer ? { Prefer: prefer } : {});
+    };
     api.rpc = function (name, args) { return authed('POST', '/rest/v1/rpc/' + name, args || {}); };
     api.fn = function (name, body) { return authed('POST', '/functions/v1/' + name, body); };
     api.signedUrl = async function (bucket, path, seconds) {

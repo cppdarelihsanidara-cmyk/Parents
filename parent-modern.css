@@ -73,7 +73,7 @@ body {
 .pm-logo { width: 42px; height: 42px; border-radius: 10px; background: #FFFFFF; padding: 2px; box-shadow: 0 2px 6px rgba(0,0,0,0.2); object-fit: contain; }
 .pm-title-block { display: flex; flex-direction: column; }
 .pm-title { font-size: 1.15rem; font-weight: 700; color: #FFFFFF; margin: 0; line-height: 1.2; }
-.pm-sub { font-size: 0.78rem; color: var(--de-accent-gold-light); margin: 0; }
+.pm-sub { font-size: 0.8rem; color: var(--de-accent-gold-light); margin: 0; }
 .pm-header-actions { display: flex; align-items: center; gap: 8px; }
 
 /* زر القائمة الجانبية (3 خطوط) */
@@ -153,7 +153,7 @@ body {
 }
 .pm-counter-item:hover { background: rgba(255, 255, 255, 0.18); transform: translateY(-2px); }
 .pm-counter-num { font-size: 1.45rem; font-weight: 800; color: #FFFFFF; display: block; line-height: 1.1; }
-.pm-counter-label { font-size: 0.76rem; color: #CBD5E1; margin-top: 2px; display: block; }
+.pm-counter-label { font-size: 0.8rem; color: #CBD5E1; margin-top: 2px; display: block; }
 
 .pm-alert-banner {
   background: #FFFBEB; border: 1px solid #FDE68A; border-right: 4px solid var(--de-accent-gold);
@@ -203,7 +203,7 @@ body {
 .pm-drawer-logo { width: 38px; height: 38px; border-radius: 8px; background: #FFFFFF; padding: 2px; }
 .pm-drawer-title-box { display: flex; flex-direction: column; }
 .pm-drawer-title { font-size: 1.1rem; font-weight: 700; margin: 0; color: #FFFFFF; line-height: 1.2; }
-.pm-drawer-sub { font-size: 0.75rem; color: var(--de-accent-gold-light); }
+.pm-drawer-sub { font-size: 0.8rem; color: var(--de-accent-gold-light); }
 .pm-drawer-close-btn {
   background: rgba(255, 255, 255, 0.15); border: none; color: #FFFFFF;
   width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
@@ -214,7 +214,7 @@ body {
 .pm-drawer-child-card {
   padding: 14px 18px; background: #F8FAFC; border-bottom: 1px solid var(--de-border);
 }
-.pm-dcc-greet { font-size: 0.74rem; color: var(--de-text-muted); margin-bottom: 2px; }
+.pm-dcc-greet { font-size: 0.8rem; color: var(--de-text-muted); margin-bottom: 2px; }
 .pm-dcc-name { font-size: 1.05rem; font-weight: 800; color: var(--de-primary); }
 .pm-dcc-badges { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
 
@@ -232,11 +232,11 @@ body {
 }
 .pm-dib-info { display: flex; flex-direction: column; flex: 1; }
 .pm-dib-title { font-size: 0.9rem; font-weight: 700; color: #92400E; }
-.pm-dib-desc { font-size: 0.72rem; color: #B45309; }
-.pm-dib-badge { background: var(--de-accent-gold); color: #FFFFFF; font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 12px; }
+.pm-dib-desc { font-size: 0.8rem; color: #B45309; }
+.pm-dib-badge { background: var(--de-accent-gold); color: #FFFFFF; font-size: 0.8rem; font-weight: 700; padding: 3px 8px; border-radius: 12px; }
 
 .pm-drawer-nav-label {
-  font-size: 0.74rem; font-weight: 700; color: var(--de-text-muted);
+  font-size: 0.8rem; font-weight: 700; color: var(--de-text-muted);
   text-transform: uppercase; padding: 14px 20px 6px; letter-spacing: 0.5px;
 }
 .pm-drawer-nav { display: flex; flex-direction: column; padding: 6px 12px; gap: 4px; flex: 1; }
@@ -254,7 +254,7 @@ body {
 .pm-drawer-tab-btn.active .i { color: #FFFFFF; }
 .pm-drawer-tab-btn .tab-dot {
   margin-right: auto; background: var(--de-accent-gold); color: #FFFFFF;
-  font-size: 0.72rem; font-weight: 700; padding: 2px 8px; border-radius: 10px;
+  font-size: 0.8rem; font-weight: 700; padding: 2px 8px; border-radius: 10px;
 }
 .pm-drawer-tab-btn.active .tab-dot { background: #FFFFFF; color: var(--de-primary); }
 
@@ -350,7 +350,7 @@ body {
 .oep-official-title-box { text-align: center; flex: 1; }
 .oep-ministry { font-size: 0.82rem; font-weight: 600; margin: 0 0 2px; color: #1E293B; }
 .oep-org { font-size: 1.15rem; font-weight: 800; color: #123E73; margin: 0 0 2px; }
-.oep-sub { font-size: 0.78rem; font-weight: 600; color: #475569; margin: 0; }
+.oep-sub { font-size: 0.8rem; font-weight: 600; color: #475569; margin: 0; }
 .oep-doc-badge {
   text-align: center; margin: 12px auto; display: inline-block;
   border: 2px solid #123E73; padding: 6px 20px; border-radius: 6px; background: #F8FAFC;
@@ -362,7 +362,7 @@ body {
 }
 @media (max-width: 600px) { .oep-child-strip { grid-template-columns: repeat(2, 1fr); } }
 .oep-meta-item { display: flex; flex-direction: column; }
-.oep-meta-item span { font-size: 0.72rem; color: #64748B; }
+.oep-meta-item span { font-size: 0.8rem; color: #64748B; }
 .oep-meta-item b { font-size: 0.88rem; color: #0F172A; }
 
 .oep-domain-block { margin-bottom: 20px; border: 1px solid #E2E8F0; border-radius: 6px; overflow: hidden; }
@@ -375,7 +375,7 @@ body {
 .oep-skills-table th, .oep-skills-table td { border: 1px solid #CBD5E1; padding: 6px 10px; text-align: right; }
 .oep-skills-table th { background: #F8FAFC; font-weight: 700; color: #334155; }
 .oep-skills-table td.score-col { text-align: center; font-weight: 700; width: 80px; }
-.oep-score-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.78rem; }
+.oep-score-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; }
 .oep-score-badge.c3 { background: #DCFCE7; color: #1D4ED8; }
 .oep-score-badge.c2 { background: #FEF3C7; color: #B45309; }
 .oep-score-badge.c1 { background: #FEE2E2; color: #B91C1C; }
@@ -387,7 +387,7 @@ body {
 }
 .oep-sig-box { min-height: 80px; display: flex; flex-direction: column; justify-content: space-between; }
 .oep-sig-title { font-weight: 700; color: #1E293B; }
-.oep-sig-line { font-size: 0.72rem; color: #94A3B8; }
+.oep-sig-line { font-size: 0.8rem; color: #94A3B8; }
 
 .oep-recommendations-box {
   background: #FFFBEB; border: 1px solid #FDE68A; border-radius: 6px;
@@ -1123,3 +1123,42 @@ body {
 }
 
 .pm-notif-badge[hidden] { display: none !important; }
+
+/* Calm Active Sidebar & Badge Contrast v4 */
+.pm-drawer-tab-btn.active, .pm-tab-btn.active {
+  background: rgba(18, 62, 115, 0.12) !important;
+  color: #0F2E57 !important;
+  border-color: rgba(18, 62, 115, 0.35) !important;
+  font-weight: 800 !important;
+}
+.tab-dot {
+  background: #B45309 !important;
+  color: #FFFFFF !important;
+  font-size: 0.8rem !important;
+  min-width: 22px;
+  height: 22px;
+  font-weight: 800;
+}
+main.pm-main, .view-host {
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+
+/* Dar El Ihsan v4.2 parent program mobile */
+.wk-parent-mobile-day-view { display:none; margin:8px 0 16px; }
+.wk-parent-mobile-head { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px; color:#24543D; }
+.wk-parent-mobile-day-select { max-width:220px; }
+.wk-parent-mobile-day-cards { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+.wk-parent-mobile-session-card { border:1px solid #DCE8E1; background:#FFFFFF; border-radius:12px; padding:12px; display:grid; grid-template-columns:1fr auto; gap:5px 8px; }
+.wk-parent-mobile-session-card.is-empty { background:#F8FAF9; border-style:dashed; }
+.wk-parent-mobile-time { color:#166534; font-weight:900; direction:ltr; text-align:left; }
+.wk-parent-mobile-kind { font-size:12px; color:#64748B; }
+.wk-parent-mobile-detail { grid-column:1/-1; font-size:14px; }
+@media (max-width:760px) {
+ .wk-parent-sheet-scroll { display:none !important; }
+ .wk-parent-mobile-day-view { display:block !important; }
+ .wk-parent-mobile-day-cards { grid-template-columns:1fr; }
+ .wk-parent-program-card { padding:10px !important; overflow:hidden; }
+}
+.wk-parent-load-table-scroll { max-width:100%; overflow-x:auto; overscroll-behavior-x:contain; }
+.wk-parent-load-table-scroll table { max-width:none; }

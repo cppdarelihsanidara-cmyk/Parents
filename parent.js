@@ -759,51 +759,17 @@
       S.me = me.id;
       var q = function (p) { return C.rest('GET', p); };
 
+      // Fail closed: parent-child visibility must come from the explicit relation.
+      // Never fall back to listing all children and guessing ownership from usernames.
       var fetchKidsResilient = async function () {
-        var linkedKids = [];
         try {
-          var k3 = await q('/parent_children?select=child:children(id,membership_no,full_name,dob,disability,center,section,branch_id,section_id,academic_year,basic_info)');
-          if (Array.isArray(k3) && k3.length) {
-            linkedKids = k3.map(function (pc) { return pc.child; }).filter(Boolean);
-          }
-        } catch (e3) {}
-        if (linkedKids.length) return linkedKids;
-
-        var allKids = [];
-        try {
-          var k1 = await q('/children?select=id,membership_no,full_name,dob,disability,center,section,branch_id,section_id,academic_year,basic_info&order=full_name');
-          if (Array.isArray(k1) && k1.length) allKids = k1;
-        } catch (e1) {
-          try {
-            var k2 = await q('/children?select=id,full_name,center,section,basic_info,active&order=full_name');
-            if (Array.isArray(k2) && k2.length) allKids = k2;
-          } catch (e2) {}
+          var linkedKids = await q('/parent_children?select=child:children(id,membership_no,full_name,dob,disability,center,section,branch_id,section_id,academic_year,basic_info)&parent_id=eq.' + uid(me.id));
+          if (!Array.isArray(linkedKids)) return [];
+          return linkedKids.map(function (pc) { return pc && pc.child; }).filter(Boolean);
+        } catch (e) {
+          console.error('تعذر تحميل الأطفال المرتبطين بحساب الولي؛ تم إيقاف العرض حمايةً للخصوصية.', e);
+          return [];
         }
-        if (allKids.length <= 1) return allKids;
-
-        // مطابقة الطفل المرتبط بحساب الولي المسجل حالياً (من البريد/اسم المستخدم أو رقم القيد)
-        var rawLoginUser = '';
-        try {
-          rawLoginUser = (safeGetItem('session', 'de_parent_user') || safeGetItem('local', 'de_parent_user') || (me && me.email) || '').trim().toLowerCase();
-        } catch (eU) {}
-        var cleanU = rawLoginUser.split('@')[0];
-        if (cleanU) {
-          var tailMatch = /\.(\d{1,4})$/.exec(cleanU) || /^(\d{1,4})$/.exec(cleanU);
-          var tailDigits = tailMatch ? tailMatch[1].replace(/^0+/, '') : '';
-          var matchedByUser = allKids.filter(function (c) {
-            if (typeof window !== 'undefined' && window.DEUser && typeof window.DEUser.username === 'function') {
-              var u = window.DEUser.username(c.full_name, c.membership_no);
-              if (u && u.toLowerCase() === cleanU) return true;
-            }
-            if (tailDigits && c.membership_no) {
-              var cDigits = String(c.membership_no).replace(/\D/g, '').replace(/^0+/, '');
-              if (cDigits && cDigits === tailDigits) return true;
-            }
-            return false;
-          });
-          if (matchedByUser.length) return matchedByUser;
-        }
-        return allKids;
       };
 
       var fetchReportsResilient = async function () {
@@ -838,13 +804,14 @@
         q('/parent_profiles?select=full_name&limit=1').catch(function () { return []; }),
         fetchKidsResilient(),
         fetchReportsResilient(),
-        q('/appointments?select=id,title,description,starts_at,ends_at,location,audience,child_id,status&order=starts_at.asc').catch(function () { return []; }),
+        q('/appointments?select=id,title,description,starts_at,ends_at,location,audience,child_id,parent_id,status&order=starts_at.asc').catch(function () { return []; }),
         q('/messages?select=id,kind,title,body,published_at&order=published_at.desc').catch(function () { return []; }),
         q('/message_reads?select=message_id').catch(function () { return []; }),
-        q('/documents?select=id,title,category,child_id,storage_path,created_at&order=created_at.desc').catch(function () { return []; }),
-        q('/educational_programs?select=id,section_id,title,description,goals,schedule,academic_year,published_at&order=created_at.desc').catch(function () { return []; }),
+        q('/documents?select=id,title,category,child_id,storage_path,created_at,shared_with_parent&order=created_at.desc').catch(function () { return []; }),
+        q('/educational_programs?select=id,section_id,title,description,goals,schedule,academic_year,published_at,status,is_archived&order=created_at.desc').catch(function () { return []; }),
         q('/sections?select=id,name').catch(function () { return []; }),
-        fetchCloudPublishedEvaluations()
+        fetchCloudPublishedEvaluations(),
+        q('/notifications?select=related_record_id,is_read,notification_type&recipient_user_id=eq.' + uid(S.me)).catch(function () { return []; })
       ]);
 
       var kids = r[1] || [];
@@ -887,69 +854,8 @@
       mergedReports.sort(function (a, b) {
         return String(b.report_date || '').localeCompare(String(a.report_date || ''));
       });
-      if (kids.length && (!mergedReports || mergedReports.length === 0)) {
-        var k0 = kids[0];
-        mergedReports = [
-          {
-            id: 'rep-init-' + (k0.membership_no || '170'),
-            child_id: k0.id,
-            title: 'تقرير المتابعة التربوية والنفسية الدورية',
-            report_date: '2026-10-15',
-            period_start: '2026-09-15',
-            period_end: '2026-10-15',
-            achievements: 'اندماج وتفاعل طيب وإيجابي داخل ' + (k0.section || 'القسم البيداغوجي') + '، مع تحسن ملحوظ في التواصل والاستجابة للتوجيهات.',
-            activities: 'أنشطة حركية دقيقة، تنمية الاستقلالية الذاتية، التفاعل الاجتماعي، وورشات التعلم المكيف.',
-            notes: 'يوصى بمواصلة التحفيز والأنشطة الداعمة في المنزل بالتنسيق مع المربي النفسي والبيداغوجي.',
-            attachment_path: ''
-          }
-        ];
-      }
+      // لا تُنشأ تقارير أو تقييمات افتراضية؛ تُعرض الوثائق المحفوظة فعلياً فقط.
 
-            // ضمان توفر استمارة التقييم البيداغوجي المعتمدة للطفل دائماً
-      if (!mergedReports.some(isEvalReport)) {
-        var k0 = (kids && kids[0]) || { id: 'kid-1', full_name: 'تلميذ دار الإحسان', membership_no: '170', section: 'قسم الشبه مدرسي مكيف' };
-        var defaultOfficialEval = {
-          id: 'eval-official-' + (k0.membership_no || '170'),
-          child_id: k0.id,
-          title: 'تقرير اللجنة البيداغوجية والتربوية — تقييم الثلاثي الأخير',
-          report_date: '2026-10-15',
-          status: 'published',
-          activities: EVAL_MARKER + JSON.stringify({
-            v: 2,
-            term: 'الثلاثي الأخير',
-            school_year: '2024/2025',
-            degree_of_disability: 'متوسطة',
-            qualification_level: k0.section || 'قسم الشبه مدرسي مكيف',
-            supervisors: [
-              { name: 'إدارة المركز', role: 'مدير المركز' },
-              { name: 'أخصائية نفسانية', role: 'أخصائية نفسانية' }
-            ],
-            general_report: 'تم تسجيل تقدم ملحوظ في الأداء العام للطفل مع تحسن في الاستجابة والتفاعل الإيجابي مع الأنشطة الموجهة.',
-            abilities: {
-              current_potentials: 'استجابة جيدة للتعليمات البسيطة والمشاركة في الأنشطة الجماعية.',
-              cognitive_intellectual: 'تحسن في مهارات التمييز والمطابقة والتركيز البصري.',
-              language_receptive_expressive: 'فهم جيد للتوجيهات الشفهية مع نطق كلمات وظيفية واضحة.',
-              communication_behavioral: 'سلوك اجتماعي هادئ وتواصل إيجابي مع المربية والزملاء.',
-              academic_preacademic: 'إتقان مسك القلم والفرز والتصنيف وفق المعايير البيداغوجية.',
-              motor_independence: 'استقلالية طيبة في تناول الوجبات والنظافة والعناية الذاتية.'
-            },
-            strengths: ['استجابة وتفاعل إيجابي مع الأنشطة الموجهة.', 'تطور ملحوظ في المهارات الحركية الدقيقة.', 'انتظام الحضور والانضباط داخل القسم.'],
-            weaknesses: ['الحاجة لتعزيز مهارات الاستقلالية في بعض المهام.', 'تنمية الثروة اللغوية والتعبير الشفهي.'],
-            recommendations: ['مواصلة المتابعة البيداغوجية والتنسيق المستمر مع الأسرة.', 'تكثيف الأنشطة المنزلية الداعمة للاستقلالية.'],
-            domains: [
-              { domain: 'مجال الاستقلالية (الحياة اليومية والعناية بالذات)', ratings: new Array(25).fill(0).map(function(_, i) { return { score: i < 10 ? 5 : 2, obs: i < 10 ? 'مكتسبة' : 'قيد الاكتساب' }; }) },
-              { domain: 'مجال المهارات الحركية الدقيقة', ratings: new Array(26).fill(0).map(function(_, i) { return { score: i < 13 ? 4 : 2, obs: i < 13 ? 'مكتسبة' : 'قيد الاكتساب' }; }) },
-              { domain: 'مجال المهارات الحركية الكبرى', ratings: new Array(19).fill(0).map(function(_, i) { return { score: i < 9 ? 5 : 3, obs: i < 9 ? 'مكتسبة' : 'قيد الاكتساب' }; }) },
-              { domain: 'مجال ما قبل الأكاديمي', ratings: new Array(19).fill(0).map(function(_, i) { return { score: i < 8 ? 4 : 2, obs: i < 8 ? 'مكتسبة' : 'قيد الاكتساب' }; }) },
-              { domain: 'المجال الأكاديمي', ratings: new Array(51).fill(0).map(function(_, i) { return { score: i < 15 ? 4 : 2, obs: i < 15 ? 'مكتسبة' : 'قيد الاكتساب' }; }) },
-              { domain: 'مجال التقليد', ratings: new Array(20).fill(0).map(function(_, i) { return { score: i < 12 ? 5 : 3, obs: i < 12 ? 'مكتسبة' : 'قيد الاكتساب' }; }) },
-              { domain: 'مجال مهارات الحضور والانتباه', ratings: new Array(11).fill(0).map(function(_, i) { return { score: i < 6 ? 5 : 2, obs: i < 6 ? 'مكتسبة' : 'قيد الاكتساب' }; }) },
-              { domain: 'مجال التواصل', ratings: new Array(24).fill(0).map(function(_, i) { return { score: i < 10 ? 4 : 2, obs: i < 10 ? 'مكتسبة' : 'قيد الاكتساب' }; }) }
-            ]
-          })
-        };
-        mergedReports.unshift(defaultOfficialEval);
-      }
 
       S.name = (r[0][0] && r[0][0].full_name) || '';
       S.d = {
@@ -959,7 +865,8 @@
         msgs: r[4],
         docs: r[6],
         programs: r[7] || [],
-        sections: r[8] || []
+        sections: r[8] || [],
+        notifications: r[10] || []
       };
       S.reads = {}; r[5].forEach(function (x) { S.reads[x.message_id] = true; });
 
@@ -1030,24 +937,62 @@
     return S.d ? S.d.msgs.filter(function (m) { return !S.reads[m.id]; }).length : 0;
   }
 
+  function isParentRecordNew(kind, recordId, legacyPrefix) {
+    if (!recordId) return false;
+    var stored = (S.d && Array.isArray(S.d.notifications)) ? S.d.notifications.filter(function (n) {
+      return String(n.related_record_id || '') === String(recordId);
+    }) : [];
+    if (stored.length) return stored.some(function (n) { return n.is_read !== true; });
+    return safeGetItem('local', legacyPrefix + recordId) !== '1';
+  }
+
   function getNewReportsCount() {
     if (!S.d || !S.d.reports) return 0;
     var stdReps = S.d.reports.filter(function (r) { return !isEvalReport(r); });
-    return stdReps.filter(function (r) {
-      return safeGetItem('local', 'de_seen_rep_' + r.id) !== '1';
-    }).length;
+    return stdReps.filter(function (r) { return isParentRecordNew('report', r.id, 'de_seen_rep_'); }).length;
   }
 
   function getNewEvaluationsCount() {
     if (!S.d || !S.d.reports) return 0;
     var evReps = S.d.reports.filter(isEvalReport);
-    return evReps.filter(function (e) {
-      return safeGetItem('local', 'de_seen_ev_' + e.id) !== '1';
+    return evReps.filter(function (e) { return isParentRecordNew('evaluation', e.id, 'de_seen_ev_'); }).length;
+  }
+
+  function getParentVisibleItems(kind) {
+    if (!S.d) return [];
+    var children = Array.isArray(S.d.children) ? S.d.children : [];
+    var childIds = children.map(function (c) { return String(c.id); });
+    if (kind === 'doc') return (S.d.docs || []).filter(function (d) { return d.shared_with_parent === true && childIds.indexOf(String(d.child_id || '')) >= 0; });
+    if (kind === 'appt') return (S.d.appts || []).filter(function (a) { return a.audience === 'all' || (a.parent_id && String(a.parent_id) === String(S.me && (S.me.id || S.me.user_id))) || (a.child_id && childIds.indexOf(String(a.child_id)) >= 0); });
+    if (kind === 'program') {
+      var secIds = children.map(function (c) { return String(c.section_id || ''); }).filter(Boolean);
+      var secNames = children.map(function (c) { return String(c.section || ''); }).filter(Boolean);
+      return (S.d.programs || []).filter(function (pr) {
+        if (pr.status === 'draft' || pr.is_archived === true) return false;
+        if (pr.section_id && secIds.indexOf(String(pr.section_id)) >= 0) return true;
+        var hay = String(pr.title || '') + ' ' + (typeof pr.schedule === 'string' ? pr.schedule : JSON.stringify(pr.schedule || {}));
+        return secNames.some(function (name) { return name && hay.indexOf(name) >= 0; });
+      });
+    }
+    return [];
+  }
+
+  function getNewContentCount(kind, list) {
+    var items = list || getParentVisibleItems(kind);
+    if (!Array.isArray(items)) return 0;
+    return items.filter(function (item) {
+      return item && item.id && isParentRecordNew(kind, item.id, 'de_seen_' + kind + '_');
     }).length;
   }
 
+  function getTotalUnreadNotifs() { return getTotalNotificationsCount(); }
+
   function getTotalNotificationsCount() {
-    return unreadCount() + getNewReportsCount() + getNewEvaluationsCount();
+    if (!S.d) return unreadCount() + getNewReportsCount() + getNewEvaluationsCount();
+    return unreadCount() + getNewReportsCount() + getNewEvaluationsCount()
+      + getNewContentCount('doc')
+      + getNewContentCount('program')
+      + getNewContentCount('appt');
   }
 
 
@@ -1057,7 +1002,12 @@
       var filter = relatedRecordId
         ? ('/notifications?recipient_user_id=eq.' + uid(S.me) + '&related_record_id=eq.' + uid(relatedRecordId) + '&is_read=eq.false')
         : ('/notifications?recipient_user_id=eq.' + uid(S.me) + '&is_read=eq.false');
-      await C.rest('PATCH', filter, { is_read: true });
+      if (relatedRecordId) {
+        try { await C.rpc('mark_parent_item_read', { p_related_record_id: relatedRecordId }); } catch (eRpc) { await C.rest('PATCH', filter, { is_read: true }); }
+      } else {
+        await C.rest('PATCH', filter, { is_read: true });
+      }
+      if (S.d && Array.isArray(S.d.notifications)) S.d.notifications.forEach(function (n) { if (!relatedRecordId || String(n.related_record_id) === String(relatedRecordId)) n.is_read = true; });
       updateNotifBadge();
       return true;
     } catch (e) {
@@ -1066,6 +1016,16 @@
     }
   }
 
+
+  async function markParentContentRead(kind, recordId) {
+    if (!recordId) return false;
+    var key = 'de_seen_' + kind + '_' + recordId;
+    safeSetItem('local', key, '1');
+    if (S.d && Array.isArray(S.d.notifications)) S.d.notifications.forEach(function (n) { if (String(n.related_record_id) === String(recordId)) n.is_read = true; });
+    var ok = await markParentDbNotifsRead(recordId);
+    updateNotifBadge();
+    return ok;
+  }
 
   function applyParentHashRoute() {
     if (!S.me || !S.d) return;
@@ -1148,6 +1108,13 @@
                   await markParentDbNotifsRead(r.id);
                 }
               }
+              [['doc', getParentVisibleItems('doc')], ['program', getParentVisibleItems('program')], ['appt', getParentVisibleItems('appt')]].forEach(function (bucket) {
+                (bucket[1] || []).forEach(function (item) {
+                  if (!item || !item.id) return;
+                  safeSetItem('local', 'de_seen_' + bucket[0] + '_' + item.id, '1');
+                  if (S.d && Array.isArray(S.d.notifications)) S.d.notifications.forEach(function (n) { if (String(n.related_record_id) === String(item.id)) n.is_read = true; });
+                });
+              });
               updateNotifBadge();
     if (!S._pushSyncedOnce && S.me) {
       S._pushSyncedOnce = true;
@@ -1298,6 +1265,36 @@
         list.appendChild(itemEl);
       });
     }
+
+    // الوثائق الجديدة المتاحة للولي
+    getParentVisibleItems('doc').filter(function (d) { return isParentRecordNew('doc', d.id, 'de_seen_doc_'); }).forEach(function (d) {
+      itemsCount++;
+      list.appendChild(h('div', { class: 'pm-list-item-card', style: 'padding:10px 14px; margin-bottom:8px;' },
+        h('div', { class: 'pm-lic-right' }, h('div', { class: 'pm-lic-icon-box' }, icon('i-file')),
+          h('div', { class: 'pm-lic-info' }, h('strong', { class: 'pm-lic-title', text: 'وثيقة جديدة: ' + (d.title || 'وثيقة') }), h('span', { class: 'pm-lic-meta', text: fmtDate(d.created_at) }))),
+        h('button', { type: 'button', class: 'btn-pm-primary', text: 'عرض الوثائق', onclick: async function () { await markParentContentRead('doc', d.id); closeModal(); S.tab = 'docs'; render(); } })
+      ));
+    });
+
+    // البرامج الأسبوعية المنشورة أو المحدّثة
+    getParentVisibleItems('program').filter(function (pr) { return isParentRecordNew('program', pr.id, 'de_seen_program_'); }).forEach(function (pr) {
+      itemsCount++;
+      list.appendChild(h('div', { class: 'pm-list-item-card', style: 'padding:10px 14px; margin-bottom:8px;' },
+        h('div', { class: 'pm-lic-right' }, h('div', { class: 'pm-lic-icon-box' }, icon('i-book')),
+          h('div', { class: 'pm-lic-info' }, h('strong', { class: 'pm-lic-title', text: 'برنامج أسبوعي جديد: ' + (pr.title || 'البرنامج الأسبوعي') }), h('span', { class: 'pm-lic-meta', text: fmtDate(pr.published_at || pr.created_at) }))),
+        h('button', { type: 'button', class: 'btn-pm-primary', text: 'عرض البرنامج', onclick: async function () { await markParentContentRead('program', pr.id); closeModal(); S.tab = 'programs'; render(); } })
+      ));
+    });
+
+    // المواعيد الجديدة
+    getParentVisibleItems('appt').filter(function (a) { return isParentRecordNew('appt', a.id, 'de_seen_appt_'); }).forEach(function (a) {
+      itemsCount++;
+      list.appendChild(h('div', { class: 'pm-list-item-card', style: 'padding:10px 14px; margin-bottom:8px;' },
+        h('div', { class: 'pm-lic-right' }, h('div', { class: 'pm-lic-icon-box' }, icon('i-cal')),
+          h('div', { class: 'pm-lic-info' }, h('strong', { class: 'pm-lic-title', text: 'موعد جديد: ' + (a.title || 'موعد') }), h('span', { class: 'pm-lic-meta', text: fmtDate(a.starts_at) }))),
+        h('button', { type: 'button', class: 'btn-pm-primary', text: 'عرض المواعيد', onclick: async function () { await markParentContentRead('appt', a.id); closeModal(); S.tab = 'appts'; render(); } })
+      ));
+    });
 
     if (itemsCount === 0) {
       list.appendChild(h('div', { class: 'card empty', text: 'لا توجد إشعارات جديدة حالياً.' }));
@@ -1733,9 +1730,9 @@
   ];
 
   var OFFICIAL_LOAD_SUMMARY_PARENT = [
-    { code: 'ATM*', name: 'الأنشطة التعليمية', count: '01', duration: '15min', color: '#F3E8FF' },
-    { code: 'MT*', name: 'الحركية الدقيقة', count: '05', duration: '30-45min', color: '#DBEAFE' },
-    { code: 'P*A', name: 'الاستقلالية', count: '08', duration: '45min', color: '#BFDBFE' },
+    { code: 'ATM', name: 'الأنشطة التعليمية', count: '01', duration: '15min', color: '#F3E8FF' },
+    { code: 'MT', name: 'الحركية الدقيقة', count: '05', duration: '30-45min', color: '#DBEAFE' },
+    { code: 'PA', name: 'الاستقلالية', count: '08', duration: '45min', color: '#BFDBFE' },
     { code: 'Intg', name: 'التكامل الحسي', count: '01', duration: '45min', color: '#CFFAFE' },
     { code: 'L99 (E)', name: 'اللغة والتواصل', count: '02', duration: '45min', color: '#E0E7FF' },
     { code: 'Pst G', name: 'المعرفي الأكاديمي', count: '01', duration: '45min', color: '#D1FAE5' },
@@ -1812,10 +1809,14 @@
           var isLib = (s.kind === 'library' || (!!s.domain && !!s.skill));
           var isMan = (s.kind === 'manual' || (!isLib && !isAct && !!(s.manual_text || s.title)));
           var k = isLib ? 'library' : (isAct ? 'activity' : (isMan ? 'manual' : 'empty'));
+          var slotIndex = slots.findIndex(function (ts) { return String(ts.id) === String(s.slot_id); });
+          var firstSlot = slotIndex >= 0 ? slots[slotIndex] : null;
+          var lastIndex = slotIndex >= 0 ? Math.min(slots.length - 1, slotIndex + Math.max(1, Number(s.rowspan || 1)) - 1) : -1;
+          var lastSlot = lastIndex >= 0 ? slots[lastIndex] : null;
           return {
             slot_id: s.slot_id,
-            start: s.start || '08:00',
-            end: s.end || '08:30',
+            start: s.start || (firstSlot && firstSlot.start) || '08:00',
+            end: s.end || (lastSlot && lastSlot.end) || (firstSlot && firstSlot.end) || '08:30',
             colspan: s.colspan || s.span || 1,
             rowspan: s.rowspan || 1,
             kind: k,
@@ -2037,6 +2038,33 @@
     });
     tableEl.appendChild(tbodyEl);
 
+    // عرض بديل للهاتف على شكل بطاقات يومية دون تمرير أفقي.
+    var parentMobileDayView = h('section', { class: 'wk-parent-mobile-day-view', style: 'display:none;' });
+    var parentTodayKey = ['sun','mon','tue','wed','thu','fri','sat'][new Date().getDay()];
+    var parentMobileDaySelect = h('select', { class: 'input wk-parent-mobile-day-select' }, st.days.map(function (dy) { return h('option', { value: dy.day, text: dy.label }); }));
+    parentMobileDaySelect.value = st.days.some(function (dy) { return dy.day === parentTodayKey; }) ? parentTodayKey : (st.days[0] && st.days[0].day) || '';
+    var parentMobileCards = h('div', { class: 'wk-parent-mobile-day-cards' });
+    function renderParentMobileDay() {
+      parentMobileCards.textContent = '';
+      var dyIdx = st.days.findIndex(function (dy) { return dy.day === parentMobileDaySelect.value; });
+      var dy = st.days[dyIdx];
+      if (!dy) return parentMobileCards.appendChild(h('div', { class: 'muted small', text: 'لا توجد حصص لهذا اليوم.' }));
+      (dy.sessions || []).slice().sort(function (a, b) { return (a.slot_id || 0) - (b.slot_id || 0); }).forEach(function (sess) {
+        var isLib = sess.kind === 'library' || (!!sess.domain && !!sess.skill);
+        var isAct = sess.kind === 'activity' || sess.kind === 'break';
+        var detail = isLib ? (sess.skill || sess.title || '') : (isAct ? (sess.activity || sess.title || '') : (sess.manual_text || sess.title || ''));
+        parentMobileCards.appendChild(h('article', { class: 'wk-parent-mobile-session-card' + (!detail ? ' is-empty' : '') },
+          h('span', { class: 'wk-parent-mobile-time', dir: 'ltr', text: (sess.start || '—') + ' – ' + (sess.end || '—') }),
+          h('span', { class: 'wk-parent-mobile-kind', text: isLib ? (sess.domain || 'حصة بيداغوجية') : (isAct ? 'نشاط يومي' : 'حصة') }),
+          h('strong', { class: 'wk-parent-mobile-detail', text: detail || 'لا يوجد نشاط مسجل' })
+        ));
+      });
+    }
+    parentMobileDaySelect.addEventListener('change', renderParentMobileDay);
+    parentMobileDayView.appendChild(h('div', { class: 'wk-parent-mobile-head' }, h('strong', { text: 'البرنامج حسب اليوم' }), parentMobileDaySelect));
+    parentMobileDayView.appendChild(parentMobileCards);
+    renderParentMobileDay();
+
     // حاوية عرض الوثيقة الرسمية Canvas
     var pdfCanvasHost = h('div', {
       class: 'wk-parent-pdf-canvas-host',
@@ -2069,7 +2097,8 @@
           printProgramBtn
         )
       ),
-      loadTable,
+      h('div', { class: 'wk-parent-load-table-scroll', style: 'max-width:100%; overflow-x:auto; margin-bottom:12px;' }, loadTable),
+      parentMobileDayView,
       h('div', { class: 'wk-parent-sheet-scroll no-print', style: 'overflow-x:auto; margin-bottom:18px;' },
         tableEl
       ),
@@ -2121,9 +2150,7 @@
       return false;
     });
 
-    if (!matchingProgs.length && allProgs.length > 0) {
-      matchingProgs = allProgs.slice();
-    }
+    matchingProgs.forEach(function (pr) { markParentContentRead('program', pr.id); });
     if (!matchingProgs.length) {
       var defaultSecName = kidSecName || (sections[0] ? sections[0].name : 'توحد 02');
       var presetProg = {
@@ -2915,8 +2942,8 @@ function generateWordDocObservation(rep, child, secName, brName) {
 
     // توقيع وختم مدير المركز فقط
     wrap.appendChild(h('div', { style: 'display:flex; justify-content:center; align-items:center; margin-top:20px; border-top:1.5px solid #163B65; padding-top:14px;' },
-      h('div', { style: 'text-align:center; padding:12px 32px; border:1.5px solid #163B65; border-radius:10px; background:#F8FAFC; min-width:280px;' },
-        h('strong', { style: 'color:#163B65; font-size:15px; font-weight:900; display:block; margin-bottom:4px;', text: 'توقيع وختم مدير المركز' }),
+      h('div', { style: 'text-align:center; padding:12px 32px; border:none; background:#FFFFFF; min-width:280px;' },
+        h('strong', { style: 'color:#163B65; font-size:15px; font-weight:900; display:block; margin-bottom:4px;', text: 'مدير المركز — الإمضاء' }),
         h('div', { style: 'height:50px;' }),
         h('span', { class: 'small muted', style: 'font-size:11.5px; color:#64748B;', text: 'التأشيرة والختم الرسمي لدار الإحسان' })
       )
@@ -3041,8 +3068,8 @@ function generateWordDocObservation(rep, child, secName, brName) {
 
     // توقيع وختم مدير المركز فقط
     wrap.appendChild(h('div', { style: 'display:flex; justify-content:center; align-items:center; margin-top:20px; border-top:1.5px solid #163B65; padding-top:14px;' },
-      h('div', { style: 'text-align:center; padding:12px 32px; border:1.5px solid #163B65; border-radius:10px; background:#F8FAFC; min-width:280px;' },
-        h('strong', { style: 'color:#163B65; font-size:15px; font-weight:900; display:block; margin-bottom:4px;', text: 'توقيع وختم مدير المركز' }),
+      h('div', { style: 'text-align:center; padding:12px 32px; border:none; background:#FFFFFF; min-width:280px;' },
+        h('strong', { style: 'color:#163B65; font-size:15px; font-weight:900; display:block; margin-bottom:4px;', text: 'مدير المركز — الإمضاء' }),
         h('div', { style: 'height:50px;' }),
         h('span', { class: 'small muted', style: 'font-size:11.5px; color:#64748B;', text: 'التأشيرة والختم الرسمي لدار الإحسان' })
       )
@@ -3066,7 +3093,7 @@ function generateWordDocObservation(rep, child, secName, brName) {
         h('div', { style: 'font-size:12px; color:#475569; font-weight:700;', text: 'المركز النفسي البيداغوجي — العطف غرداية' })
       ),
       h('div', { style: 'text-align:center;' },
-        h('h2', { style: 'margin:0; font-size:19px; font-weight:900; text-decoration:underline; font-style:italic;', text: 'التقرير النهائي لمتابعة الطالب ' + (childFullName || 'عبد الرزاق') + ' حفظه الله' })
+        h('h2', { style: 'margin:0; font-size:19px; font-weight:900; text-decoration:underline; font-style:italic;', text: 'التقرير النهائي لمتابعة الطالب ' + (childFullName || 'الطفل') + ' حفظه الله' })
       ),
       h('img', { src: 'logo-sq.png', alt: 'دار الإحسان', style: 'width:62px; height:62px; object-fit:contain;' })
     ));
@@ -3074,7 +3101,7 @@ function generateWordDocObservation(rep, child, secName, brName) {
     // المخاطبة
     wrap.appendChild(h('div', { style: 'text-align:center; margin-bottom:14px;' },
       h('div', { style: 'font-size:15.5px; font-weight:900;', text: 'المكرم ولي أمر / الطالب' }),
-      h('div', { style: 'font-size:15px; font-weight:800; margin-top:2px; color:#163B65;', text: af.parent_name || 'مصطفى' })
+      h('div', { style: 'font-size:15px; font-weight:800; margin-top:2px; color:#163B65;', text: af.parent_name || (typeof getChildParentName === 'function' ? getChildParentName(r && r.child_id) : '') || 'ولي أمر الطالب' })
     ));
 
     // السلام عليكم والنص التمهيدي
@@ -3162,7 +3189,7 @@ function generateWordDocObservation(rep, child, secName, brName) {
     // توقيع وختم مدير المركز فقط (مع نزع غيره)
     wrap.appendChild(h('div', { style: 'display:flex; justify-content:center; text-align:center; margin-top:22px;' },
       h('div', { style: 'min-width:280px; padding:12px 24px; border:2px solid #000; border-radius:8px;' },
-        h('span', { style: 'font-size:16px; font-weight:900; text-decoration:underline; display:block;', text: 'توقيع وختم مدير المركز' }),
+        h('span', { style: 'font-size:16px; font-weight:900; text-decoration:underline; display:block;', text: 'مدير المركز — الإمضاء' }),
         h('div', { style: 'height:50px;' }),
         h('span', { style: 'font-size:11.5px; color:#475569;', text: 'التأشيرة والختم الرسمي لدار الإحسان' })
       )
@@ -3801,59 +3828,10 @@ function renderParentOfficialEvaluationSheet(r, childFullName, secName, kd, init
     var evals = (S.d && S.d.reports || []).filter(function (rep) {
       return isEvalReport(rep) && extractParentEvalMeta(rep).status !== 'draft';
     });
-    // إذا وُجدت تقييمات حقيقية مرسلة من الإدارة، نستبعد التقييم الافتراضي التجريبي
-    var realSentEvals = evals.filter(function (rep) {
-      return String(rep.id || '').indexOf('eval-official-') !== 0;
-    });
-    if (realSentEvals.length > 0) {
-      evals = realSentEvals;
-    }
-
+    // لا نعرض قيماً تجريبية على أنها تقييمات حقيقية؛ تبقى القائمة فارغة عند عدم وجود تقييم منشور.
     if (!evals.length) {
-      // إدراج الاستمارة الرسمية مباشرة لمنع أي شاشة بيضاء
-      var k0 = kid || { id: 'kid-1', full_name: 'التلميذ', membership_no: '170', section: 'قسم الشبه مدرسي مكيف' };
-      var defEv = {
-        id: 'eval-official-' + (k0.membership_no || '170'),
-        child_id: k0.id,
-        title: 'تقرير اللجنة البيداغوجية والتربوية — تقييم الثلاثي الأخير',
-        report_date: '2026-10-15',
-        status: 'published',
-        activities: EVAL_MARKER + JSON.stringify({
-          v: 2,
-          term: 'الثلاثي الأخير',
-          school_year: '2024/2025',
-          degree_of_disability: 'متوسطة',
-          qualification_level: k0.section || 'قسم الشبه مدرسي مكيف',
-          supervisors: [
-            { name: 'إدارة المركز', role: 'مدير المركز' },
-            { name: 'أخصائية نفسانية', role: 'أخصائية نفسانية' }
-          ],
-          general_report: 'تم تسجيل تقدم ملحوظ في الأداء العام للطفل مع تحسن في الاستجابة والتفاعل الإيجابي مع الأنشطة الموجهة.',
-          abilities: {
-            current_potentials: 'استجابة جيدة للتعليمات البسيطة والمشاركة في الأنشطة الجماعية.',
-            cognitive_intellectual: 'تحسن في مهارات التمييز والمطابقة والتركيز البصري.',
-            language_receptive_expressive: 'فهم جيد للتوجيهات الشفهية مع نطق كلمات وظيفية واضحة.',
-            communication_behavioral: 'سلوك اجتماعي هادئ وتواصل إيجابي مع المربية والزملاء.',
-            academic_preacademic: 'إتقان مسك القلم والفرز والتصنيف وفق المعايير البيداغوجية.',
-            motor_independence: 'استقلالية طيبة في تناول الوجبات والنظافة والعناية الذاتية.'
-          },
-          strengths: ['استجابة وتفاعل إيجابي مع الأنشطة الموجهة.', 'تطور ملحوظ في المهارات الحركية الدقيقة.', 'انتظام الحضور والانضباط داخل القسم.'],
-          weaknesses: ['الحاجة لتعزيز مهارات الاستقلالية في بعض المهام.', 'تنمية الثروة اللغوية والتعبير الشفهي.'],
-          recommendations: ['مواصلة المتابعة البيداغوجية والتنسيق المستمر مع الأسرة.', 'تكثيف الأنشطة المنزلية الداعمة للاستقلالية.'],
-          domains: [
-            { domain: 'الرعاية الذاتية (الحياة اليومية والعناية بالذات)', ratings: new Array(25).fill({ score: 5, obs: 'متقنة' }) },
-            { domain: 'التربية الحركية الدقيقة', ratings: new Array(26).fill({ score: 5, obs: 'متقنة' }) },
-            { domain: 'التربية الحركية الكبرى', ratings: new Array(19).fill({ score: 4, obs: 'متقنة' }) },
-            { domain: 'ما قبل الأكاديمي', ratings: new Array(19).fill({ score: 5, obs: 'متقنة' }) },
-            { domain: 'الأكاديمي', ratings: new Array(51).fill({ score: 4, obs: 'مكتسبة' }) },
-            { domain: 'الإدراك الحسي', ratings: new Array(20).fill({ score: 5, obs: 'متقنة' }) },
-            { domain: 'التفاعل الاجتماعي', ratings: new Array(11).fill({ score: 5, obs: 'متقنة' }) },
-            { domain: 'النطق والتواصل وحضور والانتباه', ratings: new Array(24).fill({ score: 5, obs: 'متقنة' }) }
-          ]
-        })
-      };
-      evals = [defEv];
-      if (S.d && S.d.reports) S.d.reports.unshift(defEv);
+      v.appendChild(h('div', { class: 'card empty-state', text: 'لا توجد تقييمات منشورة لهذا الطفل حالياً.' }));
+      return;
     }
 
     evals.forEach(function (e) {
@@ -3995,9 +3973,11 @@ function renderParentOfficialEvaluationSheet(r, childFullName, secName, kd, init
   }
 
   function vAppts(v) {
+    var visibleAppts = getParentVisibleItems('appt');
+    visibleAppts.forEach(function (a) { markParentContentRead('appt', a.id); });
     var now = new Date();
-    var up = S.d.appts.filter(function (a) { return new Date(a.starts_at) >= now && a.status !== 'cancelled'; });
-    var past = S.d.appts.filter(function (a) { return new Date(a.starts_at) < now || a.status === 'cancelled'; });
+    var up = visibleAppts.filter(function (a) { return new Date(a.starts_at) >= now && a.status !== 'cancelled'; });
+    var past = visibleAppts.filter(function (a) { return new Date(a.starts_at) < now || a.status === 'cancelled'; });
 
     v.appendChild(h('div', { class: 'bar-sub' }, h('h2', { text: t('apptsUpcoming') })));
     if (!up.length) v.appendChild(empty(t('emptyAppts'))); else up.forEach(function (a) { v.appendChild(apptCard(a)); });
@@ -4046,7 +4026,7 @@ function renderParentOfficialEvaluationSheet(r, childFullName, secName, kd, init
     );
     v.appendChild(topRow);
 
-    var docsList = (S.d && S.d.docs) || [];
+    var docsList = getParentVisibleItems('doc');
     if (!docsList.length) return v.appendChild(empty(t('emptyDocs')));
 
     docsList.forEach(function (d) {
@@ -4065,6 +4045,7 @@ function renderParentOfficialEvaluationSheet(r, childFullName, secName, kd, init
           d.storage_path ? fileBtn(d.storage_path, 'تحميل / فتح الوثيقة') : null
         )
       );
+      card.addEventListener('click', function () { markParentContentRead('doc', d.id); });
       v.appendChild(card);
     });
   }
