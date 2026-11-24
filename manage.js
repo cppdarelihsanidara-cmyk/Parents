@@ -3044,9 +3044,9 @@
 
   /* قائمة الأنشطة والمجالات الإرشادية للحجم الساعي كما في الورقة الأصلية 23499.jpg */
   var OFFICIAL_LOAD_SUMMARY = [
-    { code: 'ATM*', name: 'الأنشطة التعليمية', count: '01', duration: '15min', color: '#F3E8FF' },
-    { code: 'MT*', name: 'الحركية الدقيقة', count: '05', duration: '30-45min', color: '#DBEAFE' },
-    { code: 'P*A', name: 'الاستقلالية', count: '08', duration: '45min', color: '#BFDBFE' },
+    { code: 'ATM', name: 'الأنشطة التعليمية', count: '01', duration: '15min', color: '#F3E8FF' },
+    { code: 'MT', name: 'الحركية الدقيقة', count: '05', duration: '30-45min', color: '#DBEAFE' },
+    { code: 'PA', name: 'الاستقلالية', count: '08', duration: '45min', color: '#BFDBFE' },
     { code: 'Intg', name: 'التكامل الحسي', count: '01', duration: '45min', color: '#CFFAFE' },
     { code: 'L99 (E)', name: 'اللغة والتواصل', count: '02', duration: '45min', color: '#E0E7FF' },
     { code: 'Pst G', name: 'المعرفي الأكاديمي', count: '01', duration: '45min', color: '#D1FAE5' },
@@ -3556,6 +3556,36 @@
                       }
                     }
                   }, makeSvgIcon('s-file'), h('span', { text: 'PDF' })),
+
+                  h('button', {
+                    type: 'button',
+                    class: 'btn light',
+                    style: 'font-size:12px; font-weight:700; display:inline-flex; align-items:center; gap:4px;',
+                    title: pItem.is_archived ? 'استعادة البرنامج من الأرشيف' : 'أرشفة البرنامج دون حذفه',
+                    onclick: async function () {
+                      var nextArch = !pItem.is_archived;
+                      try {
+                        if (pItem.id && DE.isUuid(String(pItem.id))) {
+                          await C.rest('PATCH', '/educational_programs?id=eq.' + uid(pItem.id), { is_archived: nextArch, archived_at: nextArch ? new Date().toISOString() : null });
+                        }
+                        pItem.is_archived = nextArch;
+                        bust();
+                        renderProgramsDashboard();
+                        toast(nextArch ? 'تم نقل البرنامج إلى الأرشيف.' : 'تمت استعادة البرنامج من الأرشيف.', 'ok');
+                      } catch (e) { toast('تعذر تحديث حالة الأرشفة: ' + (e.message || e), 'bad'); }
+                    }
+                  }, h('span', { text: pItem.is_archived ? 'استعادة' : 'أرشفة' })),
+
+                  h('button', {
+                    type: 'button',
+                    class: 'btn light',
+                    style: 'font-size:12px; font-weight:700; display:inline-flex; align-items:center; gap:4px;',
+                    title: 'نسخ ملخص البرنامج',
+                    onclick: function () {
+                      var txt = [pItem.title || sec.name, pItem.description || '', pItem.goals || ''].filter(Boolean).join('\n');
+                      if (window.DE && DE.copyText) DE.copyText(txt).then(function (ok) { toast(ok ? 'تم نسخ ملخص البرنامج.' : 'تعذر النسخ.', ok ? 'ok' : 'bad'); });
+                    }
+                  }, h('span', { text: 'نسخ' })),
 
                   (!S.isEducator ? h('button', {
                     type: 'button',
@@ -4523,14 +4553,7 @@
       else rows.unshift(localRecord);
 
       if (publishNow) {
-        try {
-          await C.rest('POST', '/messages', {
-            kind: 'notice',
-            title: (nextStatus === 'updated' ? 'تحديث البرنامج الأسبوعي — ' : 'نشر البرنامج الأسبوعي — ') + secName,
-            body: 'تم ' + (nextStatus === 'updated' ? 'تحديث' : 'اعتماد ونشر') + ' البرنامج المؤقت الأسبوعي لفوج «' + secName + '». يمكنكم الاطلاع عليه من قسم «البرنامج الأسبوعي» في فضاء الأولياء.',
-            published_at: nowIso
-          });
-        } catch (msgErr) {}
+        /* Notification and Push dispatch for published educational_programs are handled automatically by DB trigger trg_notify_on_educational_program. */
 
         toast('تم اعتماد ونشر البرنامج الأسبوعي في فضاء الأولياء بنجاح!', 'ok');
       } else {
@@ -4940,7 +4963,19 @@
     );
   }
 
+  var _reportSaveInFlight = Object.create(null);
   async function saveProgressReportResilient(method, path, body) {
+    var _m = String(method || '').toUpperCase();
+    var _lk = (_m === 'POST' && body) ? [body.child_id || '', body.title || '', String(body.report_date || '').slice(0, 10), body.status || ''].join('|') : '';
+    if (_lk && _reportSaveInFlight[_lk]) return _reportSaveInFlight[_lk];
+    var _p = _saveProgressReportResilientImpl(method, path, body);
+    if (_lk) {
+      _reportSaveInFlight[_lk] = _p;
+      _p.then(function () { setTimeout(function () { delete _reportSaveInFlight[_lk]; }, 2500); }, function () { delete _reportSaveInFlight[_lk]; });
+    }
+    return _p;
+  }
+  async function _saveProgressReportResilientImpl(method, path, body) {
     var dbBody = Object.assign({}, body || {});
     var todayIso = new Date().toISOString().slice(0, 10);
     var rawDate = String(dbBody.report_date || todayIso).slice(0, 10);
@@ -5374,7 +5409,7 @@
     // بطاقة توقيع المدير فقط
     card.appendChild(h('div', { style: 'display:flex; justify-content:center; margin-top:20px; border-top:1.5px solid #CBD5E1; padding-top:16px;' },
       h('div', { style: 'text-align:center; padding:12px 28px; border:1.5px solid #163B65; border-radius:10px; background:#F8FAFC; min-width:280px;' },
-        h('strong', { style: 'color:#163B65; font-size:14.5px; font-weight:900; display:block; margin-bottom:4px;', text: 'توقيع وختم مدير المركز' }),
+        h('strong', { style: 'color:#163B65; font-size:14.5px; font-weight:900; display:block; margin-bottom:4px;', text: 'مدير المركز — الإمضاء' }),
         h('div', { style: 'height:45px; border-bottom:1px dashed #94A3B8; margin-bottom:6px;' }),
         h('span', { class: 'small muted', style: 'font-size:11px;', text: 'التأشيرة والختم الرسمي لدار الإحسان' })
       )
@@ -5683,7 +5718,7 @@
     // بطاقة توقيع المدير فقط
     card.appendChild(h('div', { style: 'display:flex; justify-content:center; margin-top:20px; border-top:1.5px solid #CBD5E1; padding-top:16px;' },
       h('div', { style: 'text-align:center; padding:12px 28px; border:1.5px solid #163B65; border-radius:10px; background:#F8FAFC; min-width:280px;' },
-        h('strong', { style: 'color:#163B65; font-size:14.5px; font-weight:900; display:block; margin-bottom:4px;', text: 'توقيع وختم مدير المركز' }),
+        h('strong', { style: 'color:#163B65; font-size:14.5px; font-weight:900; display:block; margin-bottom:4px;', text: 'مدير المركز — الإمضاء' }),
         h('div', { style: 'height:45px; border-bottom:1px dashed #94A3B8; margin-bottom:6px;' }),
         h('span', { class: 'small muted', style: 'font-size:11px;', text: 'التأشيرة والختم الرسمي لدار الإحسان' })
       )
@@ -5889,7 +5924,7 @@
       kidSelect.appendChild(opt);
     });
 
-    var parentNameInp = h('input', { type: 'text', style: 'width:100%; padding:10px; border-radius:8px; border:1.5px solid #CBD5E1; font-weight:700;', placeholder: 'اسم ولي الأمر (المكرم ولي أمر / ...)', value: af.parent_name || (selKid && (selKid.parent_name || selKid.guardian)) || 'مصطفى' });
+    var parentNameInp = h('input', { type: 'text', style: 'width:100%; padding:10px; border-radius:8px; border:1.5px solid #CBD5E1; font-weight:700;', placeholder: 'اسم ولي الأمر (المكرم ولي أمر / ...)', value: af.parent_name || (selKid && (selKid.parent_name || selKid.guardian)) || '' });
     var schoolYearInp = h('input', { type: 'text', style: 'width:100%; padding:10px; border-radius:8px; border:1.5px solid #CBD5E1; font-weight:700; text-align:center;', placeholder: 'الموسم الدراسي', value: af.school_year || '2025/2026' });
     var reportDateInp = h('input', { type: 'date', style: 'width:100%; padding:10px; border-radius:8px; border:1.5px solid #CBD5E1;', value: ev.report_date || new Date().toISOString().slice(0, 10) });
 
@@ -6099,7 +6134,7 @@
         h('div', { style: 'margin-top:6px; color:#64748B; font-size:12px;', text: 'الاسم واللقب: ....................................................' })
       ),
       h('div', { style: 'text-align:center; padding:12px 28px; border:1.5px solid #163B65; border-radius:10px; background:#F8FAFC; min-width:280px;' },
-        h('strong', { style: 'color:#163B65; font-size:14.5px; font-weight:900; display:block; margin-bottom:4px;', text: 'توقيع وختم مدير المركز' }),
+        h('strong', { style: 'color:#163B65; font-size:14.5px; font-weight:900; display:block; margin-bottom:4px;', text: 'مدير المركز — الإمضاء' }),
         h('div', { style: 'height:45px; border-bottom:1px dashed #94A3B8; margin-bottom:6px;' }),
         h('span', { class: 'small muted', style: 'font-size:11px;', text: 'التأشيرة والختم الرسمي لدار الإحسان' })
       )
@@ -6310,8 +6345,8 @@
 
     // توقيع وختم مدير المركز فقط
     wrap.appendChild(h('div', { style: 'display:flex; justify-content:center; align-items:center; margin-top:20px; border-top:1.5px solid #163B65; padding-top:14px;' },
-      h('div', { style: 'text-align:center; padding:12px 32px; border:1.5px solid #163B65; border-radius:10px; background:#F8FAFC; min-width:280px;' },
-        h('strong', { style: 'color:#163B65; font-size:15px; font-weight:900; display:block; margin-bottom:4px;', text: 'توقيع وختم مدير المركز' }),
+      h('div', { style: 'text-align:center; padding:12px 32px; border:none; background:#FFFFFF; min-width:280px;' },
+        h('strong', { style: 'color:#163B65; font-size:15px; font-weight:900; display:block; margin-bottom:4px;', text: 'مدير المركز — الإمضاء' }),
         h('div', { style: 'height:50px;' }),
         h('span', { class: 'small muted', style: 'font-size:11.5px; color:#64748B;', text: 'التأشيرة والختم الرسمي لدار الإحسان' })
       )
@@ -6436,8 +6471,8 @@
 
     // توقيع وختم مدير المركز فقط
     wrap.appendChild(h('div', { style: 'display:flex; justify-content:center; align-items:center; margin-top:20px; border-top:1.5px solid #163B65; padding-top:14px;' },
-      h('div', { style: 'text-align:center; padding:12px 32px; border:1.5px solid #163B65; border-radius:10px; background:#F8FAFC; min-width:280px;' },
-        h('strong', { style: 'color:#163B65; font-size:15px; font-weight:900; display:block; margin-bottom:4px;', text: 'توقيع وختم مدير المركز' }),
+      h('div', { style: 'text-align:center; padding:12px 32px; border:none; background:#FFFFFF; min-width:280px;' },
+        h('strong', { style: 'color:#163B65; font-size:15px; font-weight:900; display:block; margin-bottom:4px;', text: 'مدير المركز — الإمضاء' }),
         h('div', { style: 'height:50px;' }),
         h('span', { class: 'small muted', style: 'font-size:11.5px; color:#64748B;', text: 'التأشيرة والختم الرسمي لدار الإحسان' })
       )
@@ -6469,7 +6504,7 @@
     // المخاطبة
     wrap.appendChild(h('div', { style: 'text-align:center; margin-bottom:14px;' },
       h('div', { style: 'font-size:15.5px; font-weight:900;', text: 'المكرم ولي أمر / الطالب' }),
-      h('div', { style: 'font-size:15px; font-weight:800; margin-top:2px; color:#163B65;', text: af.parent_name || 'مصطفى' })
+      h('div', { style: 'font-size:15px; font-weight:800; margin-top:2px; color:#163B65;', text: af.parent_name || '' })
     ));
 
     // السلام عليكم والنص التمهيدي
@@ -6557,7 +6592,7 @@
     // توقيع وختم مدير المركز فقط (مع نزع غيره)
     wrap.appendChild(h('div', { style: 'display:flex; justify-content:center; text-align:center; margin-top:22px;' },
       h('div', { style: 'min-width:280px; padding:12px 24px; border:2px solid #000; border-radius:8px;' },
-        h('span', { style: 'font-size:16px; font-weight:900; text-decoration:underline; display:block;', text: 'توقيع وختم مدير المركز' }),
+        h('span', { style: 'font-size:16px; font-weight:900; text-decoration:underline; display:block;', text: 'مدير المركز — الإمضاء' }),
         h('div', { style: 'height:50px;' }),
         h('span', { style: 'font-size:11.5px; color:#475569;', text: 'التأشيرة والختم الرسمي لدار الإحسان' })
       )
@@ -10692,7 +10727,7 @@
       treating_doctor: savedMf.treating_doctor || '',
       followup_start_date: savedMf.followup_start_date || '',
       episodes: Array.isArray(savedMf.episodes) && savedMf.episodes.length >= 2
-        ? [Object.assign({}, savedMf.episodes[0]), Object.assign({}, savedMf.episodes[1])]
+        ? (savedMf.episodes.length >= 2 ? savedMf.episodes.map(function (ep) { return Object.assign({}, ep || {}); }) : [Object.assign({}, savedMf.episodes[0] || {}), {}])
         : [{}, {}],
       manifestations_selected: Array.isArray(savedMf.manifestations_selected) ? savedMf.manifestations_selected.slice() : [],
       manifestations_custom: Array.isArray(savedMf.manifestations_custom) ? savedMf.manifestations_custom.slice() : (customStore.manifestations || []),
@@ -10937,25 +10972,57 @@
       return inp;
     }
 
-    var crisisTbl = h('table', { style: 'width:100%; border-collapse:collapse; margin-bottom:14px; font-size:13.5px;' },
-      h('thead', null,
-        h('tr', { style: 'background:#FEF2F2; color:#0F172A;' },
-          h('th', { style: 'border:1px solid #334155; padding:7px;', text: 'Informations (Épisode 1)' }),
-          h('th', { style: 'border:1px solid #334155; padding:7px;', text: 'Observations' }),
-          h('th', { style: 'border:1px solid #334155; padding:7px;', text: 'Informations (Épisode 2)' }),
-          h('th', { style: 'border:1px solid #334155; padding:7px;', text: 'Observations' })
-        )
-      ),
-      h('tbody', null, epFields.map(function (f) {
-        return h('tr', null,
-          h('td', { style: 'border:1px solid #334155; padding:6px; font-weight:800; color:#0F172A;', text: f.label }),
-          h('td', { style: 'border:1px solid #334155; padding:4px;' }, makeEpInput(mfState.episodes[0], f)),
-          h('td', { style: 'border:1px solid #334155; padding:6px; font-weight:800; color:#0F172A;', text: f.label }),
-          h('td', { style: 'border:1px solid #334155; padding:4px;' }, makeEpInput(mfState.episodes[1], f))
-        );
-      }))
-    );
-    card.appendChild(h('div', { style: 'overflow-x:auto;' }, crisisTbl));
+    var crisisHost = h('div', { style: 'overflow-x:auto; margin-bottom:14px;' });
+    function renderEpisodesDynamicTable() {
+      crisisHost.textContent = '';
+      var eps = mfState.episodes;
+      var tbl = h('table', { style: 'width:100%; border-collapse:collapse; font-size:13px;' },
+        h('thead', null,
+          h('tr', { style: 'background:#FEF2F2; color:#0F172A;' },
+            h('th', { style: 'border:1px solid #334155; padding:7px; min-width:165px;', text: 'Informations' }),
+            eps.map(function (_, epIdx) {
+              return h('th', { style: 'border:1px solid #334155; padding:7px; min-width:155px;' },
+                h('div', { style: 'display:flex; align-items:center; justify-content:space-between; gap:6px;' },
+                  h('span', { text: 'Épisode ' + (epIdx + 1) }),
+                  eps.length > 2 ? h('button', {
+                    type: 'button',
+                    class: 'btn small light danger',
+                    style: 'padding:2px 6px; font-size:11px;',
+                    title: 'Supprimer cet épisode',
+                    onclick: function () {
+                      mfState.episodes.splice(epIdx, 1);
+                      renderEpisodesDynamicTable();
+                    }
+                  }, '×') : null
+                )
+              );
+            })
+          )
+        ),
+        h('tbody', null, epFields.map(function (f) {
+          return h('tr', null,
+            h('td', { style: 'border:1px solid #334155; padding:6px; font-weight:800; color:#0F172A;', text: f.label }),
+            eps.map(function (epObj) {
+              return h('td', { style: 'border:1px solid #334155; padding:4px;' }, makeEpInput(epObj, f));
+            })
+          );
+        }))
+      );
+      crisisHost.appendChild(tbl);
+      crisisHost.appendChild(h('div', { style: 'display:flex; justify-content:flex-end; margin-top:8px; gap:8px;' },
+        h('button', {
+          type: 'button',
+          class: 'btn small light',
+          text: '+ Ajouter un épisode (' + mfState.episodes.length + ')',
+          onclick: function () {
+            mfState.episodes.push({});
+            renderEpisodesDynamicTable();
+          }
+        })
+      ));
+    }
+    renderEpisodesDynamicTable();
+    card.appendChild(crisisHost);
 
     card.appendChild(makeGreenChecklistGroup(
       '1. Manifestations observées pendant la crise :',
@@ -12478,7 +12545,8 @@
       },
       filters: [
         { label: 'الطفل', opts: kidOpts, test: function (r, x) { return r.child_id === x; } },
-        { label: 'الحالة', opts: [['published', 'منشور للولي'], ['draft', 'مسودة قيد الإعداد']], test: function (r, x) { return extractEvalStatus(r) === x; } }
+        { label: 'الحالة', opts: [['published', 'منشور للولي'], ['draft', 'مسودة قيد الإعداد']], test: function (r, x) { return extractEvalStatus(r) === x; } },
+        { label: 'الأرشيف', opts: [['active', 'التقارير النشطة'], ['archived', 'المؤرشفة فقط']], test: function (r, x) { return x === 'archived' ? !!r.is_archived : !r.is_archived; } }
       ],
       cols: [
         {
@@ -12537,6 +12605,18 @@
               await syncSharedEvaluationRecord(Object.assign({}, r, { status: 'published', activities: upd }), null);
               bust(); toast('تم نشر التقرير للولي.', 'ok'); go('reports');
             }, 'gold'),
+          rbtn(r.is_archived ? 'استعادة من الأرشيف' : 'أرشفة', async function () {
+            var nextArch = !r.is_archived;
+            if (r.id && DE.isUuid(String(r.id))) {
+              try { await saveProgressReportResilient('PATCH', '/progress_reports?id=eq.' + uid(r.id), { is_archived: nextArch, archived_at: nextArch ? new Date().toISOString() : null }); } catch (e) {}
+            }
+            r.is_archived = nextArch;
+            bust(); toast(nextArch ? 'تم نقل التقرير إلى الأرشيف.' : 'تمت استعادة التقرير من الأرشيف.', 'ok'); go('reports');
+          }, 'light'),
+          rbtn('نسخ النص', function () {
+            var txt = [r.title || '', r.achievements || '', r.notes || ''].filter(Boolean).join('\n\n');
+            if (window.DE && DE.copyText) DE.copyText(txt).then(function (ok) { toast(ok ? 'تم نسخ محتوى التقرير.' : 'تعذر النسخ.', ok ? 'ok' : 'bad'); });
+          }, 'light'),
           rbtn('حذف التقرير', function () { return deleteReportRecord(r); }, 'danger')
         ];
       }
@@ -12726,7 +12806,8 @@
       },
       filters: [
         { label: 'الطفل', opts: kidOpts, test: function (r, x) { return r.child_id === x; } },
-        { label: 'الحالة', opts: [['published', 'مرسلة ومنشورة للولي'], ['draft', 'مسودة قيد الإعداد']], test: function (r, x) { return extractEvalStatus(r) === x; } }
+        { label: 'الحالة', opts: [['published', 'مرسلة ومنشورة للولي'], ['draft', 'مسودة قيد الإعداد']], test: function (r, x) { return extractEvalStatus(r) === x; } },
+        { label: 'الأرشيف', opts: [['active', 'التقييمات النشطة'], ['archived', 'المؤرشفة فقط']], test: function (r, x) { return x === 'archived' ? !!r.is_archived : !r.is_archived; } }
       ],
       cols: [
         {
@@ -12750,7 +12831,22 @@
         { label: 'التاريخ', get: function (r) { return fmt(r.report_date); }, sort: function (r) { return r.report_date; } },
         { label: 'الحالة', get: function (r) { var st = extractEvalStatus(r); return badge(st === 'published' ? 'مرسلة للأولياء' : 'مسودة', st === 'published' ? 'ok' : 'gray'); } }
       ],
-      actions: null
+      actions: function (r) {
+        return [
+          rbtn(r.is_archived ? 'استعادة' : 'أرشفة', async function () {
+            var nextArch = !r.is_archived;
+            if (r.id && DE.isUuid(String(r.id))) {
+              try { await saveProgressReportResilient('PATCH', '/progress_reports?id=eq.' + uid(r.id), { is_archived: nextArch, archived_at: nextArch ? new Date().toISOString() : null }); } catch (e) {}
+            }
+            r.is_archived = nextArch;
+            bust(); toast(nextArch ? 'تمت أرشفة التقييم.' : 'تمت استعادة التقييم.', 'ok'); go('evaluations');
+          }, 'light'),
+          rbtn('نسخ النص', function () {
+            var txt = [r.title || '', r.achievements || '', r.notes || ''].filter(Boolean).join('\n\n');
+            if (window.DE && DE.copyText) DE.copyText(txt).then(function (ok) { toast(ok ? 'تم نسخ نص التقييم.' : 'تعذر النسخ.', ok ? 'ok' : 'bad'); });
+          }, 'light')
+        ];
+      }
     });
   }
 

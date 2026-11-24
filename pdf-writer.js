@@ -1415,7 +1415,7 @@
     var stripY = donutBoxY + 492;
     var stripH = 156;
 
-    // أ) مكان الإمضاء والختم في الأسفل على اليسار
+    // أ) مكان الإمضاء في الأسفل على اليسار
     var stampBoxX = donutBoxX + 16; // 68
     var stampBoxW = 336;
     ctx.fillStyle = '#FFFFFF';
@@ -1424,7 +1424,7 @@
     ctx.lineWidth = 1.6;
     ctx.strokeRect(stampBoxX, stripY, stampBoxW, stripH);
 
-    // ترويسة صندوق الإمضاء والختم
+    // ترويسة صندوق الإمضاء
     ctx.fillStyle = '#EEF2FF';
     ctx.fillRect(stampBoxX + 1, stripY + 1, stampBoxW - 2, 32);
     ctx.strokeStyle = '#CBD5E1';
@@ -1434,7 +1434,7 @@
     ctx.fillStyle = '#1E1B4B';
     ctx.textAlign = 'center';
     ctx.font = 'bold 14.5px "Cairo", "IBM Plex Sans Arabic", sans-serif';
-    ctx.fillText('الإمضاء والختم', stampBoxX + stampBoxW / 2, stripY + 22);
+    ctx.fillText('الإمضاء', stampBoxX + stampBoxW / 2, stripY + 22);
 
     // مساحة فارغة مخصصة للتوقيع والختم الرسمي
     ctx.fillStyle = '#64748B';
@@ -1724,7 +1724,7 @@
     ctx.fillStyle = '#0F172A';
     ctx.font = 'bold 16px "IBM Plex Sans Arabic", "Cairo", sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('ختم وتوقيع مدير المركز', M + 180, footY + 28);
+    ctx.fillText('مدير المركز — الإمضاء', M + 180, footY + 28);
 
     var jpg = await canvasToJpegBytes(c, 0.95);
     return buildPdfBinary([{ data: jpg, width: W, height: H }]);
@@ -1912,7 +1912,7 @@
     ctx.font = 'bold 20px "IBM Plex Sans Arabic", "Cairo", sans-serif';
     ctx.fillText('المكرم ولي أمر / الطالب', W / 2, y);
     y += 30;
-    ctx.fillText(af.parent_name || 'مصطفى', W / 2, y);
+    ctx.fillText(af.parent_name || 'ولي الأمر', W / 2, y);
     y += 38;
 
     // السلام عليكم
@@ -2059,14 +2059,14 @@
 
     y += 45;
 
-    // توقيع وختم مدير المركز فقط
+    // مدير المركز — الإمضاء فقط
     ctx.textAlign = 'center';
     ctx.font = 'bold 18px "IBM Plex Sans Arabic", "Cairo", sans-serif';
     ctx.strokeStyle = '#000000';
     ctx.lineWidth = 1.5;
     var sBoxW = 280, sBoxH = 75;
     ctx.strokeRect(W / 2 - sBoxW / 2, y - 25, sBoxW, sBoxH);
-    ctx.fillText('توقيع وختم مدير المركز', W / 2, y + 2);
+    ctx.fillText('مدير المركز — الإمضاء', W / 2, y + 2);
     ctx.font = '13px "IBM Plex Sans Arabic", "Cairo", sans-serif';
     ctx.fillStyle = '#475569';
     ctx.fillText('التأشيرة والختم الرسمي لدار الإحسان', W / 2, y + 36);
@@ -3226,7 +3226,7 @@
       });
     });
 
-    // 4. تذييل توقيع وختم مدير المركز فقط
+    // 4. تذييل مدير المركز — الإمضاء فقط
     var footY = H - M - footerH;
     ctx.fillStyle = '#F8FAF9';
     roundRect(ctx, tblX, footY, tblW, footerH, 8);
@@ -3250,7 +3250,7 @@
     ctx.fillStyle = '#163B65';
     ctx.textAlign = 'center';
     ctx.font = 'bold 16px "Cairo", "Tajawal", sans-serif';
-    ctx.fillText('توقيع وختم مدير المركز', dirBoxX + dirBoxW / 2, footBoxY + 28);
+    ctx.fillText('مدير المركز — الإمضاء', dirBoxX + dirBoxW / 2, footBoxY + 28);
     ctx.fillStyle = '#64748B';
     ctx.font = '12px "Cairo", "Tajawal", sans-serif';
     ctx.fillText('التأشيرة والختم الرسمي لدار الإحسان', dirBoxX + dirBoxW / 2, footBoxY + footBoxH - 12);
@@ -4958,44 +4958,7 @@
       ctx.fillText(dm.score + ' / 100', cx, scoreBoxY + 30);
     });
 
-    // بطاقة مقياس الساعة لتقييم دوافع السلوك (الأخضر 1-5 منخفض، البرتقالي 6-10 متوسط، الأحمر 11+ مرتفع)
-    var gaugeBoxY = y + boxH + 18;
-    var gaugeBoxH = Math.max(240, H - 88 - gaugeBoxY);
-    if (gaugeBoxH >= 220) {
-      ctx.fillStyle = '#F8FAFC';
-      roundRect(ctx, M, gaugeBoxY, CW, gaugeBoxH, 16);
-      ctx.fill();
-      ctx.strokeStyle = '#CBD5E1';
-      ctx.lineWidth = 1.3;
-      roundRect(ctx, M, gaugeBoxY, CW, gaugeBoxH, 16);
-      ctx.stroke();
-
-      // حساب قيمة مقياس الساعة من متوسط/درجة الدوافع أو القيمة المحددة
-      var rawMasScore = 0;
-      if (repData.mbr && repData.mbr.clock_score != null && repData.mbr.clock_score !== '') {
-        rawMasScore = Number(repData.mbr.clock_score) || 0;
-      } else if (dims.length) {
-        var maxDimScore = 0;
-        dims.forEach(function (d) { if (d.rawTotal > maxDimScore) maxDimScore = d.rawTotal; });
-        if (maxDimScore > 0) {
-          rawMasScore = Math.round((maxDimScore / 24) * 15 * 10) / 10;
-        } else {
-          var avgPct = dims.reduce(function (acc, d) { return acc + (Number(d.score) || 0); }, 0) / dims.length;
-          rawMasScore = Math.round((avgPct / 100) * 15 * 10) / 10;
-        }
-      }
-      var masGaugeR = Math.min(86, Math.floor((gaugeBoxH - 145) * 0.65));
-      drawThreeZoneClockGauge(
-        ctx,
-        W / 2,
-        gaugeBoxY + masGaugeR + 105,
-        masGaugeR,
-        24,
-        rawMasScore,
-        'درجة شدة الدافع السلوكي',
-        'مقياس الساعة لمستوى دوافع السلوك (1-5 منخفض | 6-10 متوسط | 11+ مرتفع)'
-      );
-    }
+    // تم إزالة بطاقة مقياس الساعة من تقرير دوافع السلوك بناءً على التوجيه المعتمد
 
     // تذييل الصفحة الأولى
     ctx.strokeStyle = '#CBD5E1';
@@ -5379,76 +5342,81 @@
     pg.ctx.fillText("Cette fiche doit être renseignée à chaque épisode de crise observé au sein du centre.", M, pg.y);
     pg.y += 24;
 
-    var ep1 = (mf.episodes && mf.episodes[0]) || {};
-    var ep2 = (mf.episodes && mf.episodes[1]) || {};
-    var crisisRows = [
-      { label: 'Date et heure', v1: ep1.date_time || '', v2: ep2.date_time || '', type: 'text' },
-      { label: 'Durée de la crise', v1: ep1.duration || '', v2: ep2.duration || '', type: 'text' },
-      { label: 'Lieu de survenue', v1: ep1.location || '', v2: ep2.location || '', type: 'text' },
-      { label: 'Activité avant la crise', v1: ep1.activity_before || '', v2: ep2.activity_before || '', type: 'text' },
-      { label: 'Perte de conscience', v1: ep1.loss_consciousness || '', v2: ep2.loss_consciousness || '', type: 'yn' },
-      { label: 'Convulsions', v1: ep1.convulsions || '', v2: ep2.convulsions || '', type: 'yn' },
-      { label: 'Difficultés respiratoires', v1: ep1.breathing_diff || '', v2: ep2.breathing_diff || '', type: 'yn' },
-      { label: 'Endormissement après la crise', v1: ep1.post_sleep || '', v2: ep2.post_sleep || '', type: 'yn' },
-      { label: 'Durée de récupération', v1: ep1.recovery_duration || '', v2: ep2.recovery_duration || '', type: 'text' }
-    ];
-
+    var allEps = (Array.isArray(mf.episodes) && mf.episodes.length >= 2) ? mf.episodes : [((mf.episodes && mf.episodes[0]) || {}), ((mf.episodes && mf.episodes[1]) || {})];
     var cW = [CW * 0.27, CW * 0.23, CW * 0.27, CW * 0.23];
     var cX = [M, M + cW[0], M + cW[0] + cW[1], M + cW[0] + cW[1] + cW[2]];
 
-    function drawCrisisTableHeader() {
-      ensureSpace(44);
-      var ctx = pg.ctx;
-      ctx.fillStyle = '#DCEAF5';
-      ctx.fillRect(M, pg.y, CW, 38);
-      ctx.strokeStyle = '#334155';
-      ctx.lineWidth = 1.2;
-      for (var i = 0; i < 4; i++) ctx.strokeRect(cX[i], pg.y, cW[i], 38);
-      ctx.fillStyle = '#101D35';
-      ctx.font = 'bold 16px "Times New Roman", Georgia, Arial, sans-serif';
-      ctx.textAlign = 'left';
-      ['Informations', 'Observations', 'Informations', 'Observations'].forEach(function (hTxt, i) {
-        ctx.fillText(hTxt, cX[i] + 10, pg.y + 25);
-      });
-      pg.y += 38;
-    }
+    for (var epStart = 0; epStart < allEps.length; epStart += 2) {
+      var ep1 = allEps[epStart] || {};
+      var ep2 = allEps[epStart + 1] || {};
+      var n1 = epStart + 1, n2 = epStart + 2;
+      var crisisRows = [
+        { label: 'Date et heure', v1: ep1.date_time || '', v2: ep2.date_time || '', type: 'text' },
+        { label: 'Durée de la crise', v1: ep1.duration || '', v2: ep2.duration || '', type: 'text' },
+        { label: 'Lieu de survenue', v1: ep1.location || '', v2: ep2.location || '', type: 'text' },
+        { label: 'Activité avant la crise', v1: ep1.activity_before || '', v2: ep2.activity_before || '', type: 'text' },
+        { label: 'Perte de conscience', v1: ep1.loss_consciousness || '', v2: ep2.loss_consciousness || '', type: 'yn' },
+        { label: 'Convulsions', v1: ep1.convulsions || '', v2: ep2.convulsions || '', type: 'yn' },
+        { label: 'Difficultés respiratoires', v1: ep1.breathing_diff || '', v2: ep2.breathing_diff || '', type: 'yn' },
+        { label: 'Endormissement après la crise', v1: ep1.post_sleep || '', v2: ep2.post_sleep || '', type: 'yn' },
+        { label: 'Durée de récupération', v1: ep1.recovery_duration || '', v2: ep2.recovery_duration || '', type: 'text' }
+      ];
 
-    drawCrisisTableHeader();
-    crisisRows.forEach(function (cr) {
-      var fmtVal = function (v) {
-        if (cr.type === 'yn') {
-          return (v === 'Oui' ? '☑ Oui   ☐ Non' : v === 'Non' ? '☐ Oui   ☑ Non' : '☐ Oui   ☐ Non');
-        }
-        return (v && String(v).trim()) ? String(v).trim() : '........................';
+      var drawCrisisTableHeader = function (idxA, idxB) {
+        ensureSpace(44);
+        var ctx = pg.ctx;
+        ctx.fillStyle = '#DCEAF5';
+        ctx.fillRect(M, pg.y, CW, 38);
+        ctx.strokeStyle = '#334155';
+        ctx.lineWidth = 1.2;
+        for (var i = 0; i < 4; i++) ctx.strokeRect(cX[i], pg.y, cW[i], 38);
+        ctx.fillStyle = '#101D35';
+        ctx.font = 'bold 15px "Times New Roman", Georgia, Arial, sans-serif';
+        ctx.textAlign = 'left';
+        ['Épisode ' + idxA, 'Observations', 'Épisode ' + idxB, 'Observations'].forEach(function (hTxt, i) {
+          ctx.fillText(hTxt, cX[i] + 10, pg.y + 25);
+        });
+        pg.y += 38;
       };
-      var s1 = fmtVal(cr.v1), s2 = fmtVal(cr.v2);
-      pg.ctx.font = '15.5px "Times New Roman", Georgia, Arial, sans-serif';
-      var l1 = wrapLines(pg.ctx, s1, cW[1] - 16, 4);
-      var l2 = wrapLines(pg.ctx, s2, cW[3] - 16, 4);
-      var rH = Math.max(36, Math.max(l1.length, l2.length) * 21 + 14);
-      if (pg.y + rH > BOTTOM_LIMIT) {
-        pg = newPage(false);
-        drawCrisisTableHeader();
-      }
-      var ctx = pg.ctx;
-      ctx.fillStyle = '#FFFFFF';
-      ctx.fillRect(M, pg.y, CW, rH);
-      ctx.strokeStyle = '#334155';
-      ctx.lineWidth = 1;
-      for (var i = 0; i < 4; i++) ctx.strokeRect(cX[i], pg.y, cW[i], rH);
 
-      ctx.fillStyle = '#101D35';
-      ctx.font = 'bold 15.5px "Times New Roman", Georgia, Arial, sans-serif';
-      ctx.textAlign = 'left';
-      ctx.fillText(cr.label, cX[0] + 10, pg.y + 24);
-      ctx.fillText(cr.label, cX[2] + 10, pg.y + 24);
+      drawCrisisTableHeader(n1, n2);
+      crisisRows.forEach(function (cr) {
+        var fmtVal = function (v) {
+          if (cr.type === 'yn') {
+            return (v === 'Oui' ? '☑ Oui   ☐ Non' : v === 'Non' ? '☐ Oui   ☑ Non' : '☐ Oui   ☐ Non');
+          }
+          return (v && String(v).trim()) ? String(v).trim() : '........................';
+        };
+        var s1 = fmtVal(cr.v1), s2 = fmtVal(cr.v2);
+        pg.ctx.font = '15.5px "Times New Roman", Georgia, Arial, sans-serif';
+        var l1 = wrapLines(pg.ctx, s1, cW[1] - 16, 4);
+        var l2 = wrapLines(pg.ctx, s2, cW[3] - 16, 4);
+        var rH = Math.max(36, Math.max(l1.length, l2.length) * 21 + 14);
+        if (pg.y + rH > BOTTOM_LIMIT) {
+          pg = newPage(false);
+          drawCrisisTableHeader(n1, n2);
+        }
+        var ctx = pg.ctx;
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(M, pg.y, CW, rH);
+        ctx.strokeStyle = '#334155';
+        ctx.lineWidth = 1;
+        for (var i = 0; i < 4; i++) ctx.strokeRect(cX[i], pg.y, cW[i], rH);
 
-      ctx.fillStyle = '#0F172A';
-      ctx.font = '15.5px "Times New Roman", Georgia, Arial, sans-serif';
-      l1.forEach(function (ln, idx) { ctx.fillText(ln, cX[1] + 8, pg.y + 24 + idx * 20); });
-      l2.forEach(function (ln, idx) { ctx.fillText(ln, cX[3] + 8, pg.y + 24 + idx * 20); });
-      pg.y += rH;
-    });
+        ctx.fillStyle = '#101D35';
+        ctx.font = 'bold 15.5px "Times New Roman", Georgia, Arial, sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText(cr.label, cX[0] + 10, pg.y + 24);
+        ctx.fillText(cr.label, cX[2] + 10, pg.y + 24);
+
+        ctx.fillStyle = '#0F172A';
+        ctx.font = '15.5px "Times New Roman", Georgia, Arial, sans-serif';
+        l1.forEach(function (ln, idx) { ctx.fillText(ln, cX[1] + 8, pg.y + 24 + idx * 20); });
+        l2.forEach(function (ln, idx) { ctx.fillText(ln, cX[3] + 8, pg.y + 24 + idx * 20); });
+        pg.y += rH;
+      });
+      if (epStart + 2 < allEps.length) pg.y += 12;
+    }
     pg.y += 18;
 
     // 1. Manifestations observées pendant la crise

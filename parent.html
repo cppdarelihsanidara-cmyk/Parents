@@ -12,9 +12,9 @@
 <link rel="icon" href="logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="portal.css?v=20261123_pushfix7">
-<link rel="stylesheet" href="icons.css?v=20261123_pushfix7">
-<link rel="stylesheet" href="parent-modern.css?v=20261123_pushfix7">
+<link rel="stylesheet" href="portal.css?v=20261123_pushfix10">
+<link rel="stylesheet" href="icons.css?v=20261123_pushfix10">
+<link rel="stylesheet" href="parent-modern.css?v=20261123_pushfix10">
 <link rel="manifest" href="parent.webmanifest">
 <meta name="theme-color" content="#123E73">
 <meta name="mobile-web-app-capable" content="yes">
@@ -22,10 +22,10 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="دار الإحسان">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="stylesheet" href="pwa.css?v=20261123_pushfix7">
-<script src="pwa.js?v=20261123_pushfix7" defer></script>
+<link rel="stylesheet" href="pwa.css?v=20261123_pushfix10">
+<script src="pwa.js?v=20261123_pushfix10" defer></script>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="crystal-blue-glass.css?v=20261123_pushfix7">
+  <link rel="stylesheet" href="crystal-blue-glass.css?v=20261123_pushfix10">
 </head>
 <body>
 <svg width="0" height="0" class="sprite" aria-hidden="true">
@@ -61,7 +61,7 @@
 <main id="login" class="login" hidden>
   <form id="loginForm" class="login-card" novalidate>
     <img src="logo-sq.png" alt="" class="login-logo">
-    <div class="lang-row"><button id="loginLangBtn" class="linkbtn small" type="button">Français</button></div>
+    <div class="lang-row"><button id="loginLangBtn" class="linkbtn small" type="button" aria-label="Français">Français</button></div>
     <h1 id="lTitle">فضاء الأولياء</h1>
     <p class="muted" id="lHint">سجّل الدخول لمتابعة ملف طفلك.</p>
     <div id="stCreds">
@@ -76,8 +76,8 @@
     </div>
     <p id="lErr" class="err" role="alert" hidden></p>
     <p id="lOk" class="okmsg" role="status" hidden></p>
-    <button id="lBtn" class="btn block" type="submit">دخول</button>
-    <button id="backBtn" class="linkbtn" type="button" hidden>رجوع لتسجيل الدخول</button>
+    <button id="lBtn" class="btn block" type="submit" aria-label="دخول">دخول</button>
+    <button id="backBtn" class="linkbtn" type="button" hidden aria-label="رجوع لتسجيل الدخول">رجوع لتسجيل الدخول</button>
     <p class="muted small" id="loginNotice">الحسابات تُنشأ من إدارة المركز فقط. إن لم تصلك دعوة فتواصل مع المركز.</p>
   </form>
 </main>
@@ -131,7 +131,7 @@
 
     <!-- زر تثبيت فضاء الأولياء على الهاتف المحمول -->
     <div class="pm-drawer-install-card">
-      <button id="drawerInstallBtn" class="pm-drawer-install-btn" type="button">
+      <button id="drawerInstallBtn" class="pm-drawer-install-btn" type="button" aria-label="تثبيت فضاء الأولياء تنزيل التطبيق على هاتفك المحمول تثبيت">
         <div class="pm-dib-icon">
           <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="3"/><line x1="12" y1="18" x2="12.01" y2="18"/><path d="M12 7v6m-3-3l3 3 3-3"/></svg>
         </div>
@@ -147,7 +147,7 @@
     <nav class="pm-drawer-nav" id="drawerTabs" role="tablist" aria-label="أقسام فضاء الأولياء"></nav>
 
     <div class="pm-drawer-footer">
-      <button id="drawerLogoutBtn" class="pm-drawer-logout-btn" type="button">
+      <button id="drawerLogoutBtn" class="pm-drawer-logout-btn" type="button" aria-label="تسجيل الخروج">
         <svg class="i"><use href="#i-out"/></svg>
         <span>تسجيل الخروج</span>
       </button>
@@ -163,14 +163,14 @@
 <div id="modal" class="modal" hidden role="dialog" aria-modal="true"><div id="modalCard" class="modal-card"></div></div>
 <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 
-<script src="cms-config.js?v=20261123_pushfix7"></script>
-<script src="de-core.js?v=20261123_pushfix7"></script>
-<script src="fr-names.js?v=20261123_pushfix7"></script>
-<script src="username.js?v=20261123_pushfix7"></script>
-<script src="qr-gen.js?v=20261123_pushfix7"></script>
-<script src="icons.js?v=20261123_pushfix7"></script>
-<script src="navback.js?v=20261123_pushfix7"></script>
-<script src="pdf-writer.js?v=20261123_pushfix7"></script>
-<script src="parent.js?v=20261123_pushfix7"></script>
+<script src="cms-config.js?v=20261123_pushfix10"></script>
+<script src="de-core.js?v=20261123_pushfix10"></script>
+<script src="fr-names.js?v=20261123_pushfix10"></script>
+<script src="username.js?v=20261123_pushfix10"></script>
+<script src="qr-gen.js?v=20261123_pushfix10"></script>
+<script src="icons.js?v=20261123_pushfix10"></script>
+<script src="navback.js?v=20261123_pushfix10"></script>
+<script src="pdf-writer.js?v=20261123_pushfix10"></script>
+<script src="parent.js?v=20261123_pushfix10"></script>
 </body>
 </html>
