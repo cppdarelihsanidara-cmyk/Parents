@@ -190,7 +190,7 @@
         }
 
         // الشعار الرسمي أعلى اليمين داخل دائرة بيضاء بإطار ذهبي دون قص أي كتابة
-        var lx = W - 90, ly = 86, lr = 66;
+        var lx = W - 92, ly = 84, lr = 75;
         ctx.fillStyle = WHITE;
         ctx.beginPath();
         ctx.arc(lx, ly, lr, 0, Math.PI * 2);
@@ -200,7 +200,7 @@
         ctx.stroke();
 
         if (logo && logo.width && logo.height) {
-          var s = Math.min((lr * 2 - 14) / logo.width, (lr * 2 - 14) / logo.height);
+          var s = Math.min((lr * 2 - 10) / logo.width, (lr * 2 - 10) / logo.height);
           ctx.save();
           ctx.beginPath();
           ctx.arc(lx, ly, lr - 4, 0, Math.PI * 2);
@@ -210,7 +210,7 @@
         }
 
         // العنوان الرسمي في الترويسة
-        var titleCenterX = W / 2 - 20;
+        var titleCenterX = W / 2 - 36;
         ctx.textAlign = 'center';
         ctx.fillStyle = WHITE;
         ctx.font = '800 44px ' + FONT;

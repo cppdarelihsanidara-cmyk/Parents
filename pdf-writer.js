@@ -4468,8 +4468,9 @@
         linesText = linesText.concat(wrapped);
       });
     }
-    var effectiveLines = Math.max(1, linesText.length);
-    var boxH = effectiveLines * lineSpacing + 22;
+    var minLines = Math.max(2, Number(numLines) || 3);
+    var effectiveLines = Math.max(minLines, linesText.length);
+    var boxH = effectiveLines * lineSpacing + 24;
 
     ctx.fillStyle = '#F8FAFC';
     roundRect(ctx, M, y, CW, boxH, 10);
@@ -4479,18 +4480,27 @@
     roundRect(ctx, M, y, CW, boxH, 10);
     ctx.stroke();
 
+    // رسم أسطر منقطة مريحة للكتابة في الفراغات
+    ctx.save();
+    ctx.strokeStyle = '#CBD5E1';
+    ctx.lineWidth = 1.1;
+    ctx.setLineDash([4, 4]);
+    for (var li = 0; li < effectiveLines; li++) {
+      var ly = y + 34 + li * lineSpacing;
+      ctx.beginPath();
+      ctx.moveTo(M + 16, ly);
+      ctx.lineTo(W - M - 16, ly);
+      ctx.stroke();
+    }
+    ctx.restore();
+
     if (linesText.length > 0) {
       ctx.fillStyle = '#0F172A';
       ctx.font = 'bold 17px "Cairo", "IBM Plex Sans Arabic", sans-serif';
       ctx.textAlign = 'right';
       linesText.forEach(function (ln, idx) {
-        if (ln) ctx.fillText(ln, W - M - 14, y + 26 + idx * lineSpacing);
+        if (ln) ctx.fillText(ln, W - M - 14, y + 28 + idx * lineSpacing);
       });
-    } else {
-      ctx.fillStyle = '#94A3B8';
-      ctx.font = '15px "Cairo", "IBM Plex Sans Arabic", sans-serif';
-      ctx.textAlign = 'right';
-      ctx.fillText('— لم تُسجّل ملاحظات في هذا القسم —', W - M - 14, y + 28);
     }
 
     return y + boxH + 18;
@@ -4813,7 +4823,7 @@
     y = drawSectionPillBanner(ctx, W, M, y, '2', 'النتائج العامة', 255);
 
     // صندوق الرسم البياني لأبعاد دوافع السلوك (مضبوط لمنع الفراغ الكبير بعد المنحنى)
-    var boxH = 445;
+    var boxH = 410;
     ctx.fillStyle = '#F8FAFC';
     roundRect(ctx, M, y, CW, boxH, 18);
     ctx.fill();
@@ -4899,8 +4909,8 @@
 
     // وضع قسمي تحليل الحالة وأهم النتائج مباشرة بعد المنحنى لإزالة الفراغ غير الضروري
     var nextY = y + boxH + 26;
-    nextY = drawDottedWritingSection(ctx, W, M, nextY, '3', 'تحليل الحالة', repData.caseAnalysis, 4);
-    nextY = drawDottedWritingSection(ctx, W, M, nextY, '4', 'أهم النتائج', repData.keyFindings, 4);
+    nextY = drawDottedWritingSection(ctx, W, M, nextY, '3', 'تحليل الحالة', repData.caseAnalysis, 3);
+    nextY = drawDottedWritingSection(ctx, W, M, nextY + 8, '4', 'أهم النتائج', repData.keyFindings, 3);
 
     // تذييل الصفحة الأولى
     ctx.strokeStyle = '#CBD5E1';

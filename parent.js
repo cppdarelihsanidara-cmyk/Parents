@@ -48,6 +48,7 @@
   }
 
   var _memL = {}, _memS = {};
+  try { if (typeof localStorage !== 'undefined' && !localStorage.getItem('de_clean_prog_20261124')) { localStorage.removeItem('de_shared_programs_v1'); localStorage.setItem('de_clean_prog_20261124', '1'); } } catch (e) {}
   function safeGetItem(store, k) {
     try {
       if (store && typeof store.getItem === 'function') return store.getItem(k);
@@ -1666,19 +1667,17 @@
 
   function fileBtn(path, label) {
     var holder = h('span');
-    var b = h('button', { class: 'btn small light', type: 'button', text: label || t('openDoc') });
-    b.addEventListener('click', function () {
+    var b = h('button', { class: 'btn small light', type: 'button', text: (label || 'معاينة الوثيقة').replace(/تحميل\s*\/?\s*/g, '') });
+    b.addEventListener('click', function (ev) {
+      if (ev && ev.stopPropagation) ev.stopPropagation();
       lockBtn(b, async function () {
         try {
-          var url = await C.signedUrl('private-docs', path, 60);
-          holder.textContent = '';
-          holder.appendChild(h('a', {
-            class: 'btn small gold',
-            href: url,
-            target: '_blank',
-            rel: 'noopener noreferrer',
-            text: t('openLinkWait')
-          }));
+          var url = await C.signedUrl('private-docs', path, 120);
+          var isPdf = /\.pdf(\?|$)/i.test(String(path || ''));
+          var node = isPdf
+            ? h('iframe', { src: url + '#toolbar=0&navpanes=0', style: 'width:100%;height:86vh;border:none;border-radius:10px;background:#fff;' })
+            : h('img', { src: url, alt: label || 'معاينة', style: 'max-width:100%;height:auto;border-radius:10px;' });
+          openFullscreenViewer(node, (label || 'معاينة الوثيقة').replace(/تحميل\s*\/?\s*/g, ''));
         } catch (er) { toast(er.message, 'bad'); }
       });
     });
@@ -2141,18 +2140,21 @@
           h('h2', { style: 'color:#163B65; margin:0 0 4px;', text: 'البرنامج المؤقت الأسبوعي — ' + st.section_name }),
           h('p', { class: 'muted small', style: 'margin:0;', text: 'الموسم الدراسي: ' + st.academic_year + ' | التوقيت: ' + st.day_start + ' إلى ' + st.day_end + ' | آخر اعتماد: ' + lastUpdFmt })
         ),
-        h('div', { class: 'row-actions no-print', style: 'display:flex; gap:8px; flex-wrap:wrap;' },
-          downloadPdfBtn,
-          printProgramBtn
-        )
+        h('span', { class: 'badge', text: 'اضغط على البرنامج للمعاينة بملء الشاشة' })
       ),
       h('div', { class: 'wk-parent-load-table-scroll', style: 'max-width:100%; overflow-x:auto; margin-bottom:12px;' }, loadTable),
       parentMobileDayView,
       h('div', { class: 'wk-parent-sheet-scroll no-print', style: 'overflow-x:auto; margin-bottom:18px;' },
         tableEl
       ),
-      h('div', { class: 'wk-parent-pdf-section' },
-        h('h3', { class: 'no-print', style: 'font-size:16px; color:#163B65; margin:0 0 8px;', text: 'النسخة الرسمية القابلة للعرض والطباعة (A4 أفقي Landscape):' }),
+      h('div', { class: 'wk-parent-pdf-section', style: 'cursor:zoom-in;', onclick: function () {
+          var cvs = pdfCanvasHost.querySelector('canvas');
+          if (cvs) {
+            var img = h('img', { src: cvs.toDataURL('image/png'), alt: 'البرنامج الأسبوعي', style: 'max-width:100%;height:auto;' });
+            openFullscreenViewer(img, 'البرنامج الأسبوعي — ' + st.section_name);
+          }
+        } },
+        h('h3', { class: 'no-print', style: 'font-size:16px; color:#163B65; margin:0 0 8px;', text: 'النسخة الرسمية للبرنامج الأسبوعي (اضغط للمعاينة والتكبير):' }),
         pdfCanvasHost
       )
     );
@@ -3344,23 +3346,7 @@ function generateWordDocObservation(rep, child, secName, brName) {
     );
     wrap.appendChild(sig);
 
-    var bottomBar = h('div', { style: 'display:flex; justify-content:flex-end; margin-top:20px; padding-top:14px; border-top:1px solid #E2E8F0;' },
-      h('button', {
-        type: 'button',
-        class: 'btn light',
-        onclick: async function () {
-          try {
-            toast('جارٍ تجهيز استمارة ملاحظة السلوك بصيغة PDF...', 'ok');
-            var pdfBytes = await DE_PDF.renderBehaviorObservationToPdf(ev, childFullName, secName, kd);
-            DE_PDF.downloadPdf(pdfBytes, 'استمارة_ملاحظة_سلوك_' + (childFullName || 'تلميذ').replace(/\s+/g, '_') + '.pdf');
-            toast('تم تنزيل الاستمارة بنجاح!', 'ok');
-          } catch (err) {
-            toast('تعذر التنزيل: ' + err.message, 'bad');
-          }
-        }
-      }, makeSvgIcon('s-download'), h('span', { text: 'تحميل PDF (A4)' }))
-    );
-    wrap.appendChild(bottomBar);
+
 
     return wrap;
   }
@@ -3630,7 +3616,6 @@ function renderParentOfficialEvaluationSheet(r, childFullName, secName, kd, init
     },
       h('span', { class: 'muted small', text: 'معاينة التقرير مفتوحة — اضغط على زر التقرير مرة أخرى أو «إخفاء المعاينة» لإغلاقها:' }),
       h('div', { class: 'row-actions' },
-        printBtn,
         closePreviewBtn
       )
     );
@@ -3957,7 +3942,7 @@ function renderParentOfficialEvaluationSheet(r, childFullName, secName, kd, init
             h('h3', { class: 'pm-lic-title', text: /^(تقرير الأداء الحالي|تقييم الأداء الحالي|الاداء الحالي)$/.test(String(r.title || '').trim()) ? 'التقرير الدوري' : (r.title || 'التقرير الدوري') }),
             h('div', { class: 'pm-lic-meta' },
               h('span', { text: 'تاريخ التقرير: ' + fmtDate(r.report_date) }),
-              r.attachment_path ? h('span', { class: 'badge ok', text: 'يحتوي على مرفق للتحميل' }) : null,
+              r.attachment_path ? h('span', { class: 'badge ok', text: 'يحتوي على مرفق' }) : null,
               isNew ? h('span', { class: 'badge ok', text: 'جديد' }) : null
             )
           )
@@ -3985,16 +3970,16 @@ function renderParentOfficialEvaluationSheet(r, childFullName, secName, kd, init
               if (r.attachment_path) {
                 body.appendChild(h('div', { style: 'margin-top:16px;' },
                   h('h3', { text: 'الملف المرفق بالتقرير:' }),
-                  fileBtn(r.attachment_path, 'تحميل / فتح الملف المرفق')
+                  fileBtn(r.attachment_path, 'معاينة المرفق')
                 ));
               }
               body.appendChild(h('div', { class: 'modal-actions' },
                 h('button', { class: 'btn light', type: 'button', text: 'إغلاق', onclick: closeModal })
               ));
-              openModal(body);
+              openFullscreenViewer(body, repDisplayTitle);
             }
           }),
-          r.attachment_path ? fileBtn(r.attachment_path, 'تحميل المرفق') : null
+          r.attachment_path ? fileBtn(r.attachment_path, 'معاينة المرفق') : null
         )
       );
 
@@ -4119,7 +4104,7 @@ function renderParentOfficialEvaluationSheet(r, childFullName, secName, kd, init
           )
         ),
         h('div', { class: 'pm-lic-actions' },
-          d.storage_path ? fileBtn(d.storage_path, 'تحميل / فتح الوثيقة') : null
+          d.storage_path ? fileBtn(d.storage_path, 'معاينة الوثيقة') : null
         )
       );
       card.addEventListener('click', function () { markParentContentRead('doc', d.id); });
@@ -4234,7 +4219,7 @@ function renderParentOfficialEvaluationSheet(r, childFullName, secName, kd, init
         h('a', { class: 'pm-c-social-btn fb', href: 'https://www.facebook.com/apehme', target: '_blank', rel: 'noopener noreferrer' },
           icon('i-contact'), h('span', { text: 'صفحة فيسبوك الرسمية' })
         ),
-        h('a', { class: 'pm-c-social-btn web', href: './site.html' },
+        h('a', { class: 'pm-c-social-btn web', href: 'https://cppdarelihsanidara-cmyk.github.io/-/#contact', target: '_blank', rel: 'noopener noreferrer' },
           icon('i-child'), h('span', { text: 'بوابة الموقع العام للمركز' })
         )
       )

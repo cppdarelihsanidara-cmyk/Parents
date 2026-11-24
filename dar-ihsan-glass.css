@@ -729,6 +729,9 @@
     align-items: center !important;
     justify-content: center !important;
     padding: 12px !important;
+    background: rgba(23, 47, 80, 0.24) !important;
+    backdrop-filter: blur(8px) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
   }
   #modal.modal[hidden] {
     display: none !important;
@@ -742,7 +745,12 @@
     display: block !important;
     overflow-y: auto !important;
     overflow-x: auto !important;
-    padding: 20px !important;
+    padding: 22px !important;
+    background: #FFFFFF !important;
+    color: #172F50 !important;
+    border: 1.5px solid rgba(36, 75, 120, 0.16) !important;
+    border-radius: 22px !important;
+    box-shadow: 0 24px 60px rgba(23, 47, 80, 0.18) !important;
   }
   #modal #modalCard .modal.card,
   #modal #modalCard .modal-body {
@@ -842,4 +850,114 @@
   }
   .de-acc-toggle[aria-expanded="true"] .de-acc-arrow {
     transform: rotate(180deg);
+  }
+
+  /* ── إزالة حرف الدال في القائمة الجانبية المصغرة وتحسين الشريط العلوي في الهاتف ── */
+  #app.shell.side-collapsed .side #sideAvatar,
+  #app.shell.side-collapsed .side .side-profile-pill {
+    display: none !important;
+  }
+  @media (max-width: 860px) {
+    .side #sideAvatar,
+    .side .side-profile-pill {
+      display: none !important;
+    }
+    .topbar {
+      flex-wrap: wrap !important;
+      gap: 8px !important;
+      padding: 10px 12px !important;
+    }
+    .topbar-title, #pageTitle {
+      font-size: 1rem !important;
+      white-space: normal !important;
+      overflow: visible !important;
+      text-overflow: unset !important;
+      line-height: 1.35 !important;
+    }
+    .branch-pill, .user-pill {
+      max-width: 100% !important;
+      white-space: normal !important;
+      font-size: 0.78rem !important;
+    }
+    /* تمرير أفقي سلس لجميع الجداول وجدول ملاحظة السلوك على الهاتف */
+    .table-wrap,
+    .behavior-observation-paper,
+    .oep-paper-stage,
+    .bo-table-wrap,
+    .pm-table-wrap {
+      overflow-x: auto !important;
+      -webkit-overflow-scrolling: touch !important;
+      max-width: 100% !important;
+    }
+    .behavior-observation-paper table,
+    .table-wrap table {
+      min-width: 640px;
+    }
+  }
+
+  /* ── إصلاح وضوح النصوص داخل بطاقة الطفل في قائمة فضاء الأولياء ── */
+  .pm-drawer-child-card,
+  .pm-drawer-child-card * {
+    color: #172F50 !important;
+  }
+  .pm-drawer-child-card .pm-dcc-greet {
+    color: #475569 !important;
+    font-weight: 700 !important;
+  }
+  .pm-drawer-child-card .pm-dcc-name {
+    color: #172F50 !important;
+    font-weight: 900 !important;
+  }
+  .pm-drawer-child-card .pm-dcc-badges .badge,
+  .pm-drawer-child-card .badge {
+    color: #172F50 !important;
+    background: #E9DDCC !important;
+    border: 1px solid rgba(36, 75, 120, 0.22) !important;
+    font-weight: 800 !important;
+  }
+
+  /* ── انتقالات سلسة بين الصفحات في الإدارة وفضاء الأولياء ── */
+  @keyframes deViewFadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  #view > * {
+    animation: deViewFadeIn 0.24s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  /* ── عارض ملء الشاشة التفاعلي (تكبير وتصغير يدوي باللمس دون أزرار) ── */
+  .de-fs-viewer {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 10050 !important;
+    background: rgba(15, 23, 42, 0.94) !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+  .de-fs-bar {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: 10px 16px !important;
+    background: rgba(23, 47, 80, 0.95) !important;
+    color: #FFFFFF !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.14) !important;
+  }
+  .de-fs-stage {
+    flex: 1 !important;
+    overflow: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    touch-action: pan-x pan-y pinch-zoom !important;
+    display: flex !important;
+    align-items: flex-start !important;
+    justify-content: center !important;
+    padding: 12px !important;
+  }
+  .de-fs-stage img,
+  .de-fs-stage canvas {
+    max-width: 100% !important;
+    height: auto !important;
+    border-radius: 10px !important;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45) !important;
+    touch-action: pan-x pan-y pinch-zoom !important;
   }

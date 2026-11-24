@@ -8588,7 +8588,7 @@
 
     var card = h('div', { class: 'card', style: 'max-width:1120px; margin:0 auto; padding:16px; border-radius:14px; border:1.5px solid #E2E8F0;' });
 
-    var curSecId = S.isEducator ? S.eduSectionId : (selKid0 ? selKid0.section_id : '');
+    var curSecId = S.isEducator ? S.eduSectionId : (ev.child_id && selKid0 ? selKid0.section_id : '');
     var secFilterSelect = h('select', { disabled: !!S.isEducator },
       h('option', { value: '', text: '— جميع الأقسام —' }),
       secAllOpts.map(function (o) { return h('option', { value: o[0], text: o[1] }); })
@@ -8601,6 +8601,10 @@
       var keep = ev.child_id || kidSelect.value;
       while (kidSelect.firstChild) kidSelect.removeChild(kidSelect.firstChild);
       kidSelect.appendChild(h('option', { value: '', text: '— اختر الطفل —' }));
+      if (!sId && !S.isEducator) {
+        kidSelect.appendChild(h('option', { value: '', text: '— اختر القسم أولاً —' }));
+        return;
+      }
       kids.forEach(function (k) {
         if (sId && !childMatchesSection(k, sId, nameOf(sections, sId, 'name'), sections)) return;
         kidSelect.appendChild(h('option', { value: k.id, text: k.full_name + (k.section ? (' — ' + k.section) : '') }));
@@ -9309,7 +9313,7 @@
     );
     v.appendChild(topBar);
 
-    var curSecId = S.isEducator ? S.eduSectionId : (selKid0 ? selKid0.section_id : '');
+    var curSecId = S.isEducator ? S.eduSectionId : (ev.child_id && selKid0 ? selKid0.section_id : '');
     var secFilterSelect = h('select', { disabled: !!S.isEducator },
       h('option', { value: '', text: '— جميع الأقسام —' }),
       secAllOpts.map(function (o) { return h('option', { value: o[0], text: o[1] }); })
@@ -9322,6 +9326,10 @@
       var keep = ev.child_id || kidSelect.value;
       while (kidSelect.firstChild) kidSelect.removeChild(kidSelect.firstChild);
       kidSelect.appendChild(h('option', { value: '', text: '— اختر الطفل —' }));
+      if (!sId && !S.isEducator) {
+        kidSelect.appendChild(h('option', { value: '', text: '— اختر القسم أولاً —' }));
+        return;
+      }
       kids.forEach(function (k) {
         if (sId && !childMatchesSection(k, sId, nameOf(sections, sId, 'name'), sections)) return;
         kidSelect.appendChild(h('option', { value: k.id, text: k.full_name + (k.section ? (' — ' + k.section) : '') }));
@@ -10062,6 +10070,10 @@
       var keep = ev.child_id || kidSelect.value;
       while (kidSelect.firstChild) kidSelect.removeChild(kidSelect.firstChild);
       kidSelect.appendChild(h('option', { value: '', text: '— اختر الحالة —' }));
+      if (!sId && !S.isEducator) {
+        kidSelect.appendChild(h('option', { value: '', text: '— اختر القسم أولاً —' }));
+        return;
+      }
       kids.forEach(function (k) {
         if (sId && !childMatchesSection(k, sId, nameOf(sections, sId, 'name'), sections)) return;
         kidSelect.appendChild(h('option', { value: k.id, text: k.full_name + (k.section ? (' — ' + k.section) : '') }));
@@ -10443,7 +10455,7 @@
     );
     v.appendChild(topBar);
 
-    var curSecId = S.isEducator ? S.eduSectionId : (selKid0 ? selKid0.section_id : '');
+    var curSecId = S.isEducator ? S.eduSectionId : (ev.child_id && selKid0 ? selKid0.section_id : '');
     var secFilterSelect = h('select', { disabled: !!S.isEducator },
       h('option', { value: '', text: '— جميع الأقسام —' }),
       secAllOpts.map(function (o) { return h('option', { value: o[0], text: o[1] }); })
@@ -10456,6 +10468,10 @@
       var keep = ev.child_id || kidSelect.value;
       while (kidSelect.firstChild) kidSelect.removeChild(kidSelect.firstChild);
       kidSelect.appendChild(h('option', { value: '', text: '— اختر الطفل —' }));
+      if (!sId && !S.isEducator) {
+        kidSelect.appendChild(h('option', { value: '', text: '— اختر القسم أولاً —' }));
+        return;
+      }
       kids.forEach(function (k) {
         if (sId && !childMatchesSection(k, sId, nameOf(sections, sId, 'name'), sections)) return;
         kidSelect.appendChild(h('option', { value: k.id, text: k.full_name + (k.section ? (' — ' + k.section) : '') }));
@@ -12603,6 +12619,10 @@
         : kids.filter(function (kid) { return String(kid.id) === String(S.preselectChildId || ''); })[0] || (kids.length === 1 ? kids[0] : null);
       return openForm({
         title: r ? 'تعديل التقرير الدوري' : 'إضافة تقرير تربوي دوري جديد',
+        submits: [
+          { key: 'draft', label: 'حفظ كمسودة' },
+          { key: 'publish', label: 'اعتماد ونشر للأولياء', gold: true }
+        ],
         values: r ? Object.assign({}, r, {
           section_id: (kids.filter(function (k) { return String(k.id) === String(r.child_id); })[0] || {}).section_id || ''
         }) : {
@@ -13239,20 +13259,37 @@
      ===================================================================== */
   async function secDocs(v) {
     if (S.isEducator) return go('children');
-    var d = await getMany('docs', 'children'), rows = d[0], kids = d[1];
+    var d = await getMany('docs', 'children', 'sections', 'branches'), rows = d[0], kids = d[1], allDocsSections = d[2] || [], docsBranches = d[3] || [];
+    var targetDocsCenter = S.center || 'main';
+    var docsSections = allDocsSections.filter(function (s) { return sectionCenterKey(s, docsBranches) === targetDocsCenter; });
+    if (!docsSections.length) docsSections = allDocsSections;
+    var secDocOpts = [['', '— اختر القسم أولاً —']].concat(docsSections.map(function (s) { return [s.id, s.name]; }));
     var kidOpts = kids.map(function (k) { return [k.id, (k.membership_no ? ('[' + k.membership_no + '] ') : '') + k.full_name]; });
 
     function upload() {
       return openForm({
         title: 'رفع وثيقة خاصة لملف طفل', submits: [{ key: 'up', label: 'رفع الوثيقة' }],
+        initial: { section_id: '', child_id: '' },
         fields: [
-          { k: 'child_id', label: 'الطفل المعني', type: 'select', opts: kidOpts, req: true },
+          { k: 'section_id', label: 'القسم / الفوج', type: 'select', opts: secDocOpts, req: true },
+          { k: 'child_id', label: 'الطفل المعني', type: 'select', opts: [], req: true, searchable: true },
           { k: 'title', label: 'عنوان الوثيقة', req: true, max: 150 },
           { k: 'category', label: 'التصنيف (مثال: تقرير نفسي، فحص طبي، شهادة مدرسية)', max: 60 },
           { k: 'file', label: 'الملف (PDF/JPG/PNG/WebP — حتى 5MB)', type: 'file', accept: '.pdf,.jpg,.jpeg,.png,.webp', req: true },
-          { k: 'shared', label: 'إتاحة الوثيقة للتحميل في فضاء ولي الطفل', type: 'checkbox' }
+          { k: 'shared', label: 'إتاحة الوثيقة للعرض في فضاء ولي الطفل', type: 'checkbox' }
         ],
+        onChange: function (changed, current, api) {
+          if (changed === null || changed === 'section_id') {
+            var secKids = current.section_id ? kids.filter(function (kid) {
+              return childMatchesSection(kid, current.section_id, nameOf(docsSections, current.section_id, 'name'), docsSections);
+            }) : [];
+            api.setOpts('child_id', secKids.map(function (kid) {
+              return [kid.id, (kid.membership_no ? ('[' + kid.membership_no + '] ') : '') + kid.full_name];
+            }));
+          }
+        },
         onSubmit: async function (x) {
+          if (!x.section_id) throw new Error('اختر القسم أولاً.');
           var up = await uploadChecked(x.file, x.child_id);
           try {
             await C.rest('POST', '/documents', {
