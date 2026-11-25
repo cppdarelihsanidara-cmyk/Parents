@@ -15364,15 +15364,33 @@
     var dbWaLogs = Array.isArray(d[2]) ? d[2] : [];
     var dbWaReplies = Array.isArray(d[3]) ? d[3] : [];
 
-    var eligibleKids = rawKids.filter(function (k) {
-      if (!k || !k.active) return false;
-      if (S.isEducator && S.eduSectionId && String(k.section_id) !== String(S.eduSectionId)) return false;
-      return true;
-    });
+    function isExcludedAttendanceCenter(centerVal, secNameVal) {
+      var c = String(centerVal || '').toLowerCase().trim();
+      var sn = String(secNameVal || '').trim();
+      if (c === 'work' || c === 'farm') return true;
+      if (sn.indexOf('تمهين') >= 0 || sn.indexOf('التمهين') >= 0 || sn.indexOf('بستنة') >= 0 || sn.indexOf('البستنة') >= 0 || sn.indexOf('المزرعة') >= 0) return true;
+      return false;
+    }
 
     var eligibleSections = sections.filter(function (s) {
       if (!s || s.active === false) return false;
+      var sCenter = sectionCenterKey(s, branches);
+      if (isExcludedAttendanceCenter(sCenter, s.name)) return false;
       if (S.isEducator && S.eduSectionId && String(s.id) !== String(S.eduSectionId)) return false;
+      return true;
+    });
+
+    var eligibleSecIdSet = {};
+    eligibleSections.forEach(function (s) { eligibleSecIdSet[String(s.id)] = true; });
+
+    var eligibleKids = rawKids.filter(function (k) {
+      if (!k || !k.active) return false;
+      if (isExcludedAttendanceCenter(k.center, k.section)) return false;
+      if (k.section_id && sections.length && !eligibleSecIdSet[String(k.section_id)]) {
+        var matchedSec = sections.filter(function (s) { return String(s.id) === String(k.section_id); })[0];
+        if (matchedSec && isExcludedAttendanceCenter(sectionCenterKey(matchedSec, branches), matchedSec.name)) return false;
+      }
+      if (S.isEducator && S.eduSectionId && String(k.section_id) !== String(S.eduSectionId)) return false;
       return true;
     });
 
@@ -15661,6 +15679,7 @@
 
       var unsavedWarnEl = h('span', { class: 'badge warn', hidden: true, text: 'تغييرات غير محفوظة' });
       var saveBtn = h('button', { type: 'button', class: 'btn primary' }, makeSvgIcon('s-check'), h('span', { text: 'حفظ الحضور والغياب' }));
+      var pdfAttBtn = h('button', { type: 'button', class: 'btn light' }, makeSvgIcon('s-download'), h('span', { text: 'تحميل كشف الحضور والغياب (PDF)' }));
       var sendBtn = h('button', { type: 'button', class: 'btn gold' }, makeSvgIcon('s-whatsapp'), h('span', { text: 'إرسال إشعارات الغياب عبر WhatsApp' }));
 
       var footerBar = h('div', { class: 'card att2-footer-bar' },
@@ -15668,7 +15687,7 @@
           unsavedWarnEl,
           h('span', { class: 'muted small', text: 'الحالة الافتراضية «غير محدد» لا تُحفظ كحضور أو غياب حتى يحددها الموظف.' })
         ),
-        h('div', { style: 'display:flex; gap:10px; flex-wrap:wrap;' }, saveBtn, sendBtn)
+        h('div', { style: 'display:flex; gap:10px; flex-wrap:wrap;' }, saveBtn, pdfAttBtn, sendBtn)
       );
       tabHost.appendChild(footerBar);
 
@@ -15853,6 +15872,45 @@
         }
       }
 
+      pdfAttBtn.addEventListener('click', async function () {
+        if (!window.DE_PDF || typeof window.DE_PDF.renderAttendanceToPdf !== 'function') {
+          return toast('مولد PDF غير متاح حالياً.', 'bad');
+        }
+        var sc = secFilter.value;
+        var scopeKids = eligibleKids.filter(function (k) {
+          return sc === 'all' || String(k.section_id || '') === String(sc);
+        });
+        if (!scopeKids.length) return toast('لا يوجد أطفال في النطاق المحدد.', 'bad');
+        var secLabel = sc === 'all'
+          ? 'كافة أقسام المركز الرئيسي'
+          : ((eligibleSections.filter(function (s) { return String(s.id) === String(sc); })[0] || {}).name || 'قسم');
+        var pCnt = 0, aCnt = 0;
+        var records = scopeKids.map(function (k) {
+          var st = dayAttendance[k.id] || 'unrecorded';
+          if (st === 'present') pCnt++;
+          else if (st === 'absent') aCnt++;
+          var sObj = eligibleSections.filter(function (s) { return String(s.id) === String(k.section_id); })[0];
+          return {
+            membership_no: k.membership_no || '',
+            full_name: k.full_name || '—',
+            section: (sObj && sObj.name) || k.section || '—',
+            status: st,
+            note: ''
+          };
+        });
+        pdfAttBtn.disabled = true;
+        try {
+          toast('جارٍ إعداد كشف الحضور والغياب بصيغة PDF…', 'ok');
+          var bytes = await window.DE_PDF.renderAttendanceToPdf(records, formatArabicDayLabel(dStr), secLabel, { present: pCnt, absent: aCnt });
+          window.DE_PDF.downloadPdf(bytes, 'كشف_الحضور_والغياب_' + dStr + '.pdf');
+          toast('تم تحميل كشف الحضور والغياب بنجاح.', 'ok');
+        } catch (err) {
+          toast('تعذر توليد ملف PDF: ' + (err && err.message ? err.message : 'خطأ'), 'bad');
+        } finally {
+          pdfAttBtn.disabled = false;
+        }
+      });
+
       saveBtn.addEventListener('click', async function () {
         var unrecKids = eligibleKids.filter(function (k) {
           return (dayAttendance[k.id] || 'unrecorded') === 'unrecorded';
@@ -15895,48 +15953,69 @@
         });
 
         var readyList = [];
+        var alreadyList = [];
         var skipInvalid = 0, skipAlready = 0;
         absents.forEach(function (k) {
           var ph = validateAlgerianPhone(k.phone);
           if (!ph.valid) skipInvalid++;
-          else if (sentMap[k.id]) skipAlready++;
+          else if (sentMap[k.id]) { skipAlready++; alreadyList.push(k); }
           else readyList.push(k);
         });
+
+        var forceResendFlag = false;
+        var readyNumEl = h('strong', { class: 'sic-num', text: String(readyList.length) });
+        var confirmSendBtn = h('button', {
+          type: 'button',
+          class: 'btn primary',
+          disabled: readyList.length === 0,
+          text: 'تأكيد إرسال (' + readyList.length + ') رسالة'
+        });
+
+        var resendToggle = skipAlready > 0 ? h('label', { style: 'display:flex;align-items:center;gap:8px;margin:10px 0;font-size:0.9rem;color:#172F50;font-weight:700;cursor:pointer;' },
+          h('input', {
+            type: 'checkbox',
+            onchange: function (e) {
+              forceResendFlag = !!e.target.checked;
+              var cnt = forceResendFlag ? (readyList.length + alreadyList.length) : readyList.length;
+              readyNumEl.textContent = String(cnt);
+              confirmSendBtn.textContent = 'تأكيد إرسال (' + cnt + ') رسالة';
+              confirmSendBtn.disabled = cnt === 0;
+            }
+          }),
+          h('span', { text: 'إعادة إرسال الإشعار لمن سُجّل لهم إرسال اليوم (' + skipAlready + ')' })
+        ) : null;
+
+        confirmSendBtn.onclick = async function () {
+          var targetList = forceResendFlag ? readyList.concat(alreadyList) : readyList;
+          confirmSendBtn.disabled = true;
+          var prog = document.getElementById('attSendProgress');
+          var okN = 0, failN = 0;
+          for (var i = 0; i < targetList.length; i++) {
+            if (prog) prog.textContent = 'جارٍ الإرسال (' + (i + 1) + ' / ' + targetList.length + '): ' + targetList[i].full_name;
+            var res = await sendSingleAbsenceNotification(targetList[i], dStr, forceResendFlag);
+            if (res.status === 'accepted' || res.status === 'sent' || res.status === 'delivered') okN++;
+            else failN++;
+          }
+          closeModal();
+          if (okN && !failN) toast('تم قبول ' + okN + ' رسالة في Meta WhatsApp. راجع سجل الإرسال لمتابعة التسليم.', 'ok');
+          else if (okN) toast('نجح ' + okN + ' وفشل ' + failN + '. راجع سجل إشعارات WhatsApp للتفاصيل.', 'gold');
+          else toast('لم يتم إرسال أي رسالة (تحقق من اعتماد القالب في Meta أو فحص الربط).', 'bad');
+        };
 
         var confirmBody = h('div', { class: 'modal-body' },
           h('h2', { class: 'att-mhead' }, makeSvgIcon('s-whatsapp'), h('span', { text: 'تأكيد إرسال إشعارات الغياب' })),
           h('div', { class: 'att-msum' },
             h('div', null, h('span', { text: 'إجمالي الغائبين' }), h('strong', { class: 'sic-num', text: String(absents.length) })),
-            h('div', null, h('span', { text: 'رسائل جاهزة للإرسال' }), h('strong', { class: 'sic-num', text: String(readyList.length) })),
+            h('div', null, h('span', { text: 'رسائل جاهزة للإرسال' }), readyNumEl),
             h('div', null, h('span', { text: 'أُرسل لهم اليوم' }), h('strong', { class: 'sic-num', text: String(skipAlready) }))
           ),
+          resendToggle,
           skipInvalid ? h('p', { class: 'err small', text: 'ملاحظة: يوجد ' + skipInvalid + ' غائب برقم هاتف ناقص أو غير صالح (9 أرقام أو فارغ) ولن يُرسل له آلياً.' }) : null,
           h('div', { class: 'att-preview', text: formatOfficialAbsenceMessage(absents[0].full_name, dStr) }),
           h('div', { id: 'attSendProgress', class: 'muted small', style: 'margin-top:8px;' }),
           h('div', { class: 'modal-actions' },
             h('button', { type: 'button', class: 'btn light', text: 'إلغاء', onclick: closeModal }),
-            h('button', {
-              type: 'button',
-              class: 'btn primary',
-              disabled: readyList.length === 0,
-              text: 'تأكيد إرسال (' + readyList.length + ') رسالة',
-              onclick: async function (ev) {
-                var btn = ev.currentTarget;
-                btn.disabled = true;
-                var prog = document.getElementById('attSendProgress');
-                var okN = 0, failN = 0;
-                for (var i = 0; i < readyList.length; i++) {
-                  if (prog) prog.textContent = 'جارٍ الإرسال (' + (i + 1) + ' / ' + readyList.length + '): ' + readyList[i].full_name;
-                  var res = await sendSingleAbsenceNotification(readyList[i], dStr, false);
-                  if (res.status === 'accepted' || res.status === 'sent' || res.status === 'delivered') okN++;
-                  else failN++;
-                }
-                closeModal();
-                if (okN && !failN) toast('تم قبول ' + okN + ' رسالة في Meta WhatsApp. راجع سجل الإرسال لمتابعة التسليم.', 'ok');
-                else if (okN) toast('نجح ' + okN + ' وفشل ' + failN + '. راجع سجل إشعارات WhatsApp للتفاصيل.', 'gold');
-                else toast('لم يتم إرسال أي رسالة (تحقق من اعتماد القالب في Meta أو فحص الربط).', 'bad');
-              }
-            })
+            confirmSendBtn
           )
         );
         openModal(confirmBody);
@@ -16219,6 +16298,92 @@
         });
       }
       tabHost.appendChild(repCard);
+
+      // الأرشيف الأسبوعي لرسائل WhatsApp (الصادرة والواردة مجمعة حسب الأسبوع)
+      function getWeekKeyRange(isoStr) {
+        var dt = new Date(isoStr || Date.now());
+        if (isNaN(dt.getTime())) dt = new Date();
+        var day = dt.getDay(); // 0=Sun .. 6=Sat
+        var start = new Date(dt);
+        start.setDate(dt.getDate() - day);
+        var end = new Date(start);
+        end.setDate(start.getDate() + 6);
+        var sStr = start.toISOString().slice(0, 10);
+        var eStr = end.toISOString().slice(0, 10);
+        return { key: sStr + '_' + eStr, label: 'أسبوع من ' + sStr + ' إلى ' + eStr };
+      }
+
+      var archivedWeeks = {};
+      try { archivedWeeks = JSON.parse(localStorage.getItem('de_wa_archived_weeks_v1') || '{}') || {}; } catch (e) {}
+      var weekGroups = {};
+      var allOutLogs = getLocalWaLogs().slice();
+      dbWaLogs.forEach(function (dl) {
+        if (!allOutLogs.some(function (cl) { return cl.id === dl.id || (dl.wamid && cl.wamid === dl.wamid); })) allOutLogs.push(dl);
+      });
+      allOutLogs.forEach(function (l) {
+        if (l.is_deleted) return;
+        var wk = getWeekKeyRange(l.sent_date || l.created_at);
+        if (!weekGroups[wk.key]) weekGroups[wk.key] = { key: wk.key, label: wk.label, out: [], replies: [] };
+        weekGroups[wk.key].out.push(l);
+      });
+      dbWaReplies.forEach(function (m) {
+        var wk = getWeekKeyRange(m.created_at);
+        if (!weekGroups[wk.key]) weekGroups[wk.key] = { key: wk.key, label: wk.label, out: [], replies: [] };
+        weekGroups[wk.key].replies.push(m);
+      });
+
+      var curWk = getWeekKeyRange(todayStr);
+      var sortedWeeks = Object.keys(weekGroups).sort().reverse();
+      var archCard = h('div', { class: 'card', style: 'margin-top:14px;' },
+        h('div', { class: 'bar-sub' },
+          h('h3', { style: 'margin:0;', text: 'الأرشيف الأسبوعي للرسائل (' + sortedWeeks.length + ' أسابيع)' }),
+          h('button', {
+            type: 'button',
+            class: 'btn small light',
+            text: archivedWeeks[curWk.key] ? 'إلغاء أرشفة الأسبوع الحالي' : 'أرشفة الأسبوع الحالي',
+            onclick: function () {
+              if (archivedWeeks[curWk.key]) delete archivedWeeks[curWk.key];
+              else archivedWeeks[curWk.key] = new Date().toISOString();
+              try { localStorage.setItem('de_wa_archived_weeks_v1', JSON.stringify(archivedWeeks)); } catch (e) {}
+              toast(archivedWeeks[curWk.key] ? 'تمت أرشفة رسائل الأسبوع الحالي.' : 'تم استرجاع الأسبوع الحالي من الأرشيف.', 'ok');
+              renderWhatsAppTab();
+            }
+          })
+        )
+      );
+
+      if (!sortedWeeks.length) {
+        archCard.appendChild(h('div', { class: 'empty', text: 'لا توجد رسائل مؤرشفة بعد.' }));
+      } else {
+        sortedWeeks.forEach(function (wkKey) {
+          var grp = weekGroups[wkKey];
+          var isManualArch = !!archivedWeeks[wkKey];
+          var det = document.createElement('details');
+          det.style.cssText = 'border:1px solid rgba(36,75,120,0.16);border-radius:12px;padding:10px 14px;margin-top:10px;background:#F8F5EF;';
+          var sum = document.createElement('summary');
+          sum.style.cssText = 'cursor:pointer;font-weight:800;color:#172F50;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;';
+          sum.textContent = grp.label + ' — صادر: ' + grp.out.length + ' | ردود واردة: ' + grp.replies.length + (isManualArch ? ' (مؤرشف)' : '');
+          det.appendChild(sum);
+          var inner = h('div', { style: 'margin-top:10px;display:flex;flex-direction:column;gap:8px;' });
+          grp.replies.forEach(function (m) {
+            var kid = rawKids.filter(function (k) { return k && k.id === m.child_id; })[0];
+            inner.appendChild(h('div', { class: 'att-log att-reply' },
+              h('div', { class: 'top' }, h('strong', { text: 'وارد — ' + (kid ? kid.full_name : (m.to_phone || 'مرسل')) }), h('span', { dir: 'ltr', class: 'sic-num', text: m.to_phone || '—' })),
+              h('p', { text: m.body || '—' }),
+              h('div', { class: 'meta' }, h('span', { class: 'sic-num', text: fmt(m.created_at, true) }))
+            ));
+          });
+          grp.out.forEach(function (l) {
+            inner.appendChild(h('div', { class: 'att-log' },
+              h('div', { class: 'top' }, h('strong', { text: 'صادر — ' + (l.child_name || l.recipient_name || '—') }), makeWaStatusBadge(l.status, l.created_at)),
+              h('div', { class: 'meta' }, h('span', { dir: 'ltr', class: 'sic-num', text: l.phone || '—' }), h('span', { class: 'sic-num', text: fmt(l.created_at, true) }))
+            ));
+          });
+          det.appendChild(inner);
+          archCard.appendChild(det);
+        });
+      }
+      tabHost.appendChild(archCard);
     }
 
     function renderActiveTab() {
@@ -16868,9 +17033,10 @@
     n.is_read = true;
     setLocalNotifications(NOTIF_STATE.items);
     updateNotificationBadges();
-    if (n.id && DE.isUuid(String(n.id)) && S.me) {
+    renderNotificationDropdown();
+    if (n.id && DE.isUuid(String(n.id))) {
       try {
-        await C.rest('PATCH', '/notifications?id=eq.' + uid(n.id) + '&recipient_user_id=eq.' + uid(S.me), { is_read: true });
+        await C.rest('PATCH', '/notifications?id=eq.' + uid(n.id), { is_read: true });
       } catch (e) {}
     }
   }
@@ -16880,28 +17046,172 @@
     setLocalNotifications(NOTIF_STATE.items);
     updateNotificationBadges();
     renderNotificationDropdown();
-    if (S.me) {
+    var myId = S.me && (typeof S.me === 'string' ? S.me : S.me.id);
+    if (myId) {
       try {
-        await C.rest('PATCH', '/notifications?recipient_user_id=eq.' + uid(S.me) + '&is_read=eq.false', { is_read: true });
+        var q = S.isEducator
+          ? ('/notifications?recipient_user_id=eq.' + uid(myId) + '&is_read=eq.false')
+          : ('/notifications?or=(recipient_user_id.eq.' + uid(myId) + ',recipient_user_id.is.null)&is_read=eq.false');
+        await C.rest('PATCH', q, { is_read: true });
       } catch (e) {}
     }
+  }
+
+  async function resolveChildNameById(childId) {
+    if (!childId) return '';
+    var cid = String(childId);
+    var cached = (S.cache && Array.isArray(S.cache.children)) ? S.cache.children : [];
+    for (var i = 0; i < cached.length; i++) {
+      if (String(cached[i].id) === cid && cached[i].full_name) return cached[i].full_name;
+    }
+    try {
+      var rows = await C.rest('GET', '/children?id=eq.' + uid(cid) + '&select=id,full_name&limit=1');
+      if (Array.isArray(rows) && rows[0] && rows[0].full_name) return rows[0].full_name;
+    } catch (e) {}
+    return '';
+  }
+
+  async function openWhatsappInboundModal(n) {
+    if (!n || !n.related_record_id) {
+      toast('تعذر فتح الرسالة: معرّف رسالة WhatsApp غير متوفر في هذا الإشعار.', 'bad');
+      return;
+    }
+    var msg = null;
+    try {
+      var rows = await C.rest('GET', '/whatsapp_messages?id=eq.' + uid(n.related_record_id) + '&limit=1');
+      if (Array.isArray(rows) && rows[0]) msg = rows[0];
+    } catch (e) {
+      toast('تعذر جلب رسالة WhatsApp من قاعدة البيانات: ' + (e && e.message ? e.message : 'خطأ في الاتصال'), 'bad');
+      return;
+    }
+    if (!msg) {
+      toast('لم يتم العثور على رسالة WhatsApp الأصلية في قاعدة البيانات.', 'bad');
+      return;
+    }
+
+    var childName = n._wa_child_name || await resolveChildNameById(msg.child_id || n.child_id);
+    var senderPhone = msg.to_phone || n._wa_phone || '';
+    var msgBody = msg.body || n._wa_body || n.body || '';
+    var receivedAt = fmt(msg.created_at || n.created_at, true);
+
+    var infoRows = [];
+    if (childName) {
+      infoRows.push(h('div', { style: 'display:flex;justify-content:space-between;gap:10px;padding:8px 12px;background:#F8F5EF;border-radius:10px;border:1px solid rgba(36,75,120,0.12);' },
+        h('strong', { style: 'color:#244B78;', text: 'اسم الطفل:' }),
+        h('span', { style: 'font-weight:800;color:#172F50;', text: childName })
+      ));
+    }
+    infoRows.push(h('div', { style: 'display:flex;justify-content:space-between;gap:10px;padding:8px 12px;background:#F8F5EF;border-radius:10px;border:1px solid rgba(36,75,120,0.12);' },
+      h('strong', { style: 'color:#244B78;', text: 'رقم هاتف المرسل:' }),
+      h('span', { dir: 'ltr', style: 'font-weight:800;color:#172F50;', text: senderPhone || '—' })
+    ));
+    infoRows.push(h('div', { style: 'display:flex;justify-content:space-between;gap:10px;padding:8px 12px;background:#F8F5EF;border-radius:10px;border:1px solid rgba(36,75,120,0.12);' },
+      h('strong', { style: 'color:#244B78;', text: 'تاريخ ووقت الاستقبال:' }),
+      h('span', { style: 'font-weight:700;color:#172F50;', text: receivedAt })
+    ));
+
+    openModal(h('div', { class: 'modal-body', style: 'max-width:620px;margin:0 auto;' },
+      h('div', { style: 'display:flex;align-items:center;gap:10px;margin-bottom:14px;' },
+        h('div', { class: 'npc-icon', style: 'flex-shrink:0;' }, makeSvgIcon('s-mail')),
+        h('div', null,
+          h('h2', { style: 'margin:0;font-size:1.15rem;color:#172F50;', text: 'تفاصيل رسالة WhatsApp الواردة' }),
+          h('p', { class: 'muted small', style: 'margin:2px 0 0;', text: 'رسالة مستلمة عبر خط المركز الرسمي' })
+        )
+      ),
+      h('div', { style: 'display:flex;flex-direction:column;gap:8px;margin-bottom:14px;' }, infoRows),
+      h('div', { style: 'background:#FFFFFF;border:1.5px solid rgba(36,75,120,0.16);border-radius:14px;padding:14px 16px;margin-bottom:16px;' },
+        h('strong', { style: 'display:block;color:#244B78;margin-bottom:8px;font-size:0.9rem;', text: 'محتوى الرسالة:' }),
+        h('p', { style: 'margin:0;white-space:pre-wrap;line-height:1.75;color:#172F50;font-size:0.98rem;user-select:text;', text: msgBody })
+      ),
+      h('div', { class: 'modal-actions' },
+        h('button', { type: 'button', class: 'btn gold', text: 'إغلاق', onclick: closeModal })
+      )
+    ));
+  }
+
+  async function openAdminNotification(n, onAfterRead) {
+    if (!n) return;
+    markAdminNotificationReadDb(n).catch(function () {});
+    if (typeof onAfterRead === 'function') onAfterRead();
+    var isWaInbound = (n.notification_type === 'whatsapp_inbound') || (n.category === 'messages' && n.related_record_id && !n.related_url);
+    if (isWaInbound) {
+      await openWhatsappInboundModal(n);
+      return;
+    }
+    if (n.related_url) go(n.related_url);
   }
 
   async function fetchNotifications() {
     var dbList = [];
     try {
-      var q = S.me
-        ? ('/notifications?recipient_user_id=eq.' + uid(S.me) + '&order=created_at.desc&limit=50')
+      var myId = S.me && (typeof S.me === 'string' ? S.me : S.me.id);
+      var q = myId
+        ? (S.isEducator
+            ? ('/notifications?recipient_user_id=eq.' + uid(myId) + '&order=created_at.desc&limit=50')
+            : ('/notifications?or=(recipient_user_id.eq.' + uid(myId) + ',recipient_user_id.is.null)&order=created_at.desc&limit=50'))
         : '/notifications?order=created_at.desc&limit=50';
       var rows = await C.rest('GET', q);
       if (Array.isArray(rows)) dbList = rows;
     } catch (e) {}
 
     var byId = {};
+    var waMsgIds = [];
+    var childIds = [];
     dbList.forEach(function (dItem) {
-      dItem.category = dItem.category || dItem.notification_type || 'general';
+      var rawType = String(dItem.category || dItem.notification_type || 'general').trim();
+      dItem.category = (rawType === 'whatsapp_inbound') ? 'messages' : rawType;
+      if (dItem.notification_type === 'whatsapp_inbound' && dItem.related_record_id) {
+        waMsgIds.push(String(dItem.related_record_id));
+      }
+      if (dItem.child_id) childIds.push(String(dItem.child_id));
       byId[dItem.id] = dItem;
     });
+
+    if (waMsgIds.length) {
+      try {
+        var uniqWa = Array.from(new Set(waMsgIds)).slice(0, 50);
+        var waRows = await C.rest('GET', '/whatsapp_messages?id=in.(' + uniqWa.map(uid).join(',') + ')&select=id,to_phone,body,child_id,created_at');
+        if (Array.isArray(waRows)) {
+          var waMap = {};
+          waRows.forEach(function (w) {
+            waMap[String(w.id)] = w;
+            if (w.child_id) childIds.push(String(w.child_id));
+          });
+          dbList.forEach(function (dItem) {
+            if (dItem.notification_type === 'whatsapp_inbound' && dItem.related_record_id) {
+              var w = waMap[String(dItem.related_record_id)];
+              if (w) {
+                dItem._wa_phone = w.to_phone || '';
+                dItem._wa_body = w.body || '';
+                dItem._wa_created_at = w.created_at || dItem.created_at;
+                if (!dItem.child_id && w.child_id) dItem.child_id = w.child_id;
+              }
+            }
+          });
+        }
+      } catch (e) {}
+    }
+
+    if (childIds.length) {
+      var childMap = {};
+      var cachedKids = (S.cache && Array.isArray(S.cache.children)) ? S.cache.children : [];
+      cachedKids.forEach(function (k) { if (k && k.id) childMap[String(k.id)] = k.full_name || ''; });
+      var missingKids = Array.from(new Set(childIds)).filter(function (id) { return !childMap[id]; }).slice(0, 50);
+      if (missingKids.length) {
+        try {
+          var kRows = await C.rest('GET', '/children?id=in.(' + missingKids.map(uid).join(',') + ')&select=id,full_name');
+          if (Array.isArray(kRows)) {
+            kRows.forEach(function (k) { if (k && k.id) childMap[String(k.id)] = k.full_name || ''; });
+          }
+        } catch (e) {}
+      }
+      dbList.forEach(function (dItem) {
+        if (dItem.child_id && childMap[String(dItem.child_id)]) {
+          dItem._wa_child_name = childMap[String(dItem.child_id)];
+        }
+      });
+    }
+
     var localList = getLocalNotifications();
     localList.forEach(function (m) {
       if (!byId[m.id] && !DE.isUuid(String(m.id || ''))) {
@@ -16914,6 +17224,9 @@
     setLocalNotifications(merged);
     updateNotificationBadges();
     renderNotificationDropdown();
+    if (typeof NOTIF_STATE.onUpdate === 'function' && S.sec === 'notifications') {
+      try { NOTIF_STATE.onUpdate(); } catch (e) {}
+    }
   }
 
   function updateNotificationBadges() {
@@ -16954,20 +17267,26 @@
       else if (n.category === 'docs') iconName = 's-file';
       else if (n.category === 'system') iconName = 's-shield';
 
+      var dropTitle = n.title || (n.notification_type === 'whatsapp_inbound' ? 'رسالة WhatsApp واردة' : 'إشعار');
+      if (n.notification_type === 'whatsapp_inbound' && (n._wa_child_name || n._wa_phone)) {
+        dropTitle = n._wa_child_name ? ('رسالة WhatsApp — ' + n._wa_child_name) : ('رسالة WhatsApp — ' + n._wa_phone);
+      }
+      var dropBody = (n.notification_type === 'whatsapp_inbound' && n._wa_body)
+        ? ((n._wa_phone && n._wa_child_name ? (n._wa_phone + ' • ') : '') + n._wa_body)
+        : (n.body || '');
       var item = h('div', {
         class: 'notif-drop-item' + (!n.is_read ? ' is-unread' : ''),
         onclick: function () {
-          markAdminNotificationReadDb(n);
           var drop = document.getElementById('notifDropdown');
           if (drop) drop.hidden = true;
-          if (n.related_url) go(n.related_url);
+          openAdminNotification(n);
         }
       },
         h('div', { class: 'ndi-icon' }, makeSvgIcon(iconName)),
         h('div', { class: 'ndi-info' },
-          h('strong', { class: 'ndi-title', text: n.title }),
-          h('p', { class: 'ndi-body', text: n.body }),
-          h('span', { class: 'ndi-time', text: fmt(n.created_at, true) })
+          h('strong', { class: 'ndi-title', text: dropTitle }),
+          h('p', { class: 'ndi-body', text: dropBody }),
+          h('span', { class: 'ndi-time', text: fmt(n._wa_created_at || n.created_at, true) + (n.is_read ? ' • مقروء' : ' • جديد') })
         )
       );
       host.appendChild(item);
@@ -17193,19 +17512,31 @@
         else if (n.category === 'docs') iconName = 's-file';
         else if (n.category === 'system') iconName = 's-shield';
 
-        var card = h('div', { class: 'notif-page-card' + (!n.is_read ? ' is-unread' : '') },
+        var cardTitle = n.title || (n.notification_type === 'whatsapp_inbound' ? 'رسالة WhatsApp واردة' : 'إشعار');
+        if (n.notification_type === 'whatsapp_inbound' && n._wa_child_name) {
+          cardTitle = 'رسالة WhatsApp — ' + n._wa_child_name;
+        }
+        var cardBody = (n.notification_type === 'whatsapp_inbound' && n._wa_body) ? n._wa_body : (n.body || '');
+        var card = h('div', {
+          class: 'notif-page-card' + (!n.is_read ? ' is-unread' : ''),
+          style: 'cursor:pointer;',
+          onclick: function () {
+            openAdminNotification(n, renderList);
+          }
+        },
           h('div', { class: 'npc-left' },
             h('div', { class: 'npc-icon' }, makeSvgIcon(iconName)),
             h('div', { class: 'npc-body' },
-              h('div', { style: 'display:flex;align-items:center;gap:10px;' },
-                h('strong', { text: n.title }),
-                !n.is_read ? badge('جديد', 'gold') : null
+              h('div', { style: 'display:flex;align-items:center;gap:10px;flex-wrap:wrap;' },
+                h('strong', { text: cardTitle }),
+                n._wa_phone ? h('span', { class: 'badge', dir: 'ltr', text: n._wa_phone }) : null,
+                !n.is_read ? badge('جديد', 'gold') : badge('مقروء', 'ok')
               ),
-              h('p', { text: n.body }),
+              h('p', { text: cardBody }),
               h('div', { class: 'npc-meta' },
-                h('span', { text: fmt(n.created_at, true) }),
+                h('span', { text: fmt(n._wa_created_at || n.created_at, true) }),
                 h('span', { text: '•' }),
-                h('span', { text: 'النوع: ' + (n.category || 'عام') })
+                h('span', { text: n.category === 'messages' ? 'النوع: الرسائل' : ('النوع: ' + (n.category || 'عام')) })
               )
             )
           ),
@@ -17213,18 +17544,17 @@
             h('button', {
               type: 'button',
               class: 'btn small light',
-              onclick: function () {
-                n.is_read = true;
-                setLocalNotifications(NOTIF_STATE.items);
-                updateNotificationBadges();
-                if (n.related_url) go(n.related_url);
+              onclick: function (ev) {
+                if (ev && ev.stopPropagation) ev.stopPropagation();
+                openAdminNotification(n, renderList);
               }
             }, makeSvgIcon('s-eye'), h('span', { text: 'عرض التفاصيل' })),
             h('button', {
               type: 'button',
               class: 'btn small ghost',
               title: 'حذف الإشعار',
-              onclick: function () {
+              onclick: function (ev) {
+                if (ev && ev.stopPropagation) ev.stopPropagation();
                 NOTIF_STATE.items = (NOTIF_STATE.items || []).filter(function (x) { return x.id !== n.id; });
                 setLocalNotifications(NOTIF_STATE.items);
                 updateNotificationBadges();
@@ -17237,8 +17567,10 @@
       });
     }
 
+    NOTIF_STATE.onUpdate = renderList;
     renderTabs();
     renderList();
+    fetchNotifications();
   }
 
   /* ══════════════════════════════════════════════════════════════════════════════

@@ -2644,7 +2644,7 @@
     var logoImg = await loadLogoImage();
     var W = 1240, H = 1754, M = 56, CW = W - M * 2;
     var rows = Array.isArray(records) ? records : [];
-    var rowsPerPage = 20;
+    var rowsPerPage = 26;
     var totalPages = Math.max(1, Math.ceil(rows.length / rowsPerPage));
     var pages = [];
 
@@ -2652,7 +2652,7 @@
       var c = document.createElement('canvas');
       c.width = W; c.height = H;
       var ctx = c.getContext('2d');
-      drawOfficialHeader(ctx, W, 'سجل الغيابات والحضور اليومي — دار الإحسان', logoImg);
+      drawOfficialHeader(ctx, W, 'كشف الحضور والغياب اليومي — المركز النفسي البيداغوجي دار الإحسان', logoImg);
 
       ctx.fillStyle = '#F4F7FB';
       ctx.fillRect(M, 205, CW, 70);
@@ -2678,7 +2678,7 @@
       }
 
       var y = 295;
-      var colW = [148, 198, 122, 122, 118, 152, CW - 860];
+      var colW = [60, 120, 340, 220, 140, CW - 880];
       var colX = [];
       var curX = M;
       for (var ci = 0; ci < colW.length; ci++) { colX.push(curX); curX += colW[ci]; }
