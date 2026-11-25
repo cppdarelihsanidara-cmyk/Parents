@@ -9,6 +9,35 @@
     return id;
   }
 
+  function canvasToImgNode(cvs, altTxt) {
+    var img = document.createElement('img');
+    img.alt = altTxt || 'معاينة';
+    img.style.maxWidth = '100%';
+    img.style.height = 'auto';
+    img.style.display = 'block';
+    img.style.margin = '0 auto 12px';
+    img.style.borderRadius = '10px';
+    img.style.touchAction = 'pan-x pan-y pinch-zoom';
+    try {
+      if (cvs && typeof cvs.toBlob === 'function') {
+        cvs.toBlob(function (blob) {
+          if (blob) {
+            var u = URL.createObjectURL(blob);
+            img.src = u;
+            img.dataset.blobUrl = u;
+          } else {
+            img.src = cvs.toDataURL('image/png');
+          }
+        }, 'image/png');
+      } else if (cvs && typeof cvs.toDataURL === 'function') {
+        img.src = cvs.toDataURL('image/png');
+      }
+    } catch (err) {
+      try { img.src = cvs.toDataURL('image/png'); } catch (e2) {}
+    }
+    return img;
+  }
+
   function openFullscreenViewer(contentNode, titleTxt) {
     var old = document.getElementById('deFullscreenViewer');
     if (old && old.parentNode) old.parentNode.removeChild(old);
@@ -27,6 +56,9 @@
     closeBtn.className = 'btn small light';
     closeBtn.textContent = '✕ إغلاق';
     closeBtn.onclick = function () {
+      ov.querySelectorAll('img[data-blob-url]').forEach(function (im) {
+        try { URL.revokeObjectURL(im.dataset.blobUrl); } catch (e) {}
+      });
       if (ov.parentNode) ov.parentNode.removeChild(ov);
     };
     bar.appendChild(ttl);
@@ -2131,31 +2163,49 @@
         }).catch(function () {});
       }
     }
-    setTimeout(renderPdfCanvasNow, 20);
-
-    return h('div', { class: 'card wk-parent-program-card wk-interactive-sheet-paper', style: 'max-width:1040px; margin:0 auto; padding:14px 18px; background:#FFFFFF; border:2px solid #163B65; border-radius:12px; box-shadow:0 4px 20px rgba(22, 59, 101,0.08); box-sizing:border-box;' },
-      notifBanner,
-      h('div', { class: 'bar-sub', style: 'margin-bottom:14px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;' },
-        h('div', null,
-          h('h2', { style: 'color:#163B65; margin:0 0 4px;', text: 'البرنامج المؤقت الأسبوعي — ' + st.section_name }),
-          h('p', { class: 'muted small', style: 'margin:0;', text: 'الموسم الدراسي: ' + st.academic_year + ' | التوقيت: ' + st.day_start + ' إلى ' + st.day_end + ' | آخر اعتماد: ' + lastUpdFmt })
-        ),
-        h('span', { class: 'badge', text: 'اضغط على البرنامج للمعاينة بملء الشاشة' })
-      ),
-      h('div', { class: 'wk-parent-load-table-scroll', style: 'max-width:100%; overflow-x:auto; margin-bottom:12px;' }, loadTable),
-      parentMobileDayView,
-      h('div', { class: 'wk-parent-sheet-scroll no-print', style: 'overflow-x:auto; margin-bottom:18px;' },
-        tableEl
-      ),
-      h('div', { class: 'wk-parent-pdf-section', style: 'cursor:zoom-in;', onclick: function () {
-          var cvs = pdfCanvasHost.querySelector('canvas');
-          if (cvs) {
-            var img = h('img', { src: cvs.toDataURL('image/png'), alt: 'البرنامج الأسبوعي', style: 'max-width:100%;height:auto;' });
-            openFullscreenViewer(img, 'البرنامج الأسبوعي — ' + st.section_name);
+    var wkDetailsBtn = h('button', {
+      type: 'button',
+      class: 'btn-pm-primary',
+      text: 'التفاصيل',
+      onclick: async function () {
+        wkDetailsBtn.disabled = true;
+        var oldTxt = wkDetailsBtn.textContent;
+        wkDetailsBtn.textContent = 'جارٍ العرض…';
+        try {
+          if (!window.DE_PDF || typeof window.DE_PDF.renderWeeklyProgramCanvas !== 'function') {
+            throw new Error('محرك عرض البرنامج غير متاح حالياً.');
           }
-        } },
-        h('h3', { class: 'no-print', style: 'font-size:16px; color:#163B65; margin:0 0 8px;', text: 'النسخة الرسمية للبرنامج الأسبوعي (اضغط للمعاينة والتكبير):' }),
-        pdfCanvasHost
+          var cEl = await window.DE_PDF.renderWeeklyProgramCanvas(st, st.section_name);
+          var wrapFs = document.createElement('div');
+          wrapFs.style.width = '100%';
+          wrapFs.style.textAlign = 'center';
+          wrapFs.appendChild(canvasToImgNode(cEl, 'البرنامج الأسبوعي — ' + st.section_name));
+          openFullscreenViewer(wrapFs, 'البرنامج الأسبوعي — ' + st.section_name);
+        } catch (err) {
+          toast('تعذر عرض البرنامج: ' + (err && err.message ? err.message : 'خطأ غير متوقع'), 'bad');
+        } finally {
+          wkDetailsBtn.disabled = false;
+          wkDetailsBtn.textContent = oldTxt;
+        }
+      }
+    });
+
+    return h('div', { style: 'max-width:1040px; margin:0 auto;' },
+      notifBanner,
+      h('div', { class: 'pm-list-item-card' },
+        h('div', { class: 'pm-lic-right' },
+          h('div', { class: 'pm-lic-icon-box' }, icon('i-program')),
+          h('div', { class: 'pm-lic-info' },
+            h('h3', { class: 'pm-lic-title', text: 'البرنامج المؤقت الأسبوعي — ' + st.section_name }),
+            h('div', { class: 'pm-lic-meta' },
+              h('span', { text: 'الموسم الدراسي: ' + st.academic_year }),
+              h('span', { text: 'التوقيت: ' + st.day_start + ' إلى ' + st.day_end }),
+              h('span', { text: 'آخر اعتماد: ' + lastUpdFmt }),
+              h('span', { class: 'badge ok', text: isUpdated ? 'تم تحديثه' : 'منشور ومعتمد' })
+            )
+          )
+        ),
+        h('div', { class: 'pm-lic-actions' }, wkDetailsBtn)
       )
     );
   }
@@ -3871,8 +3921,6 @@ function renderParentOfficialEvaluationSheet(r, childFullName, secName, kd, init
     evals.forEach(function (e) {
       var isNew = false; try { isNew = safeGetItem('local', 'de_seen_ev_' + e.id) !== '1'; } catch (errS) {}
 
-      var inlineDetailsHost = h('div', { class: 'pm-eval-inline-details', hidden: true, style: 'margin-top:12px; margin-bottom:20px;' });
-      var isExpanded = false;
       var detailsBtn = h('button', {
         type: 'button',
         class: 'btn-pm-primary',
@@ -3880,19 +3928,25 @@ function renderParentOfficialEvaluationSheet(r, childFullName, secName, kd, init
         onclick: async function () {
           safeSetItem('local', 'de_seen_ev_' + e.id, '1'); await markParentDbNotifsRead(e.id);
           updateNotifBadge();
-          isExpanded = !isExpanded;
-          detailsBtn.textContent = isExpanded ? 'إخفاء التفاصيل' : 'التفاصيل';
-          detailsBtn.className = isExpanded ? 'btn-pm-gold' : 'btn-pm-primary';
-          if (isExpanded) {
-            var evMeta = extractParentEvalMeta(e);
-            var evChildName = (kid && doesEvalMatchKid(e, kid)) ? childFullName : (evMeta.child_name || childFullName);
-            var evSecName = (kid && doesEvalMatchKid(e, kid)) ? secName : (evMeta.section_name || secName);
-            inlineDetailsHost.textContent = '';
-            inlineDetailsHost.appendChild(renderParentOfficialEvaluationSheet(e, evChildName, evSecName, kid, null));
-            inlineDetailsHost.hidden = false;
-          } else {
-            inlineDetailsHost.hidden = true;
-          }
+          var evMeta = extractParentEvalMeta(e);
+          var evChildName = (kid && doesEvalMatchKid(e, kid)) ? childFullName : (evMeta.child_name || childFullName);
+          var evSecName = (kid && doesEvalMatchKid(e, kid)) ? secName : (evMeta.section_name || secName);
+          var sheet = renderParentOfficialEvaluationSheet(e, evChildName, evSecName, kid, null);
+          var fsWrap = document.createElement('div');
+          fsWrap.style.width = '100%';
+          fsWrap.style.maxWidth = '1040px';
+          fsWrap.style.margin = '0 auto';
+          fsWrap.appendChild(sheet);
+          openFullscreenViewer(fsWrap, e.title || 'معاينة التقييم');
+          // تحويل أي لوحة Canvas داخل التقييم إلى صورة قابلة للتكبير اليدوي بملء الشاشة
+          setTimeout(function () {
+            fsWrap.querySelectorAll('canvas').forEach(function (cvs) {
+              if (cvs.width > 0 && cvs.height > 0) {
+                var img = canvasToImgNode(cvs, e.title || 'صفحة التقييم');
+                if (cvs.parentNode) cvs.parentNode.replaceChild(img, cvs);
+              }
+            });
+          }, 350);
         }
       });
 
@@ -3914,7 +3968,6 @@ function renderParentOfficialEvaluationSheet(r, childFullName, secName, kd, init
       );
 
       v.appendChild(card);
-      v.appendChild(inlineDetailsHost);
     });
   }
 
