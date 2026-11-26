@@ -1875,11 +1875,7 @@
     }
 
     function publicCardUrl(child) {
-      var isWeb = (typeof window !== 'undefined' && window.location && window.location.origin && window.location.origin !== 'null' && window.location.protocol !== 'file:' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1');
-      var origin = isWeb ? window.location.origin : 'https://cppdarelihsanidara-cmyk.github.io';
-      var basePath = isWeb ? window.location.pathname.replace(/[^/]*$/, '') : '/Admin/';
-      if (!basePath.startsWith('/')) basePath = '/' + basePath;
-      var u = new URL(basePath + 'parent.html', origin);
+      var u = new URL('https://cppdarelihsanidara-cmyk.github.io/Parents/parent.html');
       var uname = getChildOfficialUsername(child);
       if (uname) {
         u.searchParams.set('u', uname);
@@ -17696,7 +17692,7 @@
         h('button', {
           type: 'button',
           class: 'btn gold',
-          onclick: function () { window.open('parent.html', '_blank'); }
+          onclick: function () { window.open('https://cppdarelihsanidara-cmyk.github.io/Parents/parent.html', '_blank', 'noopener'); }
         }, makeSvgIcon('s-desktop'), h('span', { text: 'فتح فضاء الأولياء للمعاينة' }))
       )
     ));
