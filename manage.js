@@ -17011,7 +17011,7 @@
           body: body,
           childId: childId || null,
           audience: audience,
-          url: './parent.html'
+          url: 'https://cppdarelihsanidara-cmyk.github.io/Parents/parent.html'
         });
         toast('تمت إضافة الإشعار إلى قائمة الإرسال. سيُرسل آلياً بعد معالجة الطابور.', 'ok');
         return queued;
@@ -17058,7 +17058,7 @@
       event_type: o.eventType || 'announcement',
       title: o.title || 'دار الإحسان',
       body: o.body || 'لديك إشعار جديد من المركز',
-      url: o.url || './parent.html',
+      url: o.url || 'https://cppdarelihsanidara-cmyk.github.io/Parents/parent.html',
       tag: o.tag || ('de-admin-push-' + Date.now()),
       status: 'pending',
       scheduled_at: new Date().toISOString()
