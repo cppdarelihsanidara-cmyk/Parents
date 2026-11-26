@@ -754,14 +754,25 @@
     return S.isOwner || (S.centerAccess === 'all') || (typeof canAccessGeneralAdmin === 'function' && canAccessGeneralAdmin());
   }
 
+  function isFullPowerAdmin() {
+    var em = String((S.me && S.me.email) || '').toLowerCase().trim();
+    return em === 'amir.zakaria06000@gmail.com' || em === 'cppdarelihsan.idara@gmail.com';
+  }
+
   function applyRoleSidebarUI() {
     var isEdu = !!S.isEducator;
     var isFarm = isFarmSession();
     var isSpec = !!S.isSpecialist;
-    var allowedForEdu = { children: true, attendance: true, reports: true, evaluations: true };
-    var allowedForSpec = { dash: true, children: true, attendance: true, programs: true, reports: true, evaluations: true, appts: true, msgs: true, docs: true };
+    var isFull = isFullPowerAdmin();
+    // الشؤون البيداغوجية دون فضاء الأولياء في المركز الرئيسي
+    var allowedForEdu = { children: true, attendance: true, reports: true, evaluations: true, programs: true, msgs: true };
+    var allowedForSpec = { children: true, reports: true, evaluations: true, programs: true, docs: true, msgs: true };
     var isWorkOrFarm = !isEdu && !isSpec && (S.activeCenter === 'work' || S.activeCenter === 'farm');
     var allowedForWorkOrFarm = { children: true, attendance: true, educators: true, programs: true, reports: true, evaluations: true, accounts: true, archive: true, requests: true, inquiries: true };
+
+    if (typeof document !== 'undefined' && document.body) {
+      document.body.classList.toggle('de-readonly-admin', !!S.isReadOnlyAdmin);
+    }
 
     [].forEach.call(document.querySelectorAll('#nav [data-sec]'), function (btn) {
       var secKey = btn.dataset.sec;
@@ -769,8 +780,12 @@
         btn.hidden = true;
         return;
       }
+      if (!isFull && secKey === 'parents' && S.activeCenter === 'main') {
+        btn.hidden = true;
+        return;
+      }
       if (secKey === 'attendance') {
-        btn.hidden = false;
+        btn.hidden = isSpec ? true : false;
         setNavBtnLabel(btn, 'الغيابات والحضور');
         return;
       }
@@ -791,7 +806,7 @@
         if (secKey === 'accounts') setNavBtnLabel(btn, S.activeCenter === 'work' ? 'الحسابات الخاصة بمركز المساعدة على العمل' : 'الحسابات الخاصة بالمزرعة البيداغوجية');
         if (secKey === 'archive') setNavBtnLabel(btn, 'الأرشيف والنسخ الاحتياطية');
       } else {
-        btn.hidden = false;
+        btn.hidden = (!isFull && secKey === 'parents' && S.activeCenter === 'main');
         if (secKey === 'children') setNavBtnLabel(btn, 'الأقسام والأطفال');
         if (secKey === 'reports') setNavBtnLabel(btn, 'التقارير');
         if (secKey === 'evaluations') setNavBtnLabel(btn, 'التقييم');
@@ -1001,6 +1016,23 @@
           h('button', { class: 'btn light', type: 'button', text: 'تراجع', onclick: function () { done(false); } }),
           h('button', { class: 'btn' + (o.danger ? ' danger' : ''), type: 'button', text: o.ok || 'تأكيد', onclick: function () { done(true); } }))));
     });
+    // إخفاء عناوين المجموعات الفارغة في القائمة الجانبية
+    try {
+      var navEl = document.getElementById('nav');
+      if (navEl) {
+        var curLbl = null, hasVis = false;
+        [].forEach.call(navEl.children, function (ch) {
+          if (ch.classList && ch.classList.contains('nav-group-label')) {
+            if (curLbl) curLbl.hidden = !hasVis;
+            curLbl = ch;
+            hasVis = false;
+          } else if (ch.matches && ch.matches('[data-sec]')) {
+            if (!ch.hidden) hasVis = true;
+          }
+        });
+        if (curLbl) curLbl.hidden = !hasVis;
+      }
+    } catch (eGrp) {}
   }
   function info(title, node) {
     openModal(h('div', { class: 'modal-body' }, h('h2', { text: title }), node, h('div', { class: 'modal-actions' }, h('button', { class: 'btn light', type: 'button', text: 'إغلاق', onclick: closeModal }))));
@@ -1772,7 +1804,7 @@
     }
 
     function editChild(c) {
-      if (S.isEducator || S.isSpecialist) return toast('صلاحية تعديل ملفات الطلبة محصورة بالإدارة.', 'bad');
+      if (S.isEducator || S.isSpecialist || S.isReadOnlyAdmin) return toast('صلاحية تعديل ملفات الطلبة محصورة بالإدارة المخوّلة.', 'bad');
       return openForm({
         title: c ? 'تعديل بيانات تلميذ' : 'إضافة تلميذ جديد إلى المركز',
         values: c ? Object.assign({}, c, { created_at: c.created_at ? String(c.created_at).slice(0, 10) : '' }) : (function () {
@@ -1959,12 +1991,12 @@
             h('p', { class: 'csh-sub', text: selectedSecName ? ('عرض ملفات وتفاصيل الأطفال المسجلين في «' + selectedSecName + '» (' + curFilteredKids + ' طالب).') : ('إدارة ملفات وبطاقات جميع الأطفال والتلاميذ وتوزيعهم على الأقسام التربوية المعتمدة (' + totalKidsAll + ' طالب).') })
           ),
           h('div', { class: 'csh-actions' },
-            (!S.isEducator && !S.isSpecialist) ? h('button', {
+            (!S.isEducator && !S.isSpecialist && !S.isReadOnlyAdmin) ? h('button', {
               type: 'button',
               class: 'btn gold',
               onclick: function () { editChild(null); }
             }, makeSvgIcon('s-plus'), h('span', { text: 'إضافة طالب جديد' })) : null,
-            (!S.isEducator && !S.isSpecialist) ? h('button', {
+            (!S.isEducator && !S.isSpecialist && !S.isReadOnlyAdmin) ? h('button', {
               type: 'button',
               class: 'btn light',
               onclick: function () { openAddSectionForCenterModal(S.activeCenter, branches, function () { go('children'); }); }
@@ -2183,8 +2215,8 @@
 
     listView(v, {
       title: listTitle,
-      addLabel: S.isEducator ? '' : 'إضافة طالب جديد',
-      onAdd: (S.isEducator || S.isSpecialist) ? null : function () { editChild(null); },
+      addLabel: (S.isEducator || S.isSpecialist || S.isReadOnlyAdmin) ? '' : 'إضافة طالب جديد',
+      onAdd: (S.isEducator || S.isSpecialist || S.isReadOnlyAdmin) ? null : function () { editChild(null); },
       extra: [],
       rows: rows,
       sheet: true,
@@ -2219,7 +2251,7 @@
         var actionsBarItems = [
           rbtn('بطاقة التلميذ الرسمية', function () { openStudentCard(r); }, 'gold')
         ];
-        if (!S.isEducator && !S.isSpecialist) {
+        if (!S.isEducator && !S.isSpecialist && !S.isReadOnlyAdmin) {
           actionsBarItems.push(
             rbtn('تعديل البيانات', function () { editChild(r); }, 'light'),
             rbtn('حذف نهائي', async function () {
@@ -3479,13 +3511,16 @@
 
   /* الدالة الرئيسية لقسم البرامج الأسبوعية في لوحة الإدارة (واجهة الأقسام مع زر إضافة برنامج وزر التفاصيل) */
   async function secPrograms(v) {
-    if (S.isEducator) return go('children');
     v.textContent = '';
 
     var d = await getMany('programs', 'sections', 'branches');
     var allProgs = d[0] || [], allSections = d[1] || [], branches = d[2] || [];
     var centerSecs = allSections.filter(function (s) { return sectionCenterKey(s, branches) === S.activeCenter; });
     var sections = centerSecs.length ? centerSecs : allSections;
+    if (S.isEducator && S.eduSectionId) {
+      var eduOnlySecs = sections.filter(function (s) { return String(s.id) === String(S.eduSectionId); });
+      if (eduOnlySecs.length) sections = eduOnlySecs;
+    }
     var secIdsMap = {};
     sections.forEach(function (s) { secIdsMap[s.id] = true; });
     var rows = allProgs.filter(function (p) { return !p.section_id || !!secIdsMap[p.section_id]; });
@@ -12609,6 +12644,9 @@
 
     var kidOpts = kids.map(function (k) { return [k.id, (k.membership_no ? ('[' + k.membership_no + '] ') : '') + k.full_name]; });
     var branchOpts = branches.map(function (b) { return [b.id, b.name]; });
+    if (S.isEducator && S.eduSectionId) {
+      sections = sections.filter(function (s) { return String(s.id) === String(S.eduSectionId); });
+    }
     var mainCenterSections = sections.filter(function (s) { return sectionCenterKey(s, branches) === 'main'; });
     var secAllOpts = (mainCenterSections.length ? mainCenterSections : sections).map(function (s) { return [s.id, s.name]; });
 
@@ -12923,6 +12961,9 @@
       rows = rows.filter(function (r) { return !!centerKidIds[r.child_id]; });
     }
 
+    if (S.isEducator && S.eduSectionId) {
+      sections = sections.filter(function (s) { return String(s.id) === String(S.eduSectionId); });
+    }
     var kidOpts = kids.map(function (k) { return [k.id, (k.membership_no ? ('[' + k.membership_no + '] ') : '') + k.full_name]; });
     var branchOpts = branches.map(function (b) { return [b.id, b.name]; });
     var secAllOpts = sections.map(function (s) { return [s.id, s.name]; });
@@ -13175,9 +13216,12 @@
      8. الرسائل والإعلانات (Messages)
      ===================================================================== */
   async function secMsgs(v) {
-    if (S.isEducator) return go('children');
     var d = await getMany('msgs', 'reads', 'parents', 'children', 'branches', 'sections');
     var rows = d[0], reads = d[1], pars = d[2], kids = d[3], branches = d[4], sections = d[5];
+    if (S.isEducator && S.eduSectionId) {
+      sections = sections.filter(function (s) { return String(s.id) === String(S.eduSectionId); });
+      kids = kids.filter(function (k) { return childMatchesSection(k, S.eduSectionId, S.eduSectionName, sections); });
+    }
     var branchOpts = branches.map(function (b) { return [b.id, b.name]; });
     var secAllOpts = sections.map(function (s) { return [s.id, s.name]; });
     var parOpts = pars.map(function (p) { return [p.user_id, p.full_name]; });
@@ -13190,11 +13234,11 @@
       var vals = m ? Object.assign({}, m, { branch_id: kid0 ? kid0.branch_id : '', section_id: kid0 ? kid0.section_id : '' }) : { kind: 'announcement', audience: 'all' };
       var lastSec = vals.section_id || '';
       return openForm({
-        title: m ? 'تعديل رسالة/إعلان' : 'رسالة / إعلان جديد', values: vals,
+        title: m ? 'تعديل رسالة/إعلان' : 'رسالة / إعلان جديد', values: S.isEducator ? Object.assign({}, vals, { audience: 'child', section_id: S.eduSectionId || vals.section_id }) : vals,
         submits: m && m.published_at ? [{ key: 'save', label: 'حفظ التعديلات (منشور)' }] : [{ key: 'draft', label: 'حفظ كمسودة' }, { key: 'publish', label: 'نشر الآن' }],
         fields: [
           { k: 'kind', label: 'النوع', type: 'select', opts: [['announcement', 'إعلان عام'], ['message', 'رسالة خاصة']], req: true },
-          { k: 'audience', label: 'المستلمون', type: 'select', opts: [['all', 'جميع الأولياء'], ['parent', 'ولي معيّن'], ['child', 'أولياء طفل معيّن']], req: true },
+          { k: 'audience', label: 'المستلمون', type: 'select', opts: S.isEducator ? [['child', 'أولياء طفل من قسمي']] : [['all', 'جميع الأولياء'], ['parent', 'ولي معيّن'], ['child', 'أولياء طفل معيّن']], req: true },
           { k: 'parent_id', label: 'الولي المستلم', type: 'select', opts: parOpts, req: true, showIf: function (x) { return x.audience === 'parent'; } },
           { k: 'branch_id', label: 'الفرع', type: 'select', opts: branchOpts, req: true, showIf: function (x) { return x.audience === 'child'; } },
           { k: 'section_id', label: 'القسم / الفوج', type: 'select', opts: secAllOpts, req: true, showIf: function (x) { return x.audience === 'child'; } },
@@ -13258,7 +13302,6 @@
      9. الوثائق الخاصة (Documents)
      ===================================================================== */
   async function secDocs(v) {
-    if (S.isEducator) return go('children');
     var d = await getMany('docs', 'children', 'sections', 'branches'), rows = d[0], kids = d[1], allDocsSections = d[2] || [], docsBranches = d[3] || [];
     var targetDocsCenter = S.center || 'main';
     var docsSections = allDocsSections.filter(function (s) { return sectionCenterKey(s, docsBranches) === targetDocsCenter; });
@@ -15627,6 +15670,12 @@
           var tplApproved = tc.found && tc.status === 'APPROVED';
           body.appendChild(dRow(tplApproved, 'قالب الغياب (' + tc.name + ')', tc.found ? (tplApproved ? 'معتمد وجاهز (APPROVED)' : 'قيد المراجعة / غير معتمد (' + tc.status + ')') : 'غير موجود في Meta'));
         }
+        if (Array.isArray(r.templates)) {
+          var tplNames = r.templates.map(function (t) {
+            return (t.name || '—') + ' [' + (t.language || '?') + ' · ' + (t.status || '?') + ']';
+          });
+          body.appendChild(dRow(r.templates.length > 0, 'القوالب الموجودة في حساب Meta (' + r.templates.length + ')', tplNames.length ? tplNames.join(' ، ') : 'لا توجد أي قوالب في هذا الحساب'));
+        }
         if (r.hints && r.hints.length) {
           r.hints.forEach(function (x) { body.appendChild(h('div', { class: 'att-diag warn', text: '→ ' + x })); });
         }
@@ -16440,10 +16489,11 @@
     if (isFarmSession() && sec === 'reports') {
       sec = 'children';
     }
-    if (S.isEducator && (sec !== 'children' && sec !== 'attendance' && (sec !== 'reports' || isFarmSession()) && (sec !== 'evaluations' || isFarmSession()))) {
+    if (!isFullPowerAdmin() && sec === 'parents' && S.activeCenter === 'main') { sec = 'children'; }
+    if (S.isEducator && (sec !== 'children' && sec !== 'attendance' && (sec !== 'reports' || isFarmSession()) && (sec !== 'evaluations' || isFarmSession()) && sec !== 'programs' && sec !== 'msgs')) {
       sec = 'children';
     }
-    if (S.isSpecialist && (sec === 'accounts' || sec === 'hub' || sec === 'hub_accounts' || sec === 'audit' || sec === 'settings' || sec === 'educators' || sec === 'archive' || sec === 'whatsapp' || sec === 'attendance')) {
+    if (S.isSpecialist && (sec !== 'children' && sec !== 'reports' && sec !== 'evaluations' && sec !== 'programs' && sec !== 'docs' && sec !== 'msgs')) {
       toast('غير مخوّلة: هذه الصلاحية محصورة بإدارة المركز فقط.', 'bad');
       return go('children');
     }
@@ -16625,18 +16675,22 @@
         return e.email && e.email.toLowerCase() === myEmail;
       })[0];
 
+      var um = (meUser && meUser.user_metadata) || {};
+      var metaJob = String((adminRecord && adminRecord.job_title) || (accMeta && accMeta.job_title) || um.job_title || '').trim();
+      var isExemptFull = (myEmail === 'amir.zakaria06000@gmail.com' || myEmail === 'cppdarelihsan.idara@gmail.com');
       var userRole = (adminRecord && adminRecord.role) || (accMeta && accMeta.role) || (eduMatch ? 'educator' : 'admin');
-      var isKnownSpec = (userRole === 'specialist' || (adminRecord && adminRecord.job_title === 'أخصائية نفسانية'));
-      var isKnownEdu = !isKnownSpec && (userRole === 'educator');
+      var isKnownSpec = !isExemptFull && (userRole === 'specialist' || metaJob.indexOf('أخصائية') >= 0 || metaJob.indexOf('اخصائية') >= 0);
+      var isKnownEdu = !isExemptFull && !isKnownSpec && (userRole === 'educator' || !!eduMatch || metaJob.indexOf('مربية') >= 0 || metaJob.indexOf('مربي') >= 0);
 
       S.me = meUser;
       S.adminRecord = adminRecord;
       bust();
 
       if (isKnownEdu) {
-        var prof = Object.assign({}, eduMatch || {}, accMeta || {});
+        var prof = Object.assign({}, um || {}, eduMatch || {}, accMeta || {});
         S.isEducator = true;
         S.isSpecialist = false;
+        S.isReadOnlyAdmin = false;
         S.eduProfile = prof;
         S.eduSectionId = (prof && prof.section_id) || '';
         S.eduSectionName = (prof && prof.section_name) || '';
@@ -16657,6 +16711,7 @@
       } else if (isKnownSpec) {
         S.isEducator = false;
         S.isSpecialist = true;
+        S.isReadOnlyAdmin = false;
         S.eduProfile = null;
         S.eduSectionId = '';
         S.eduSectionName = '';
@@ -16665,6 +16720,7 @@
       } else {
         S.isEducator = false;
         S.isSpecialist = false;
+        S.isReadOnlyAdmin = !isFullPowerAdmin();
         S.eduProfile = null;
         S.eduSectionId = '';
         S.eduSectionName = '';
@@ -16675,19 +16731,22 @@
 
       applyRoleSidebarUI(); initHeaderWidgets();
       show('app');
+      var umWho = (S.me && S.me.user_metadata) || {};
       if (S.isEducator) {
-        var eduName = (S.eduProfile && S.eduProfile.full_name) || (embeddedMatch && embeddedMatch.full_name) || myEmail;
-        $('#who').textContent = '' + eduName + (S.eduSectionName ? (' — ' + S.eduSectionName) : '');
+        var eduName = (S.eduProfile && S.eduProfile.full_name) || umWho.full_name || (embeddedMatch && embeddedMatch.full_name) || 'مربية';
+        $('#who').textContent = eduName + (S.eduSectionName ? (' — ' + S.eduSectionName) : ' — مربية');
       } else if (S.isSpecialist) {
-        $('#who').textContent = ((S.adminRecord && S.adminRecord.full_name) || myEmail) + ' — أخصائية نفسانية';
+        var specName = umWho.full_name || (S.adminRecord && S.adminRecord.full_name) || 'الأخصائية النفسانية';
+        $('#who').textContent = specName + ' — أخصائية نفسانية';
       } else {
-        var whoEmail = (S.me && S.me.email) || 'مدير';
-        if (/^edu\.\d+@darelihsan\.org$/i.test(whoEmail)) {
-          var matchedSt = EMBEDDED_STAFF.filter(function (st) { return st.email && st.email.toLowerCase() === whoEmail.toLowerCase(); })[0];
-          $('#who').textContent = (matchedSt && matchedSt.full_name) || 'مستخدم إداري';
-        } else {
-          $('#who').textContent = whoEmail;
+        var admName = umWho.full_name || (S.adminRecord && S.adminRecord.full_name) || '';
+        if (!admName) {
+          if (myEmail === 'amir.zakaria06000@gmail.com') admName = 'أمير زكرياء';
+          else if (myEmail === 'cppdarelihsan.idara@gmail.com') admName = 'إدارة دار الإحسان';
+          else admName = 'طاقم الإدارة';
         }
+        var admJob = umWho.job_title || (S.isReadOnlyAdmin ? 'إدارة (عرض)' : 'الإدارة العامة');
+        $('#who').textContent = admName + ' — ' + admJob;
       }
 
       S.stopIdle && S.stopIdle();
@@ -17294,6 +17353,11 @@
   }
 
   function initHeaderWidgets() {
+    var topLogoutBtn = document.getElementById('topLogoutBtn');
+    if (topLogoutBtn && !topLogoutBtn._bound) {
+      topLogoutBtn._bound = true;
+      topLogoutBtn.addEventListener('click', function () { logout(); });
+    }
     initThemeEngine();
 
     // ربط جرس الإشعارات
