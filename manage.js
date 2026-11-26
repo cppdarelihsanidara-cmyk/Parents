@@ -772,6 +772,8 @@
 
     if (typeof document !== 'undefined' && document.body) {
       document.body.classList.toggle('de-readonly-admin', !!S.isReadOnlyAdmin);
+      var nBox = document.querySelector('.hdr-notif-box');
+      if (nBox) nBox.style.display = (isEdu || isSpec) ? 'none' : '';
     }
 
     [].forEach.call(document.querySelectorAll('#nav [data-sec]'), function (btn) {
@@ -1619,7 +1621,7 @@
         }
         S.activeCenter = ck;
         S.filterSectionId = '';
-        applyRoleSidebarUI(); initHeaderWidgets();
+        applyRoleSidebarUI(); initHeaderWidgets(); syncMobileBottomNav(sec);
         if (ck === 'main') {
           go('dash');
         } else {
@@ -2248,9 +2250,9 @@
         }));
 
         // 2. شريط إجراءات الطفل الرسمي المباشر (البطاقة، التعديل، الحذف — مع إزالة رمز الأرشفة ورمز تسجيل الولي والأزرار المكررة)
-        var actionsBarItems = [
-          rbtn('بطاقة التلميذ الرسمية', function () { openStudentCard(r); }, 'gold')
-        ];
+        var actionsBarItems = (!S.isEducator && !S.isSpecialist)
+          ? [rbtn('بطاقة التلميذ الرسمية', function () { openStudentCard(r); }, 'gold')]
+          : [];
         if (!S.isEducator && !S.isSpecialist && !S.isReadOnlyAdmin) {
           actionsBarItems.push(
             rbtn('تعديل البيانات', function () { editChild(r); }, 'light'),
@@ -17352,6 +17354,43 @@
     });
   }
 
+  function syncMobileBottomNav(activeSec) {
+    if (typeof document === 'undefined') return;
+    var nav = document.getElementById('mobileBottomNav');
+    if (!nav) {
+      nav = document.createElement('nav');
+      nav.id = 'mobileBottomNav';
+      nav.setAttribute('aria-label', 'التنقل السريع');
+      document.body.appendChild(nav);
+    }
+    var items = [
+      { sec: 'children', label: 'الأقسام', icon: 's-child' },
+      { sec: 'reports', label: 'التقارير', icon: 's-report' },
+      { sec: 'evaluations', label: 'التقييم', icon: 's-card' },
+      { sec: 'programs', label: 'البرامج', icon: 's-book' },
+      { sec: '_more', label: 'المزيد', icon: 's-menu' }
+    ];
+    nav.textContent = '';
+    items.forEach(function (it) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'mbn-item' + (activeSec === it.sec ? ' is-active' : '');
+      b.appendChild(makeSvgIcon(it.icon));
+      var sp = document.createElement('span');
+      sp.textContent = it.label;
+      b.appendChild(sp);
+      b.onclick = function () {
+        if (it.sec === '_more') {
+          var appEl = document.getElementById('app');
+          if (appEl) appEl.classList.remove('side-collapsed');
+          return;
+        }
+        go(it.sec);
+      };
+      nav.appendChild(b);
+    });
+  }
+
   function initHeaderWidgets() {
     var topLogoutBtn = document.getElementById('topLogoutBtn');
     if (topLogoutBtn && !topLogoutBtn._bound) {
@@ -17395,9 +17434,11 @@
       });
     }
 
-    fetchNotifications();
-    if (!NOTIF_STATE.poller) {
-      NOTIF_STATE.poller = setInterval(fetchNotifications, 10000);
+    if (!S.isEducator && !S.isSpecialist) {
+      fetchNotifications();
+      if (!NOTIF_STATE.poller) {
+        NOTIF_STATE.poller = setInterval(fetchNotifications, 10000);
+      }
     }
   }
 
