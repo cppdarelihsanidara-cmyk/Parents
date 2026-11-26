@@ -248,7 +248,7 @@
       emptyApptsPast: 'لا توجد مواعيد سابقة.',
       emptyMsgs: 'لا توجد رسائل أو إعلانات حتى الآن.',
       emptyDocs: 'لا توجد وثائق مشاركة معك بعد.',
-      center_main: 'المركز الرئيسي لدار الإحسان',
+      center_main: 'المركز النفسي البيداغوجي لذوي الإحتياجات الخاصة دار الإحسان',
       center_work: 'مركز المساعدة على العمل (ورشات التأهيل والتمهين)',
       center_farm: 'المزرعة البيداغوجية (البستنة والأنشطة الفلاحية)',
       membershipPrefix: 'رقم القيد: ',
@@ -1209,25 +1209,73 @@
       )
     );
 
-    // Keep the enrollment action inside the existing notifications screen (no persistent banner).
-    card.appendChild(h('div', { class: 'card', style: 'display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:0 0 14px;padding:12px 14px;' },
-      h('p', { style: 'margin:0;flex:1;min-width:180px;font-size:0.9rem;', text: 'فعّل إشعارات الهاتف لتصلك تنبيهات المركز حتى عند إغلاق فضاء الأولياء.' }),
-      h('button', {
-        type: 'button',
-        class: 'btn small gold',
-        text: (typeof Notification !== 'undefined' && Notification.permission === 'granted') ? 'تحديث اشتراك الإشعارات' : 'تفعيل إشعارات الهاتف',
-        onclick: async function () {
-          var btn = this;
-          var oldText = btn.textContent;
-          btn.disabled = true;
-          btn.textContent = 'جارٍ التفعيل…';
-          try { await requestPhoneNotificationPermission(); }
-          finally {
-            btn.disabled = false;
-            btn.textContent = (typeof Notification !== 'undefined' && Notification.permission === 'granted') ? 'تحديث اشتراك الإشعارات' : (oldText || 'تفعيل إشعارات الهاتف');
+    // بطاقة حالة اشتراك إشعارات Push الفعلية لهذا الجهاز مع كشف التسجيل المسبق وسبب أي فشل
+    var pushStatusBadge = h('span', { class: 'badge', style: 'font-weight:700;', text: 'جارٍ فحص حالة الجهاز…' });
+    var pushBtn = h('button', {
+      type: 'button',
+      class: 'btn small gold',
+      text: (typeof Notification !== 'undefined' && Notification.permission === 'granted') ? 'تحديث اشتراك الإشعارات' : 'تفعيل إشعارات الهاتف',
+      onclick: async function () {
+        var btn = this;
+        var oldText = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = 'جارٍ التفعيل…';
+        try {
+          var ok = await requestPhoneNotificationPermission();
+          if (ok) {
+            pushStatusBadge.textContent = '✓ هذا الجهاز مسجّل ومفعّل لاستقبال الإشعارات';
+            pushStatusBadge.className = 'badge ok';
           }
+        } finally {
+          btn.disabled = false;
+          btn.textContent = (typeof Notification !== 'undefined' && Notification.permission === 'granted') ? 'تحديث اشتراك الإشعارات' : (oldText || 'تفعيل إشعارات الهاتف');
         }
-      })
+      }
+    });
+
+    (async function checkDevicePushStatus() {
+      try {
+        if (typeof Notification === 'undefined' || !('serviceWorker' in navigator) || !('PushManager' in window)) {
+          pushStatusBadge.textContent = 'المتصفح الحالي لا يدعم إشعارات Push (إشعارات التطبيق الداخلية تعمل)';
+          pushStatusBadge.className = 'badge';
+          return;
+        }
+        if (Notification.permission === 'denied') {
+          pushStatusBadge.textContent = 'إذن الإشعارات مرفوض في إعدادات المتصفح';
+          pushStatusBadge.className = 'badge bad';
+          return;
+        }
+        if (Notification.permission !== 'granted') {
+          pushStatusBadge.textContent = 'الإشعارات غير مفعّلة بعد على هذا الجهاز';
+          pushStatusBadge.className = 'badge gold';
+          return;
+        }
+        var reg = await navigator.serviceWorker.ready;
+        var sub = await reg.pushManager.getSubscription();
+        if (!sub || !sub.endpoint) {
+          pushStatusBadge.textContent = 'الإذن ممنوح لكن الجهاز غير مسجّل — اضغط تحديث الاشتراك';
+          pushStatusBadge.className = 'badge gold';
+          return;
+        }
+        var rows = await C.rest('GET', '/push_subscriptions?select=id,is_active&parent_user_id=eq.' + encodeURIComponent(S.me) + '&endpoint=eq.' + encodeURIComponent(sub.endpoint) + '&limit=1').catch(function () { return []; });
+        if (Array.isArray(rows) && rows[0] && rows[0].is_active) {
+          pushStatusBadge.textContent = '✓ هذا الجهاز مسجّل ومفعّل لاستقبال الإشعارات';
+          pushStatusBadge.className = 'badge ok';
+        } else {
+          pushStatusBadge.textContent = 'الاشتراك منتهٍ أو غير متزامن — اضغط تحديث الاشتراك';
+          pushStatusBadge.className = 'badge gold';
+        }
+      } catch (e) {
+        pushStatusBadge.textContent = 'تعذر التحقق من حالة Push حالياً';
+      }
+    })();
+
+    card.appendChild(h('div', { class: 'card', style: 'display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:0 0 14px;padding:12px 14px;' },
+      h('div', { style: 'flex:1;min-width:190px;display:flex;flex-direction:column;gap:6px;' },
+        h('p', { style: 'margin:0;font-size:0.9rem;', text: 'فعّل إشعارات الهاتف لتصلك تنبيهات المركز حتى عند إغلاق فضاء الأولياء.' }),
+        pushStatusBadge
+      ),
+      pushBtn
     ));
 
     var list = h('div', { class: 'dynamic-items-container', style: 'max-height: 400px; overflow-y: auto;' });
@@ -2455,15 +2503,17 @@ function saveAttendanceReply(reply) {
 
   try { safeSetItem('local', 'de_attendance_replies_v2', JSON.stringify(replies)); } catch (e) {}
 
-  // محاولة المزامنة مع خادم قاعدة البيانات إن توفرت نقطة النهاية
-  if (typeof C !== 'undefined' && C.rest) {
-    C.rest('POST', '/whatsapp_messages', {
-      to_phone: reply.phone || '213000000000',
-      direction: 'inbound',
-      body: 'تبرير غياب الطفل [' + (reply.child_name || '') + ']: ' + (reply.reply_text || ''),
-      status: 'delivered',
-      child_id: reply.child_id || null
-    }).catch(function () {});
+  // حفظ تبرير الغياب في جدول تبريرات الغياب المخصص (منفصل تماماً عن رسائل WhatsApp الواردة)
+  if (typeof C !== 'undefined' && C.rest && reply.child_id) {
+    C.rest('POST', '/absence_justifications', {
+      child_id: reply.child_id,
+      parent_user_id: (typeof S !== 'undefined' && S.me) ? S.me : null,
+      absence_date: reply.date || new Date().toISOString().slice(0, 10),
+      reason: reply.reply_text || '',
+      expires_at: reply.expires_at
+    }).catch(function () {
+      // في حال عدم تطبيق ترحيل جدول absence_justifications بعد، يبقى التبرير محفوظاً محلياً دون تلويث سجل WhatsApp
+    });
   }
   return reply;
 }
@@ -2553,7 +2603,7 @@ function generateWordDocMas(rep, child, secName, brName) {
     '.sec-banner { background-color: #7DD3FC; font-weight: bold; text-align: center; padding: 6pt; border: 1pt solid #000; margin-bottom: 8pt; }\n' +
     '.hdr { text-align: center; border-bottom: 2pt solid #000; padding-bottom: 8pt; margin-bottom: 10pt; }\n' +
     '</style></head><body>\n' +
-    '<div class="hdr"><h3>جمعية أولياء الأطفال المعاقين ذهنيًا — المركز النفسي البيداغوجي دار الإحسان</h3>\n' +
+    '<div class="hdr"><h3>جمعية أولياء الأطفال المعاقين ذهنيًا — المركز النفسي البيداغوجي لذوي الإحتياجات الخاصة دار الإحسان</h3>\n' +
     '<p>العطف - غرداية • ÉVALUATION DES MOTIVATIONS DU COMPORTEMENT (MAS) & BIP</p>\n' +
     '<h2>' + title + '</h2></div>\n' +
     '<div class="banner">مقياس تقييم دوافع السلوك الوظيفي مع خطة التدخل السلوكي الفردية (BIP)</div>\n' +
@@ -2616,7 +2666,7 @@ function generateWordDocObservation(rep, child, secName, brName) {
     '.sec-banner { background-color: #7DD3FC; font-weight: bold; text-align: center; padding: 6pt; border: 1pt solid #000; margin-bottom: 8pt; }\n' +
     '.hdr { text-align: center; border-bottom: 2pt solid #000; padding-bottom: 8pt; margin-bottom: 10pt; }\n' +
     '</style></head><body>\n' +
-    '<div class="hdr"><h3>جمعية أولياء الأطفال المعاقين ذهنيًا — المركز النفسي البيداغوجي دار الإحسان</h3>\n' +
+    '<div class="hdr"><h3>جمعية أولياء الأطفال المعاقين ذهنيًا — المركز النفسي البيداغوجي لذوي الإحتياجات الخاصة دار الإحسان</h3>\n' +
     '<p>العطف - غرداية • FICHE D&#39;OBSERVATION DU COMPORTEMENT</p>\n' +
     '<h2>' + title + '</h2></div>\n' +
     '<div class="banner">استمارة متابعة وملاحظة السلوك الميداني والمظاهر النمائية للطفل</div>\n' +
@@ -3245,7 +3295,7 @@ function generateWordDocObservation(rep, child, secName, brName) {
     var header = h('div', { style: 'display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #163B65; padding-bottom:12px; margin-bottom:16px;' },
       h('div', { style: 'text-align:right;' },
         h('h3', { style: 'margin:0 0 2px; color:#163B65; font-size:15px; font-weight:800;', text: 'جمعية أولياء الأطفال المعاقين ذهنيًا' }),
-        h('h4', { style: 'margin:0 0 2px; color:#2563EB; font-size:14px; font-weight:700;', text: 'المركز النفسي البيداغوجي دار الإحسان' }),
+        h('h4', { style: 'margin:0 0 2px; color:#2563EB; font-size:14px; font-weight:700;', text: 'المركز النفسي البيداغوجي لذوي الإحتياجات الخاصة دار الإحسان' }),
         h('p', { style: 'margin:0; color:#64748B; font-size:12px;', text: '— العطف - غرداية —' })
       ),
       h('div', { style: 'text-align:center;' },
@@ -3344,7 +3394,7 @@ function renderParentOfficialEvaluationSheet(r, childFullName, secName, kd, init
       logoImg,
       h('div', { class: 'oep-title-block' },
         h('h3', { class: 'oep-org-name', text: 'جمعية أولياء الأطفال المعاقين ذهنيًا' }),
-        h('h4', { class: 'oep-center-name', text: 'المركز النفسي البيداغوجي دار الإحسان' }),
+        h('h4', { class: 'oep-center-name', text: 'المركز النفسي البيداغوجي لذوي الإحتياجات الخاصة دار الإحسان' }),
         h('p', { class: 'oep-location', text: '— العطف - غرداية —' }),
         h('div', { class: 'oep-fr-title', text: "COMPTE RENDU DE L'EQUIPE PEDAGOGIQUE" }),
         h('h2', { class: 'oep-report-heading', text: 'التقرير البيداغوجي الوصفي (تقرير الملاحظات والتوجيهات)' })
@@ -4165,7 +4215,7 @@ function renderParentOfficialEvaluationSheet(r, childFullName, secName, kd, init
         h('h3', { text: 'المقر الرسمي وساعات العمل' })
       ),
       h('div', { style: 'padding:12px 0;' },
-        h('strong', { style: 'display:block; color:#163B65; font-size:15px; margin-bottom:6px;', text: 'المركز النفسي البيداغوجي دار الإحسان' }),
+        h('strong', { style: 'display:block; color:#163B65; font-size:15px; margin-bottom:6px;', text: 'المركز النفسي البيداغوجي لذوي الإحتياجات الخاصة دار الإحسان' }),
         h('p', { class: 'muted', style: 'margin:0 0 10px;', text: 'بلدية العطف — ولاية غرداية، الجزائر.' }),
         h('div', { class: 'pm-c-badge-pill', text: 'أوقات العمل: من الأحد إلى الخميس من 08:00 صباحًا إلى 14:00 زوالاً' })
       )
