@@ -706,7 +706,7 @@
 
     // الشعار الرسمي في أعلى اليمين لجميع الوثائق، بما فيها النماذج الفرنسية.
     if (logoImg && logoImg.width) {
-      drawLogoAspect(ctx, logoImg, w - 180, 48, 115, 115, true);
+      drawLogoAspect(ctx, logoImg, w - 156, 44, 88, 88, true);
     }
 
     ctx.textAlign = 'center';
@@ -822,10 +822,10 @@
     // 1. الترويسة العلوية المطابقة للصورة (56725.jpg)
     // الشعار على اليمين
     if (logoImg && logoImg.width) {
-      drawLogoAspect(ctx, logoImg, W - 173, 44, 125, 125, true);
+      drawLogoAspect(ctx, logoImg, W - 156, 44, 88, 88, true);
     }
     // العلم الجزائري الدائري على اليسار
-    drawAlgeriaFlagCircle(ctx, 112, 106, 56);
+    // Algerian flag removed per institutional design standard
 
     ctx.direction = 'rtl';
     ctx.textAlign = 'center';
@@ -1417,10 +1417,10 @@
     ctx.fillStyle = '#1F513A';
     ctx.textAlign = 'right';
     ctx.font = 'bold 15px "Cairo", "IBM Plex Sans Arabic", sans-serif';
-    ctx.fillText('مدير المركز', stampBoxX + stampBoxW - 12, stripY + 24);
+    ctx.fillText('مدير المركز', M + 140, stripY + 24);
     ctx.fillStyle = '#475569';
     ctx.font = '13px "Cairo", "IBM Plex Sans Arabic", sans-serif';
-    ctx.fillText('الإمضاء', stampBoxX + stampBoxW - 12, stripY + 48);
+    // open white space for signature
     // تظل بقية المساحة بيضاء ومفتوحة للتوقيع اليدوي والختم عند الحاجة.
 
     // ب) جدول مطابقة النسب المئوية للمجالات على اليمين
@@ -2899,7 +2899,7 @@
       drawLogoAspect(ctx, logoImg, W - 142, hdrY + 4, 94, 94, true);
     }
     // العلم الجزائري على اليسار
-    drawAlgeriaFlagCircle(ctx, hdrX + 54, hdrY + 54, 38);
+    // Algerian flag removed per institutional design standard
 
     // النصوص في الوسط وأعلى الصفحة
     ctx.direction = 'rtl';
@@ -4116,7 +4116,7 @@
     var y = 66;
     // الشعار على اليمين أو اليسار كما في النموذج المرفق (أعلى اليمين في الصفحة)
     if (logoImg) {
-      drawLogoAspect(ctx, logoImg, W - M - 115, 42, 115, 115, true);
+      drawLogoAspect(ctx, logoImg, W - M - 88, 42, 88, 88, true);
     }
 
     ctx.fillStyle = '#64748B';
@@ -4516,9 +4516,7 @@
     drawReportTopGradientBar(ctx, W);
 
     var y = 82;
-    if (logoImg) {
-      // Logo shown on Page 1 only
-    }
+    // Logo strictly on Page 1 only
 
     ctx.fillStyle = '#101D35';
     ctx.font = 'bold 21px "Cairo", "IBM Plex Sans Arabic", sans-serif';
@@ -4719,7 +4717,7 @@
 
     var y = 66;
     if (logoImg) {
-      drawLogoAspect(ctx, logoImg, W - M - 115, 42, 115, 115, true);
+      drawLogoAspect(ctx, logoImg, W - M - 88, 42, 88, 88, true);
     }
 
     ctx.fillStyle = '#64748B';
@@ -4937,9 +4935,7 @@
     drawReportTopGradientBar(ctx, W);
 
     var y = 82;
-    if (logoImg) {
-      // Logo shown on Page 1 only
-    }
+    // Logo strictly on Page 1 only
 
     ctx.fillStyle = '#101D35';
     ctx.font = 'bold 21px "Cairo", "IBM Plex Sans Arabic", sans-serif';

@@ -2,7 +2,7 @@
 (function () {
   'use strict';
 
-  var BUILD = '20261124_pastel1';
+  var BUILD = '20261128_secfix2';
   var CACHE_PREFIX = 'de-parents-';
   var secure = window.isSecureContext || location.protocol === 'https:' ||
     location.hostname === 'localhost' || location.hostname === '127.0.0.1';

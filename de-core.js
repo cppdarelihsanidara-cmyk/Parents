@@ -4,7 +4,7 @@
 (function (root) {
   'use strict';
 
-  var BUILD = '2026-10-19.3';
+  var BUILD = '2026-11-28.secfix1';
   var MAX_FILE = 5 * 1024 * 1024;                       // 5 ميغابايت (يطابق حد الحاوية private-docs)
   var EXT = { pdf: 'application/pdf', jpg: 'image/jpeg', png: 'image/png', webp: 'image/webp' };
   var UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -50,7 +50,7 @@
   }
   function pdfHasActive(bytes) {  // فحص استدلالي لمحتوى نشط داخل PDF (ليس بديلًا عن برنامج حماية)
     var s = ''; for (var i = 0; i < bytes.length; i += 8192) s += String.fromCharCode.apply(null, bytes.subarray(i, Math.min(i + 8192, bytes.length)));
-    return /\/(JavaScript|JS|Launch|EmbeddedFile|RichMedia)\b/.test(s);
+    return /\/(JavaScript|JS|Launch|EmbeddedFile|RichMedia|OpenAction|AA|SubmitForm|GoToR|ImportData)\b/.test(s);
   }
   // f: { name, size, type, bytes:Uint8Array }  — bytes = الملف كاملًا (≤ 5MB)
   function checkFile(f) {
@@ -82,11 +82,26 @@
       if (v == null || v === false) return;
       if (k === 'class') el.className = v;
       else if (k === 'text') el.textContent = v;
+      else if (k === 'onclick' && typeof v === 'function' && String(tag).toLowerCase() === 'button') {
+        el.addEventListener('click', function (ev) {
+          if (el._deBusy) return;
+          var r = v.call(this, ev);
+          if (r && typeof r.then === 'function') {
+            el._deBusy = true;
+            var prevDis = el.disabled;
+            el.disabled = true;
+            r.then(function () { el._deBusy = false; if (!prevDis) el.disabled = false; },
+                   function () { el._deBusy = false; if (!prevDis) el.disabled = false; });
+          }
+          return r;
+        });
+      }
       else if (k.slice(0, 2) === 'on' && typeof v === 'function') el.addEventListener(k.slice(2), v);
       else if (k === 'value' || k === 'checked' || k === 'disabled' || k === 'hidden' || k === 'selected') el[k] = v;
       else if (k === 'style') { el.style.cssText = String(v); }
       else if (/^on/i.test(k) || k === 'innerHTML' || k === 'outerHTML' || k === 'srcdoc') return;   // مرفوضة عمدًا
-      else if ((k === 'href' || k === 'src') && !/^(https:|blob:|#)/i.test(String(v))) return;
+      else if (k === 'href' && !/^(https:|blob:|#)/i.test(String(v))) return;
+      else if (k === 'src' && !/^(https:|blob:|data:image\/(?:png|jpe?g|webp|gif);base64,|(?![./]*\.\.)(?:\.\/)?[a-zA-Z0-9._\/-]+\.(?:png|jpe?g|webp|svg|gif)(?:\?[a-zA-Z0-9_=&.-]*)?$)/i.test(String(v))) return;
       else el.setAttribute(k, v === true ? '' : String(v));
     });
     for (var i = 2; i < arguments.length; i++) append(el, arguments[i]);
@@ -326,7 +341,7 @@
       var p = String(path || '');
       if (m === 'POST' && p.indexOf('on_conflict=') === -1) {
         var sig = p + '|' + (body ? JSON.stringify(body) : '');
-        if (body && typeof body === 'object' && !Array.isArray(body) && /^\/(progress_reports|educational_programs|messages|documents|appointments)/.test(p) && !body.idempotency_key) {
+        if (body && typeof body === 'object' && !Array.isArray(body) && /^\/(progress_reports|educational_programs|messages|documents|appointments|notifications)/.test(p) && !body.idempotency_key) {
           body = Object.assign({}, body, { idempotency_key: 'de_' + Date.now() + '_' + Math.random().toString(36).slice(2, 10) });
         }
         var now = Date.now();
@@ -366,9 +381,15 @@
 
   /* مهلة خمول: خروج تلقائي بعد فترة بلا نشاط (راحة للمستخدم على الأجهزة المشتركة؛ ليست بديلًا عن انتهاء الجلسة في الخادم) */
   function idle(ms, cb) {
-    var t; function reset() { clearTimeout(t); t = setTimeout(cb, ms); }
-    ['click', 'keydown', 'touchstart', 'scroll'].forEach(function (ev) { root.addEventListener(ev, reset, { passive: true }); });
-    reset(); return function stop() { clearTimeout(t); };
+    var t, stopped = false, evs = ['click', 'keydown', 'touchstart', 'scroll'];
+    function reset() { if (stopped) return; clearTimeout(t); t = setTimeout(function () { if (!stopped) cb(); }, ms); }
+    evs.forEach(function (ev) { root.addEventListener(ev, reset, { passive: true }); });
+    reset();
+    return function stop() {
+      stopped = true;
+      clearTimeout(t);
+      evs.forEach(function (ev) { try { root.removeEventListener(ev, reset); } catch (e) {} });
+    };
   }
 
   var DE = {

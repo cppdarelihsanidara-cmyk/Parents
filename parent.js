@@ -861,19 +861,9 @@
         return dbReps;
       };
 
-      var fetchCloudPublishedEvaluations = async function () {
-        try {
-          var rows = await q('/site_content?id=eq.draft&select=id,data');
-          var row = Array.isArray(rows) ? rows[0] : null;
-          if (row && row.data) {
-            if (Array.isArray(row.data._published_evaluations)) return row.data._published_evaluations;
-            if (row.data._portal_meta && Array.isArray(row.data._portal_meta.published_evaluations)) {
-              return row.data._portal_meta.published_evaluations;
-            }
-          }
-        } catch (eCloud) {}
-        return [];
-      };
+      // Security hardening (2026-11-28): Never fetch site_content?id=eq.draft from Parent portal.
+      // All published evaluations/reports come strictly from RLS-protected progress_reports.
+      var fetchCloudPublishedEvaluations = async function () { return []; };
 
       var r = await Promise.all([
         q('/parent_profiles?select=full_name&limit=1').catch(function () { return []; }),
@@ -892,7 +882,7 @@
       var kids = r[1] || [];
       var dbReports = (r[2] || []).slice();
       var cloudEvals = (r[9] || []).slice();
-      var localEvals = readLocalSharedEvaluationsParent();
+      var localEvals = []; // Security hardening: no cross-session localStorage evaluation merge
 
       // دمج جميع التقارير واستمارات التقييم المرسلة من قاعدة البيانات والسحابة والتخزين المحلي
       var allCandidateReports = [];
@@ -908,23 +898,14 @@
         allCandidateReports.push(rep);
       });
 
-      // تصفية التقييمات الخاصة بطفل الولي، وإن لم يتطابق المعرف (أثناء التجربة) نعرض التقييمات المرسلة المعتمدة حتى لا تختفي أبداً
+      // Fail-closed privacy isolation (2026-11-28): strictly display reports/evaluations matching linked children only.
       var mergedReports = [];
       if (kids.length) {
-        var kidSpecific = allCandidateReports.filter(function (rep) {
+        mergedReports = allCandidateReports.filter(function (rep) {
           return kids.some(function (k) { return doesEvalMatchKid(rep, k); });
         });
-        var kidSpecificEvals = kidSpecific.filter(isEvalReport);
-        var allPublishedEvals = allCandidateReports.filter(isEvalReport);
-        if (kidSpecificEvals.length > 0) {
-          mergedReports = kidSpecific;
-        } else if (allPublishedEvals.length > 0) {
-          mergedReports = allPublishedEvals.concat(kidSpecific.filter(function (x) { return !isEvalReport(x); }));
-        } else {
-          mergedReports = kidSpecific;
-        }
       } else {
-        mergedReports = allCandidateReports;
+        mergedReports = [];
       }
       mergedReports.sort(function (a, b) {
         return String(b.report_date || '').localeCompare(String(a.report_date || ''));

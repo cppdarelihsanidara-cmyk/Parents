@@ -2,10 +2,10 @@
 'use strict';
 
 var CACHE_PREFIX = 'de-parents-';
-var CACHE = CACHE_PREFIX + 'prod-20261126-di6';
+var CACHE = CACHE_PREFIX + 'prod-20261128-secfix2';
 var APP_SCOPE = new URL(self.registration.scope);
 var SHELL = [
-  './', 'index.html', 'parent.html', 'navback.js', 'icons.js', 'icons.css',
+  './', 'index.html', 'parent.html', 'navback.js', 'theme-switcher.js', 'icons.js', 'icons.css',
   'portal.css', 'crystal-blue-glass.css', 'pastel-glass.css', 'parent-modern.css', 'pdf-writer.js',
   'pwa.css', 'pwa.js', 'cms-config.js', 'parent.js', 'de-core.js', 'username.js',
   'fr-names.js', 'qr-gen.js', 'logo.png', 'logo-sq.png', 'icon-192.png',
